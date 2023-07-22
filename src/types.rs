@@ -8,8 +8,9 @@ use tokio::sync::broadcast;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Msg {
-    pub room: u32,
-    pub msg: String
+    pub chat_id: u32,
+    pub msg_id: String, 
+    pub text: String
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]

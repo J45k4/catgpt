@@ -1,6 +1,22 @@
 
 // let ws: WebSocket
 
+type MsgDelta = {
+    type: "MsgDelta"
+    delta: String
+    index:  number
+}
+
+type StartWriting = {
+    type: String
+}
+
+type FinishWrite = {
+    type: String
+}
+
+type ServerMsg = MsgDelta
+
 const createWs = (args: {
     onMsg: (msg) => void
 }) => {
