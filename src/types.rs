@@ -1,3 +1,10 @@
+use std::sync::Arc;
+
+use chrono::DateTime;
+use chrono::Utc;
+use tokio::sync::RwLock;
+use tokio::sync::broadcast;
+
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Msg {
@@ -5,25 +12,27 @@ pub struct Msg {
     pub msg: String
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct MsgDelta {
-    msg_id: u32,
-    delta: String
+    pub msg_id: u32,
+    pub delta: String
 }
 
 #[derive(serde::Deserialize, Debug)]
+#[serde(tag = "type")]
 pub enum MsgToSrv {
     SendMsg(Msg)
 }
 
 #[derive(serde::Serialize, Debug)]
+#[serde(tag = "type")]
 pub enum MsgToCli {
     MsgDelta(MsgDelta)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
-    MsgDelta
+    MsgDelta(MsgDelta)
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -103,4 +112,49 @@ pub struct OpenaiStreamChoice {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OpenaiStreamResMsg {
     pub choices: Vec<OpenaiStreamChoice>
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct ChatMsg {
+    pub id: usize,
+    pub message: String,
+    pub user: String,
+    pub datetime: DateTime<Utc>
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct Chat {
+    pub messages: Vec<ChatMsg>
+}
+
+// pub struct Conversations {
+//     conversations: Vec<Conversation>
+// }
+
+pub struct Context {
+    pub chats: Arc<RwLock<Vec<Chat>>>,
+    pub ch: broadcast::Sender<Event>
+}
+
+impl Clone for Context {
+    fn clone(&self) -> Self {
+        Self { 
+            chats: self.chats.clone(),
+            ch: self.ch.clone()
+        }
+    }
+}
+
+impl Context {
+    pub fn new() -> Self {
+        let (ch, _) = broadcast::channel::<Event>(100);
+        let chat = Chat::default();
+
+        Self { 
+            chats: Arc::new(RwLock::new(vec![
+                chat
+            ])),
+            ch: ch
+        }
+    }
 }

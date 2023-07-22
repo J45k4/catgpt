@@ -1,20 +1,23 @@
 use std::{convert::Infallible, net::SocketAddr, io::{self, Write}};
 
 use anyhow::bail;
+use chrono::Utc;
 use clap::Parser;
+use env_logger::filter;
 use hyper::{service::{make_service_fn, service_fn}, Request, Body, Server, Response, Error, body};
 use hyper_tungstenite::{HyperWebsocket, tungstenite::Message};
-use futures_util::stream::StreamExt;
+use futures_util::{stream::StreamExt, SinkExt};
 use reqwest::Client;
 use serde_json::{from_str, to_string};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, broadcast};
 use types::{MsgToSrv, OpenaiChatReq, OpenaiStreamResMsg, OpenaiChatMessage};
 
-use crate::{args::{Args, Commands}, sse::{SSEvent, parse_events}};
+use crate::{args::{Args, Commands}, sse::{SSEvent, parse_events}, types::{Event, ChatMsg, Context, OpenaiChatRole, MsgToCli, MsgDelta}, ws_server::WsServer};
 
 mod types;
 mod args;
 mod sse;
+mod ws_server;
 
 pub struct OpenaiChatStreamRes {
     rx: mpsc::Receiver<OpenaiStreamResMsg>
@@ -79,9 +82,11 @@ async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
                 Err(error) => break,
             };
 
-            // println!("received chunk {}", chunk);
+            //println!("received chunk {}", chunk);
 
             let events = parse_events(&chunk);
+
+            //println!("events: {:?}", events);
 
             for event in events {
                 match event {
@@ -110,30 +115,134 @@ async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
     OpenaiChatStreamRes{ rx: rx }
 }
 
-async fn serve_ws(ws: HyperWebsocket) -> anyhow::Result<()> {
-    let mut ws = ws.await?;
+// async fn serve_ws(ws: HyperWebsocket, ctx: Context) -> anyhow::Result<()> {
+//     let mut ws = ws.await?;
 
-    while let Some(msg) = ws.next().await {
-        match msg? {
-            Message::Text(text) => {
-                let msg: MsgToSrv = from_str(&text)?;
+//     loop {
+//         let msg = {
+//             let msg = match ws.next().await {
+//                 Some(m) => m,
+//                 None => break,
+//             };
 
-                match msg {
-                    MsgToSrv::SendMsg(msg) => println!("{:?}", msg),
-                }
-            },
-            Message::Binary(_) => {},
-            Message::Ping(_) => {},
-            Message::Pong(_) => {},
-            Message::Close(_) => {},
-            Message::Frame(_) => {},
-        }
-    }
+//             let msg = match msg {
+//                 Ok(m) => m,
+//                 Err(err) => {
+//                     println!("error: {:?}", err);
+//                     break;
+//                 },
+//             };
 
-    Ok(())
-}
+//             let msg = match msg {
+//                 Message::Text(text) => text,
+//                 Message::Binary(_) => continue,
+//                 Message::Ping(_) => {
+//                     println!("ping");
+//                     continue;
+//                 },
+//                 Message::Pong(_) => continue,
+//                 Message::Close(_) => {
+//                     println!("close");
+//                     continue;
+//                 },
+//                 Message::Frame(_) => continue,
+//             };
 
-pub async fn handle_request(mut req: Request<Body>) -> Result<Response<Body>, anyhow::Error> {
+//             let msg: MsgToSrv = match from_str(&msg) {
+//                 Ok(m) => m,
+//                 Err(err) => {
+//                     println!("parse err: {:?}", err);
+//                     break;
+//                 },
+//             };
+
+//             msg
+//         };
+
+//         println!("parsed msg: {:?}", msg);
+
+//         match msg {
+//             MsgToSrv::SendMsg(msg) => {
+//                 println!("{:?}", msg);
+
+//                 let msg = ChatMsg {
+//                     id: 1,
+//                     message: msg.msg,
+//                     user: "User".to_string(),
+//                     datetime: Utc::now()
+//                 };
+
+//                 let mut chats = ctx.chats.write().await;
+
+//                 chats[0].messages.push(msg);
+
+//                 let mut req = OpenaiChatReq { 
+//                     model: "gpt-3.5-turbo".to_string(), 
+//                     messages: vec![], 
+//                     stream: true
+//                 };
+
+//                 let mut word_count = 0;
+
+//                 for msg in chats[0].messages.iter().rev().into_iter() {
+//                     let len = msg.message.len();
+
+//                     if word_count + len > 2000 {
+//                         let diff = word_count + len - 2000;
+
+//                         req.messages.push(
+//                             OpenaiChatMessage {
+//                                 role: OpenaiChatRole::User,
+//                                 content: msg.message[diff..].to_string()
+//                             }
+//                         );
+
+//                         break;
+//                     }
+
+//                     req.messages.push(
+//                         OpenaiChatMessage { 
+//                             role: OpenaiChatRole::User, 
+//                             content: msg.message.to_string() 
+//                         }
+//                     );
+                    
+//                     word_count += msg.message.len();
+//                 }
+
+//                 tokio::spawn(async move {
+//                     let mut stream = stream_openai_chat(req).await;
+                    
+//                     while let Some(r) = stream.next().await {
+//                         // println!("OpenaiStreamResMsg: {:?}", r);
+//                         let first_choise = &r.choices[0];
+
+//                         if let Some(d) = &first_choise.delta.content {
+//                             print!("{}", d);
+
+//                             let msg = MsgToCli::MsgDelta(
+//                                 MsgDelta {
+//                                     msg_id: 1,
+//                                     delta: d.to_string(),
+//                                 }
+//                             );
+//                             let msg = to_string(&msg).unwrap();
+//                             let msg = Message::text(msg);
+//                             ws.send(msg);
+//                         }
+//                     }
+
+//                     println!("");
+//                 });
+//             }
+//         }
+//     }
+//     println!("closed ws conn");
+
+//     Ok(())
+// }
+
+pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     // Use the connection pool here
 
     log::info!("handle_request {}", req.uri());
@@ -149,7 +258,12 @@ pub async fn handle_request(mut req: Request<Body>) -> Result<Response<Body>, an
 
         match req.uri().path() {
             "/ws" => {
-                tokio::spawn(serve_ws(ws));
+                println!("new ws request");
+
+                tokio::spawn(async move {
+                    let ws = ws.await.unwrap();
+                    WsServer::new(ws, ctx.clone()).serve().await;
+                });
             }
             &_ | _ => {
                 bail!("not allowed url")
@@ -208,10 +322,14 @@ async fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Server => {
+            let ctx = Context::new();
+
             let make_scv = make_service_fn(move |_| {
+                let ctx = ctx.clone();
                 async move {
                     Ok::<_, Infallible>(service_fn(move |req| {
-                        handle_request(req)
+                        let ctx = ctx.clone();
+                        handle_request(req, ctx)
                     }))
                 }
             });
