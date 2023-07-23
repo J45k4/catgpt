@@ -7,15 +7,19 @@ use tokio::sync::broadcast;
 
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Msg {
     pub chat_id: u32,
-    pub msg_id: String, 
-    pub text: String
+    pub msg_cli_id: String, 
+    pub model: String,
+    pub txt: String
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MsgDelta {
-    pub msg_id: u32,
+    pub msg_id: String,
+    pub author: String,
     pub delta: String
 }
 

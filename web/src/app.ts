@@ -1,6 +1,8 @@
 
 // let ws: WebSocket
 
+import { v4 } from "uuid"
+
 type MsgDelta = {
     type: "MsgDelta"
     delta: String
@@ -15,10 +17,24 @@ type FinishWrite = {
     type: String
 }
 
-type ServerMsg = MsgDelta
+type MsgFromSrv = MsgDelta
+
+type SendMsg = {
+    type: "SendMsg"
+    chatId: number
+    msgCliId: string
+    txt: string
+    model: String
+}
+
+type StopGen = {
+    type: "StopGen"
+}
+
+type MsgToSrv = SendMsg | StopGen
 
 const createWs = (args: {
-    onMsg: (msg) => void
+    onMsg: (msg: MsgFromSrv) => void
 }) => {
     const ws = new WebSocket("ws://localhost:5566/ws")
 
@@ -32,15 +48,57 @@ const createWs = (args: {
     }
 
     return {
-        sendMsg: (msg) => {
+        sendMsg: (msg: MsgToSrv) => {
             let text = JSON.stringify(msg)
             ws.send(text)
         }
     }
 }
 
+const createChatMessage = (args: {
+    id: string
+    author: string
+    msg: string
+
+}) => {
+    const div = document.createElement("div")
+    div.style.marginLeft = "5px"
+    div.style.marginRight = "5px"
+    div.style.marginTop = "10px"
+    div.style.marginBottom = "10px"
+
+    const headerDiv = document.createElement("div")
+    headerDiv.innerHTML = args.author
+    headerDiv.style.fontSize = "20px"
+    headerDiv.style.fontWeight = "2px"
+
+    const bodyDiv = document.createElement("div")
+    bodyDiv.innerHTML = args.msg
+    bodyDiv.className = "msgText"
+
+    div.appendChild(headerDiv)
+    div.appendChild(bodyDiv)
+
+    return div
+}
+
+enum Model {
+    gpt4 = "gpt4",
+    gpt3_5 = "gpt3.5",
+    random = "random"
+}
 
 window.onload = () => {
+    const modelSelect = document.querySelector("#modelSelect") as HTMLSelectElement
+    let currentModel =  Model.random
+    modelSelect.value = currentModel
+
+    modelSelect.onchange = e => {
+        currentModel = e.target.value
+        console.log("currentMode", currentModel)
+    }
+
+
     const messagesBox = document.querySelector("#messagesBox")
 
     let ws = createWs({
@@ -59,16 +117,28 @@ window.onload = () => {
     const sendButton = document.querySelector("#sendButton") as HTMLButtonElement
     
     sendButton.onclick = () => {
-        console.log("send message ", newMessageInput.value)
+        const msg = newMessageInput.value
+        console.log("send message ", msg)
+
+        const msgClientId = v4()
+
+        const chatMsgComponent = createChatMessage({
+            id: msgClientId,
+            author: "User",
+            msg: msg
+        })
+        messagesBox.appendChild(chatMsgComponent)
 
         ws.sendMsg({
             type: "SendMsg",
-            room: 1,
-            msg: newMessageInput.value
+            chatId: 1,
+            msgCliId: msgClientId,
+            model: currentModel,
+            txt: msg
         })
 
         newMessageInput.value = ""
-        messagesBox.innerHTML = ""
+        // messagesBox.innerHTML = ""
     }
 
 }

@@ -47,16 +47,20 @@ impl WsServer {
             MsgToSrv::SendMsg(msg) => {
                 println!("{:?}", msg);
 
-                let msg = ChatMsg {
+                let chatmsg = ChatMsg {
                     id: 1,
-                    message: msg.msg,
+                    message: msg.txt,
                     user: "User".to_string(),
                     datetime: Utc::now()
                 };
 
                 let mut chats = self.ctx.chats.write().await;
 
-                chats[0].messages.push(msg);
+                chats[0].messages.push(chatmsg);
+
+                if msg.model == "random" {
+                    
+                }
 
                 let mut req = OpenaiChatReq { 
                     model: "gpt-3.5-turbo".to_string(), 
@@ -94,6 +98,8 @@ impl WsServer {
 
                 let ctx = self.ctx.clone();
                 tokio::spawn(async move {
+                    let msg_id = uuid::Uuid::new_v4().to_string();
+
                     let mut stream = stream_openai_chat(req).await;
                     
                     while let Some(r) = stream.next().await {
@@ -103,7 +109,8 @@ impl WsServer {
                         if let Some(d) = &first_choise.delta.content {
                             let event = Event::MsgDelta(
                                 MsgDelta {
-                                    msg_id: 1,
+                                    msg_id: msg_id.clone(),
+                                    author: "ChatGPT".to_string(),
                                     delta: d.to_string()
                                 }
                             );
@@ -129,12 +136,7 @@ impl WsServer {
     async fn handle_event(&mut self, event: Event) {
         match event {
             Event::MsgDelta(delta) => {
-                let msg = MsgToCli::MsgDelta(
-                    MsgDelta {
-                        msg_id: 1,
-                        delta: delta.delta.to_string(),
-                    }
-                );
+                let msg = MsgToCli::MsgDelta(delta);
                 let msg = to_string(&msg).unwrap();
                 let msg = Message::text(msg);
                 self.ws.send(msg).await;

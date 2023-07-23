@@ -18,6 +18,7 @@ mod types;
 mod args;
 mod sse;
 mod ws_server;
+mod random;
 
 pub struct OpenaiChatStreamRes {
     rx: mpsc::Receiver<OpenaiStreamResMsg>
