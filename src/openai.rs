@@ -68,11 +68,7 @@ pub async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
                 Err(error) => break,
             };
 
-            //println!("received chunk {}", chunk);
-
             let events = parse_events(&chunk);
-
-            //println!("events: {:?}", events);
 
             for event in events {
                 match event {
@@ -84,8 +80,6 @@ pub async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
                                 break
                             },
                         };
-            
-                        // println!("msg: {:?}", msg);
 
                         match tx.send(msg).await {
                             Ok(_) => {},
@@ -161,7 +155,6 @@ pub async fn create_openai_resp(ctx: Context, instructions: Option<String>) {
     let mut text = String::new();
     
     while let Some(r) = stream.next().await {
-    //     // println!("OpenaiStreamResMsg: {:?}", r);
         let first_choise = &r.choices[0];
 
         if let Some(d) = &first_choise.delta.content {
@@ -175,16 +168,6 @@ pub async fn create_openai_resp(ctx: Context, instructions: Option<String>) {
             );
 
             ctx.ch.send(event);
-
-            // let msg = MsgToCli::MsgDelta(
-            //     MsgDelta {
-            //         msg_id: 1,
-            //         delta: d.to_string(),
-            //     }
-            // );
-            // let msg = to_string(&msg).unwrap();
-            // let msg = Message::text(msg);
-            // ws.send(msg);
         }
     }
 

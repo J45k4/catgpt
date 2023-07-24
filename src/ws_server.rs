@@ -123,50 +123,6 @@ impl WsServer {
             }
         }
     }
-
-    //     loop {
-    //         let msg = {
-    //             let msg = match ws.next().await {
-    //                 Some(m) => m,
-    //                 None => break,
-    //             };
-    
-    //             let msg = match msg {
-    //                 Ok(m) => m,
-    //                 Err(err) => {
-    //                     println!("error: {:?}", err);
-    //                     break;
-    //                 },
-    //             };
-    
-    //             let msg = match msg {
-    //                 Message::Text(text) => text,
-    //                 Message::Binary(_) => continue,
-    //                 Message::Ping(_) => {
-    //                     println!("ping");
-    //                     continue;
-    //                 },
-    //                 Message::Pong(_) => continue,
-    //                 Message::Close(_) => {
-    //                     println!("close");
-    //                     continue;
-    //                 },
-    //                 Message::Frame(_) => continue,
-    //             };
-    
-    //             let msg: MsgToSrv = match from_str(&msg) {
-    //                 Ok(m) => m,
-    //                 Err(err) => {
-    //                     println!("parse err: {:?}", err);
-    //                     break;
-    //                 },
-    //             };
-    
-    //             msg
-    //         };
-    //     }
-    //     println!("closed ws conn");
-    // }
 }
 
 async fn handle_ws_msg(msg: String) {
