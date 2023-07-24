@@ -38,6 +38,7 @@ dependencies = [
  "hyper",
  "hyper-tungstenite",
  "log",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",

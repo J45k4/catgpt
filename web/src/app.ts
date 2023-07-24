@@ -1,12 +1,11 @@
-
-// let ws: WebSocket
-
 import { v4 } from "uuid"
 
 type MsgDelta = {
     type: "MsgDelta"
-    delta: String
+    msgId: string
+    delta: string
     index:  number
+    author: string
 }
 
 type StartWriting = {
@@ -62,6 +61,7 @@ const createChatMessage = (args: {
 
 }) => {
     const div = document.createElement("div")
+    div.id = args.id
     div.style.marginLeft = "5px"
     div.style.marginRight = "5px"
     div.style.marginTop = "10px"
@@ -80,6 +80,33 @@ const createChatMessage = (args: {
     div.appendChild(bodyDiv)
 
     return div
+}
+
+const updateChatMessage = (args: {
+    container: Element
+    id: string
+    author: string
+    msg: string
+}) => {
+    const existingChatMessage = document.getElementById(args.id)
+
+    if (existingChatMessage) {
+        const textComponent = existingChatMessage.children[1]
+
+        textComponent.innerHTML += args.msg
+
+        return
+    }
+
+    console.log("create new chatMsg", args)
+
+    const el = createChatMessage({
+        id: args.id,
+        author: args.author,
+        msg: args.msg
+    })
+
+    args.container.appendChild(el)
 }
 
 enum Model {
@@ -104,7 +131,12 @@ window.onload = () => {
     let ws = createWs({
         onMsg: msg => {
             if (msg.type = "MsgDelta") {
-                messagesBox.innerHTML += msg.delta
+                updateChatMessage({
+                    container: messagesBox,
+                    author: msg.author,
+                    id: msg.msgId,
+                    msg: msg.delta
+                })
             }
         }
     })

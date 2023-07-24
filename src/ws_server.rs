@@ -1,7 +1,6 @@
 use chrono::Utc;
 use futures_util::SinkExt;
 use futures_util::StreamExt;
-use hyper_tungstenite::HyperWebsocket;
 use hyper_tungstenite::WebSocketStream;
 use hyper_tungstenite::tungstenite::Message;
 use serde_json::from_str;
@@ -9,17 +8,13 @@ use serde_json::to_string;
 
 use crate::openai::create_openai_resp;
 use crate::random::create_random_resp;
-use crate::stream_openai_chat;
 use crate::types::Context;
 use crate::types::ChatMsg;
 use crate::types::Event;
 use crate::types::MODEL_GPT_3_5;
-use crate::types::MsgDelta;
+use crate::types::MODEL_RANDOM;
 use crate::types::MsgToCli;
 use crate::types::MsgToSrv;
-use crate::types::OpenaiChatMessage;
-use crate::types::OpenaiChatReq;
-use crate::types::OpenaiChatRole;
 
 
 pub struct WsServer {
@@ -61,7 +56,7 @@ impl WsServer {
 
                 chats[0].messages.push(chatmsg);
 
-                if msg.model == "random" {
+                if msg.model == MODEL_RANDOM {
                     tokio::spawn(create_random_resp(self.ctx.clone()));
                 }
 
