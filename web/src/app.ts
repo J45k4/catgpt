@@ -23,7 +23,8 @@ type SendMsg = {
     chatId: number
     msgCliId: string
     txt: string
-    model: String
+    model: string
+    instructions?: string
 }
 
 type StopGen = {
@@ -33,13 +34,27 @@ type StopGen = {
 type MsgToSrv = SendMsg | StopGen
 
 const createWs = (args: {
+    onOpen: () => void
+    onClose: () => void
     onMsg: (msg: MsgFromSrv) => void
 }) => {
-    const ws = new WebSocket("ws://localhost:5566/ws")
+    let ws
 
-    ws.onopen = () => {
-        console.log("onopen")
+    const createConn = () => {
+        ws = new WebSocket("ws://localhost:5566/ws")
+
+        ws.onopen = () => {
+            console.log("onopen")
+            args.onOpen()
+        }
+    
+        ws.onclose = () => {
+            args.onClose()
+            setTimeout(createConn, 1000)
+        }
     }
+
+    createConn()
 
     ws.onmessage = data => {
         const msg = JSON.parse(data.data)
@@ -116,6 +131,9 @@ enum Model {
 }
 
 window.onload = () => {
+    const connectionStatus = document.getElementById("connectionStatus")
+    const instructionTextrea = document.getElementById("instructionText") as HTMLTextAreaElement
+
     const modelSelect = document.querySelector("#modelSelect") as HTMLSelectElement
     let currentModel =  Model.random
     modelSelect.value = currentModel
@@ -129,6 +147,14 @@ window.onload = () => {
     const messagesBox = document.querySelector("#messagesBox")
 
     let ws = createWs({
+        onOpen: () => {
+            connectionStatus.innerHTML = "Connected"
+            connectionStatus.style.color = "green"
+        },
+        onClose: () => {
+            connectionStatus.innerHTML = "Not connected"
+            connectionStatus.style.color = "red"
+        },
         onMsg: msg => {
             if (msg.type = "MsgDelta") {
                 updateChatMessage({
@@ -161,12 +187,15 @@ window.onload = () => {
         })
         messagesBox.appendChild(chatMsgComponent)
 
+        console.log("instructions", instructionTextrea.value)
+
         ws.sendMsg({
             type: "SendMsg",
             chatId: 1,
             msgCliId: msgClientId,
             model: currentModel,
-            txt: msg
+            txt: msg,
+            instructions: instructionTextrea.value
         })
 
         newMessageInput.value = ""

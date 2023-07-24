@@ -1,3 +1,4 @@
+use chrono::Utc;
 use futures_util::StreamExt;
 use reqwest::Client;
 use serde_json::from_str;
@@ -6,6 +7,7 @@ use tokio::sync::mpsc;
 
 use crate::sse::SSEvent;
 use crate::sse::parse_events;
+use crate::types::ChatMsg;
 use crate::types::Context;
 use crate::types::Event;
 use crate::types::MsgDelta;
@@ -99,7 +101,7 @@ pub async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
     OpenaiChatStreamRes{ rx: rx }
 }
 
-pub async fn create_openai_resp(ctx: Context) {
+pub async fn create_openai_resp(ctx: Context, instructions: Option<String>) {
     let mut req = OpenaiChatReq { 
         model: "gpt-3.5-turbo".to_string(), 
         messages: vec![], 
@@ -108,18 +110,30 @@ pub async fn create_openai_resp(ctx: Context) {
 
     let mut word_count = 0;
 
-    {
+    if let Some(instructions) = instructions {
+        req.messages.push(
+            OpenaiChatMessage { 
+                role: OpenaiChatRole::System, 
+                content: instructions
+            }
+        );
+    }
+
+    let req = {
         let chats = ctx.chats.read().await;
 
         for msg in chats[0].messages.iter().into_iter() {
             let len = msg.message.len();
+
+            let role = if msg.bot { OpenaiChatRole::Assistant } 
+            else { OpenaiChatRole::User };
     
             if word_count + len > 2000 {
                 let diff = word_count + len - 2000;
     
                 req.messages.push(
                     OpenaiChatMessage {
-                        role: OpenaiChatRole::User,
+                        role: role,
                         content: msg.message[diff..].to_string()
                     }
                 );
@@ -129,7 +143,7 @@ pub async fn create_openai_resp(ctx: Context) {
     
             req.messages.push(
                 OpenaiChatMessage { 
-                    role: OpenaiChatRole::User, 
+                    role: role, 
                     content: msg.message.to_string() 
                 }
             );
@@ -137,35 +151,52 @@ pub async fn create_openai_resp(ctx: Context) {
             word_count += msg.message.len();
         }
 
-        let msg_id = uuid::Uuid::new_v4().to_string();
+        req
+    };
 
-        let mut stream = stream_openai_chat(req).await;
-        
-        while let Some(r) = stream.next().await {
-        //     // println!("OpenaiStreamResMsg: {:?}", r);
-            let first_choise = &r.choices[0];
+    let msg_id = uuid::Uuid::new_v4().to_string();
 
-            if let Some(d) = &first_choise.delta.content {
-                let event = Event::MsgDelta(
-                    MsgDelta {
-                        msg_id: msg_id.clone(),
-                        author: "ChatGPT".to_string(),
-                        delta: d.to_string()
-                    }
-                );
+    let mut stream = stream_openai_chat(req).await;
 
-                ctx.ch.send(event);
+    let mut text = String::new();
+    
+    while let Some(r) = stream.next().await {
+    //     // println!("OpenaiStreamResMsg: {:?}", r);
+        let first_choise = &r.choices[0];
 
-                // let msg = MsgToCli::MsgDelta(
-                //     MsgDelta {
-                //         msg_id: 1,
-                //         delta: d.to_string(),
-                //     }
-                // );
-                // let msg = to_string(&msg).unwrap();
-                // let msg = Message::text(msg);
-                // ws.send(msg);
-            }
+        if let Some(d) = &first_choise.delta.content {
+            text += d;
+            let event = Event::MsgDelta(
+                MsgDelta {
+                    msg_id: msg_id.clone(),
+                    author: "ChatGPT".to_string(),
+                    delta: d.to_string()
+                }
+            );
+
+            ctx.ch.send(event);
+
+            // let msg = MsgToCli::MsgDelta(
+            //     MsgDelta {
+            //         msg_id: 1,
+            //         delta: d.to_string(),
+            //     }
+            // );
+            // let msg = to_string(&msg).unwrap();
+            // let msg = Message::text(msg);
+            // ws.send(msg);
         }
     }
+
+    let mut chats = ctx.chats.write().await;
+
+    chats[0].messages.push(
+        ChatMsg {
+            id: msg_id,
+            datetime: Utc::now(),
+            message: text,
+            bot: true,
+            user: "ChatGPT".to_string()
+        }
+    )
 }

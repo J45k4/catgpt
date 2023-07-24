@@ -12,6 +12,7 @@ pub struct Msg {
     pub chat_id: u32,
     pub msg_cli_id: String, 
     pub model: String,
+    pub instructions: Option<String>,
     pub txt: String
 }
 
@@ -121,10 +122,11 @@ pub struct OpenaiStreamResMsg {
 
 #[derive(Default, Debug, Clone)]
 pub struct ChatMsg {
-    pub id: usize,
+    pub id: String,
     pub message: String,
     pub user: String,
-    pub datetime: DateTime<Utc>
+    pub datetime: DateTime<Utc>,
+    pub bot: bool
 }
 
 #[derive(Default, Debug, Clone)]

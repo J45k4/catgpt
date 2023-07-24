@@ -4,6 +4,9 @@
         <script src="./dist/app.js"></script>
     </head>
     <body>
+        <div style="color: red;" id="connectionStatus">
+            Not connected
+        </div>
         <select id="modelSelect" sel>
             <option value="gpt4">GPT-4</option>
             <option value="gpt3.5">GPT-3.5</option>
@@ -17,7 +20,7 @@
                 </label>
             </div>
             <div>
-                <textarea> </textarea>
+                <textarea id="instructionText"></textarea>
             </div>
         </div>
 

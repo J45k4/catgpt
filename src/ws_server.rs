@@ -46,8 +46,9 @@ impl WsServer {
                 println!("{:?}", msg);
 
                 let chatmsg = ChatMsg {
-                    id: 1,
+                    id: msg.msg_cli_id,
                     message: msg.txt,
+                    bot: false,
                     user: "User".to_string(),
                     datetime: Utc::now()
                 };
@@ -61,7 +62,7 @@ impl WsServer {
                 }
 
                 if msg.model == MODEL_GPT_3_5 {
-                    tokio::spawn(create_openai_resp(self.ctx.clone()));
+                    tokio::spawn(create_openai_resp(self.ctx.clone(), msg.instructions));
                 }
             }
         }
