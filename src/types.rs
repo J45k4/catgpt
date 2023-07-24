@@ -163,3 +163,7 @@ impl Context {
         }
     }
 }
+
+pub const MODEL_RANDOM: &str = "random";
+pub const MODEL_GPT_3_5: &str = "gpt_3.5";
+pub const MODEL_GPT_4: &str = "gpt4";

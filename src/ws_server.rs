@@ -7,10 +7,13 @@ use hyper_tungstenite::tungstenite::Message;
 use serde_json::from_str;
 use serde_json::to_string;
 
+use crate::openai::create_openai_resp;
+use crate::random::create_random_resp;
 use crate::stream_openai_chat;
 use crate::types::Context;
 use crate::types::ChatMsg;
 use crate::types::Event;
+use crate::types::MODEL_GPT_3_5;
 use crate::types::MsgDelta;
 use crate::types::MsgToCli;
 use crate::types::MsgToSrv;
@@ -59,76 +62,12 @@ impl WsServer {
                 chats[0].messages.push(chatmsg);
 
                 if msg.model == "random" {
-                    
+                    tokio::spawn(create_random_resp(self.ctx.clone()));
                 }
 
-                let mut req = OpenaiChatReq { 
-                    model: "gpt-3.5-turbo".to_string(), 
-                    messages: vec![], 
-                    stream: true
-                };
-
-                let mut word_count = 0;
-
-                for msg in chats[0].messages.iter().into_iter() {
-                    let len = msg.message.len();
-
-                    if word_count + len > 2000 {
-                        let diff = word_count + len - 2000;
-
-                        req.messages.push(
-                            OpenaiChatMessage {
-                                role: OpenaiChatRole::User,
-                                content: msg.message[diff..].to_string()
-                            }
-                        );
-
-                        break;
-                    }
-
-                    req.messages.push(
-                        OpenaiChatMessage { 
-                            role: OpenaiChatRole::User, 
-                            content: msg.message.to_string() 
-                        }
-                    );
-                    
-                    word_count += msg.message.len();
+                if msg.model == MODEL_GPT_3_5 {
+                    tokio::spawn(create_openai_resp(self.ctx.clone()));
                 }
-
-                let ctx = self.ctx.clone();
-                tokio::spawn(async move {
-                    let msg_id = uuid::Uuid::new_v4().to_string();
-
-                    let mut stream = stream_openai_chat(req).await;
-                    
-                    while let Some(r) = stream.next().await {
-                    //     // println!("OpenaiStreamResMsg: {:?}", r);
-                        let first_choise = &r.choices[0];
-
-                        if let Some(d) = &first_choise.delta.content {
-                            let event = Event::MsgDelta(
-                                MsgDelta {
-                                    msg_id: msg_id.clone(),
-                                    author: "ChatGPT".to_string(),
-                                    delta: d.to_string()
-                                }
-                            );
-
-                            ctx.ch.send(event);
-
-                            // let msg = MsgToCli::MsgDelta(
-                            //     MsgDelta {
-                            //         msg_id: 1,
-                            //         delta: d.to_string(),
-                            //     }
-                            // );
-                            // let msg = to_string(&msg).unwrap();
-                            // let msg = Message::text(msg);
-                            // ws.send(msg);
-                        }
-                    }
-                });
             }
         }
     }
