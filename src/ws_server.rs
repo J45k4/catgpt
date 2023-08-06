@@ -12,6 +12,7 @@ use crate::types::Context;
 use crate::types::ChatMsg;
 use crate::types::Event;
 use crate::types::MODEL_GPT_3_5;
+use crate::types::MODEL_GPT_4;
 use crate::types::MODEL_RANDOM;
 use crate::types::MsgToCli;
 use crate::types::MsgToSrv;
@@ -57,12 +58,15 @@ impl WsServer {
 
                 chats[0].messages.push(chatmsg);
 
-                if msg.model == MODEL_RANDOM {
-                    tokio::spawn(create_random_resp(self.ctx.clone()));
-                }
-
-                if msg.model == MODEL_GPT_3_5 {
-                    tokio::spawn(create_openai_resp(self.ctx.clone(), msg.instructions));
+                match msg.model.as_str() {
+                    MODEL_RANDOM => {
+                        tokio::spawn(create_random_resp(self.ctx.clone()));
+                    },
+                    MODEL_GPT_3_5 | MODEL_GPT_4 => {
+                        let model = msg.model.clone();
+                        tokio::spawn(create_openai_resp(self.ctx.clone(), model, msg.instructions));
+                    }
+                    _ => {}
                 }
             }
         }

@@ -95,9 +95,15 @@ pub async fn stream_openai_chat(req: OpenaiChatReq) ->  OpenaiChatStreamRes {
     OpenaiChatStreamRes{ rx: rx }
 }
 
-pub async fn create_openai_resp(ctx: Context, instructions: Option<String>) {
+pub async fn create_openai_resp(ctx: Context, model: String, instructions: Option<String>) {
+    let model = match model {
+        MODEL_GPT_3_5 => "gpt-3.5-turbo",
+        MODEL_GPT_4 => "gpt-4",
+        _ => todo!("model not supported")
+    };
+
     let mut req = OpenaiChatReq { 
-        model: "gpt-3.5-turbo".to_string(), 
+        model: model.to_string(), 
         messages: vec![], 
         stream: true
     };
@@ -156,6 +162,8 @@ pub async fn create_openai_resp(ctx: Context, instructions: Option<String>) {
     
     while let Some(r) = stream.next().await {
         let first_choise = &r.choices[0];
+
+        println!("first_choise: {:?}", first_choise);
 
         if let Some(d) = &first_choise.delta.content {
             text += d;
