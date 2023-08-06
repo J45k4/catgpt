@@ -2,37 +2,46 @@
     <head>
         <title>aki</title>
         <script src="/app.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="/index.css" />
     </head>
     <body>
-        <div style="color: red;" id="connectionStatus">
-            Not connected
-        </div>
-        <select id="modelSelect" sel>
-            <option value="gpt4">GPT-4</option>
-            <option value="gpt3.5">GPT-3.5</option>
-            <option value="random">Random</option>
-        </select>
-
-        <div>
+        <div class="mainContent">
             <div>
-                <label>
-                    Assistant instructions
-                </label>
+                <div style="color: red;" id="connectionStatus">
+                    Not connected
+                </div>
+                <select id="modelSelect" sel>
+                    <option value="gpt4">GPT-4</option>
+                    <option value="gpt3.5">GPT-3.5</option>
+                    <option value="random">Random</option>
+                </select>
+        
+                <div>
+                    <div>
+                        <label>
+                            Assistant instructions
+                        </label>
+                    </div>
+                    <div>
+                        <textarea id="instructionText"></textarea>
+                    </div>
+                </div>
+        
+                <div>
+                    <div id="messagesBox">
+                        messages
+                    </div>
+                    <div>
+                        <input type="text" id="newMessageInput" />
+                        <button id="sendButton">
+                            Send
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <textarea id="instructionText"></textarea>
-            </div>
-        </div>
-
-        <div>
-            <div id="messagesBox">
-                messages
-            </div>
-            <div>
-                <input type="text" id="newMessageInput" />
-                <button id="sendButton">
-                    Send
-                </button>
+            <div id="prevChats">
+                
             </div>
         </div>
     </body>

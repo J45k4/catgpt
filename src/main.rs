@@ -71,6 +71,12 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
             let app_js = fs::read_to_string("./web/dist/app.js").await?;
             Ok(Response::new(Body::from(app_js)))
         },
+        "/index.css" => {
+            log::debug!("using index.css");
+
+            let index_css = fs::read_to_string("./web/index.css").await?;
+            Ok(Response::new(Body::from(index_css)))
+        },
         _ => {
             log::debug!("using index.html");
 
