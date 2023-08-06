@@ -15,6 +15,7 @@ use hyper::Server;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
 use openai::stream_openai_chat;
+use tokio::fs;
 use types::Context;
 use types::OpenaiChatMessage;
 use types::OpenaiChatReq;
@@ -28,6 +29,7 @@ mod sse;
 mod ws_server;
 mod random;
 mod openai;
+mod config;
 
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     // Use the connection pool here
@@ -60,23 +62,33 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
         return Ok(response);
     }
 
-    todo!()
+    let path = req.uri().path();
 
-    // match req.uri().path() {
-    //     "/index.js" => {
-    //         let response = Response::new(Body::from(index_js_bytes));
-    //         Ok(response)
-    //     },
-    //     _ => {
-    //         let response = serve_index();
-    //         Ok(response)
-    //     }
-    // }
+    match path.trim() {
+        "/app.js" => {
+            log::debug!("using app.js");
+
+            let app_js = fs::read_to_string("./web/dist/app.js").await?;
+            Ok(Response::new(Body::from(app_js)))
+        },
+        _ => {
+            log::debug!("using index.html");
+
+            let index_html = fs::read_to_string("./web/index.html").await?;
+            Ok(Response::new(Body::from(index_html)))
+        }
+    }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let builder = env_logger::Builder::new()
+        .filter_level(log::LevelFilter::Debug)
+        .init();
+
     let args = Args::parse();
+
+    log::debug!("hello there!");
 
     match args.command {
         Commands::Ask(args) => {
