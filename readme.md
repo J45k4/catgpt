@@ -11,3 +11,10 @@ conda install -c conda-forge datasets
 conda install -c anaconda scikit-learn
 conda install -c conda-forge pyarrow
 ```
+
+## Web
+
+Bundle new app.js
+```
+npx spack
+```
