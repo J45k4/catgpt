@@ -9,7 +9,7 @@ use tokio::sync::broadcast;
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Msg {
-    pub chat_id: u32,
+    pub chat_id: String,
     pub msg_cli_id: String, 
     pub model: String,
     pub instructions: Option<String>,
@@ -24,16 +24,39 @@ pub struct MsgDelta {
     pub delta: String
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct GetChats {
+
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateChat {
+    pub chat_id: String,
+}
+
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToSrv {
-    SendMsg(Msg)
+    SendMsg(Msg),
+    GetChats(GetChats),
+    CreateChat(CreateChat)
+}
+
+pub struct ChatMetadata {
+
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct ChatIds {
+    pub ids: Vec<String>
 }
 
 #[derive(serde::Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToCli {
-    MsgDelta(MsgDelta)
+    MsgDelta(MsgDelta),
+    ChatIds(ChatIds)
 }
 
 #[derive(Debug, Clone)]
@@ -131,6 +154,7 @@ pub struct ChatMsg {
 
 #[derive(Default, Debug, Clone)]
 pub struct Chat {
+    pub id: String,
     pub messages: Vec<ChatMsg>
 }
 
@@ -155,12 +179,9 @@ impl Clone for Context {
 impl Context {
     pub fn new() -> Self {
         let (ch, _) = broadcast::channel::<Event>(100);
-        let chat = Chat::default();
 
         Self { 
-            chats: Arc::new(RwLock::new(vec![
-                chat
-            ])),
+            chats: Arc::new(RwLock::new(vec![])),
             ch: ch
         }
     }

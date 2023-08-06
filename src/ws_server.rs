@@ -8,6 +8,8 @@ use serde_json::to_string;
 
 use crate::openai::create_openai_resp;
 use crate::random::create_random_resp;
+use crate::types::Chat;
+use crate::types::ChatIds;
 use crate::types::Context;
 use crate::types::ChatMsg;
 use crate::types::Event;
@@ -44,7 +46,7 @@ impl WsServer {
     
         match msg {
             MsgToSrv::SendMsg(msg) => {
-                println!("{:?}", msg);
+                log::debug!("{:?}", msg);
 
                 let chatmsg = ChatMsg {
                     id: msg.msg_cli_id,
@@ -68,6 +70,30 @@ impl WsServer {
                     }
                     _ => {}
                 }
+            }
+            MsgToSrv::GetChats(args) => {
+                log::debug!("{:?}", args);
+
+                let chats = self.ctx.chats.read().await;
+
+                let msg = ChatIds {
+                    ids: chats.iter().map(|c| c.id.clone()).collect()
+                };
+
+                let msg = MsgToCli::ChatIds(msg);
+                let msg = to_string(&msg).unwrap();
+                let msg = Message::text(msg);
+                self.ws.send(msg).await;
+            }
+            MsgToSrv::CreateChat(args) => {
+                log::debug!("{:?}", args);
+
+                let mut chats = self.ctx.chats.write().await;
+                let chat = Chat {
+                    id: args.chat_id,
+                    messages: vec![],
+                };
+                chats.push(chat);
             }
         }
     }

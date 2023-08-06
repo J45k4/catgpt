@@ -47,14 +47,14 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
         match req.uri().path() {
             "/ws" => {
-                println!("new ws request");
+                log::debug!("new ws request");
 
                 tokio::spawn(async move {
                     let ws = ws.await.unwrap();
                     WsServer::new(ws, ctx.clone()).serve().await;
                 });
             }
-            &_ | _ => {
+            _ => {
                 bail!("not allowed url")
             }
         };
@@ -132,7 +132,17 @@ async fn main() -> anyhow::Result<()> {
                 async move {
                     Ok::<_, Infallible>(service_fn(move |req| {
                         let ctx = ctx.clone();
-                        handle_request(req, ctx)
+                        async move {
+                            match handle_request(req, ctx).await {
+                                Ok(res) => {
+                                    Ok::<_, Infallible>(res)
+                                },
+                                Err(e) => {
+                                    log::error!("request error: {}", e);
+                                    Ok::<_, Infallible>(Response::new(Body::from("error")))
+                                }
+                            }
+                        }
                     }))
                 }
             });

@@ -16,11 +16,26 @@ type FinishWrite = {
     type: String
 }
 
-type MsgFromSrv = MsgDelta
+type Chat = {
+    id: string
+    title: String
+}
+
+type Chats = {
+    type: "Chats"
+    chats: Chat[]
+}
+
+type ChatIds = {
+    type: "ChatIds"
+    ids: string[]
+}
+
+type MsgFromSrv = MsgDelta | Chats | ChatIds
 
 type SendMsg = {
     type: "SendMsg"
-    chatId: number
+    chatId: string
     msgCliId: string
     txt: string
     model: string
@@ -31,7 +46,16 @@ type StopGen = {
     type: "StopGen"
 }
 
-type MsgToSrv = SendMsg | StopGen
+type GetChats = {
+    type: "GetChats"
+}
+
+type CreateChat = {
+    type: "CreateChat"
+    chatId: string
+}
+
+type MsgToSrv = SendMsg | StopGen | GetChats | CreateChat
 
 const createWs = (args: {
     onOpen: () => void
@@ -124,6 +148,36 @@ const updateChatMessage = (args: {
     args.container.appendChild(el)
 }
 
+class OtherChats {
+    private root: HTMLDivElement
+    private onChatClicked: (chatId: string) => void
+    
+    constructor(args: {
+        root: HTMLDivElement
+        onChatClicked: (chatId: string) => void
+    }) {
+        this.root = args.root
+        this.onChatClicked = args.onChatClicked
+    }
+
+    public addPlaceholder(chatId: string) {
+        console.log("addPlaceholder")
+
+        const div = document.createElement("div")
+        div.innerHTML = chatId
+        div.style.marginTop = "10px"
+        div.style.marginBottom = "10px"
+        div.style.cursor = "pointer"
+        div.style.color = "blue"
+
+        div.onclick = () => {
+            this.onChatClicked(chatId)
+        }
+
+        this.root.appendChild(div)
+    }
+}
+
 enum Model {
     gpt4 = "gpt4",
     gpt3_5 = "gpt3.5",
@@ -131,6 +185,8 @@ enum Model {
 }
 
 window.onload = () => {
+    let currentChatId = null
+
     const connectionStatus = document.getElementById("connectionStatus")
     const instructionTextrea = document.getElementById("instructionText") as HTMLTextAreaElement
 
@@ -143,6 +199,13 @@ window.onload = () => {
         console.log("currentMode", currentModel)
     }
 
+    const otherChats = new OtherChats({
+        root: document.getElementById("otherChats") as HTMLDivElement,
+        onChatClicked: chatId => {
+            currentChatId = chatId
+            console.log("currentChatId", currentChatId)
+        }
+    })
 
     const messagesBox = document.querySelector("#messagesBox")
 
@@ -150,19 +213,29 @@ window.onload = () => {
         onOpen: () => {
             connectionStatus.innerHTML = "Connected"
             connectionStatus.style.color = "green"
+
+            ws.sendMsg({
+                type: "GetChats"
+            })
         },
         onClose: () => {
             connectionStatus.innerHTML = "Not connected"
             connectionStatus.style.color = "red"
         },
         onMsg: msg => {
-            if (msg.type = "MsgDelta") {
+            if (msg.type === "MsgDelta") {
                 updateChatMessage({
                     container: messagesBox,
                     author: msg.author,
                     id: msg.msgId,
                     msg: msg.delta
                 })
+            }
+
+            if (msg.type === "ChatIds") {
+                for (const chatId of msg.ids) {
+                    otherChats.addPlaceholder(chatId)
+                }
             }
         }
     })
@@ -189,9 +262,17 @@ window.onload = () => {
 
         console.log("instructions", instructionTextrea.value)
 
+        if (!currentChatId) {
+            currentChatId = v4()
+            ws.sendMsg({
+                type: "CreateChat",
+                chatId: currentChatId
+            })
+        }
+
         ws.sendMsg({
             type: "SendMsg",
-            chatId: 1,
+            chatId: currentChatId,
             msgCliId: msgClientId,
             model: currentModel,
             txt: msg,
