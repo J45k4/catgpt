@@ -9,16 +9,26 @@ type MsgDelta = {
 }
 
 type StartWriting = {
-    type: String
+    type: string
 }
 
 type FinishWrite = {
-    type: String
+    type: string
+}
+
+type ChatMsg = {
+    id: string,
+    message: string,
+    user: string,
+    datetime: string,
+    bot: boolean
 }
 
 type Chat = {
+    type: "Chat"
     id: string
     title: String
+    messages: ChatMsg[]
 }
 
 type Chats = {
@@ -31,7 +41,7 @@ type ChatIds = {
     ids: string[]
 }
 
-type MsgFromSrv = MsgDelta | Chats | ChatIds
+type MsgFromSrv = MsgDelta | Chats | ChatIds | Chat
 
 type SendMsg = {
     type: "SendMsg"
@@ -55,7 +65,12 @@ type CreateChat = {
     chatId: string
 }
 
-type MsgToSrv = SendMsg | StopGen | GetChats | CreateChat
+type GetChat = {
+    type: "GetChat"
+    chatId: string
+}
+
+type MsgToSrv = SendMsg | StopGen | GetChats | CreateChat | GetChat
 
 const createWs = (args: {
     onOpen: () => void
@@ -178,6 +193,48 @@ class OtherChats {
     }
 }
 
+class ChatMessages {
+    private root: HTMLDivElement
+    
+    constructor(args: {
+        root: HTMLDivElement
+    }) {
+        this.root = args.root
+    }
+
+    public setChat(chat: Chat) {
+        this.root.innerHTML = ""
+
+        for (const msg of chat.messages) {
+            this.addMessage(msg)
+        }
+    }
+
+    public addMessage(msg: ChatMsg) {
+        const div = document.createElement("div")
+        div.id = msg.id
+        div.style.marginLeft = "5px"
+        div.style.marginRight = "5px"
+        div.style.marginTop = "10px"
+        div.style.marginBottom = "10px"
+    
+        const headerDiv = document.createElement("div")
+        headerDiv.innerHTML = msg.user
+        headerDiv.style.fontSize = "20px"
+        headerDiv.style.fontWeight = "2px"
+    
+        const bodyDiv = document.createElement("div")
+        bodyDiv.innerHTML = msg.message
+        bodyDiv.className = "msgText"
+    
+        div.appendChild(headerDiv)
+        div.appendChild(bodyDiv)
+
+        this.root.appendChild(div)
+    }
+
+}
+
 enum Model {
     gpt4 = "gpt4",
     gpt3_5 = "gpt3.5",
@@ -204,10 +261,19 @@ window.onload = () => {
         onChatClicked: chatId => {
             currentChatId = chatId
             console.log("currentChatId", currentChatId)
+
+            ws.sendMsg({
+                type: "GetChat",
+                chatId
+            })
         }
     })
 
-    const messagesBox = document.querySelector("#messagesBox")
+    // const messagesBox = document.querySelector("#messagesBox")
+
+    const messages = new ChatMessages({
+        root: document.getElementById("messagesBox") as HTMLDivElement
+    })
 
     let ws = createWs({
         onOpen: () => {
@@ -236,6 +302,12 @@ window.onload = () => {
                 for (const chatId of msg.ids) {
                     otherChats.addPlaceholder(chatId)
                 }
+            }
+
+            if (msg.type === "Chat") {
+                console.log("chat", msg)
+
+                messages.setChat(msg)
             }
         }
     })

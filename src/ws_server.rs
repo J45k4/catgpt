@@ -37,7 +37,7 @@ impl WsServer {
         let msg: MsgToSrv = match from_str(&msg) {
             Ok(m) => m,
             Err(err) => {
-                println!("parse err: {:?}", err);
+                log::error!("{} parse err: {:?}", msg, err);
                 return;
             },
         };
@@ -94,6 +94,20 @@ impl WsServer {
                     messages: vec![],
                 };
                 chats.push(chat);
+            }
+            MsgToSrv::GetChat { chat_id } => {
+                log::debug!("{:?}", chat_id);
+
+                let chats = self.ctx.chats.read().await;
+
+                let chat = chats.iter().find(|c| c.id == chat_id);
+
+                if let Some(chat) = chat {
+                    let msg = MsgToCli::Chat(chat.clone());
+                    let msg = to_string(&msg).unwrap();
+                    let msg = Message::text(msg);
+                    self.ws.send(msg).await;
+                }
             }
         }
     }

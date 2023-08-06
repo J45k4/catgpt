@@ -40,7 +40,11 @@ pub struct CreateChat {
 pub enum MsgToSrv {
     SendMsg(Msg),
     GetChats(GetChats),
-    CreateChat(CreateChat)
+    CreateChat(CreateChat),
+    #[serde(rename_all = "camelCase")]
+    GetChat {
+        chat_id: String
+    }
 }
 
 pub struct ChatMetadata {
@@ -56,7 +60,8 @@ pub struct ChatIds {
 #[serde(tag = "type")]
 pub enum MsgToCli {
     MsgDelta(MsgDelta),
-    ChatIds(ChatIds)
+    ChatIds(ChatIds),
+    Chat(Chat)
 }
 
 #[derive(Debug, Clone)]
@@ -143,7 +148,7 @@ pub struct OpenaiStreamResMsg {
     pub choices: Vec<OpenaiStreamChoice>
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChatMsg {
     pub id: String,
     pub message: String,
@@ -152,7 +157,7 @@ pub struct ChatMsg {
     pub bot: bool
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Chat {
     pub id: String,
     pub messages: Vec<ChatMsg>
