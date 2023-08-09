@@ -5,6 +5,9 @@ use chrono::Utc;
 use tokio::sync::RwLock;
 use tokio::sync::broadcast;
 
+use crate::database::Database;
+use crate::openai::Openai;
+
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -168,26 +171,29 @@ pub struct Chat {
 // }
 
 pub struct Context {
-    pub chats: Arc<RwLock<Vec<Chat>>>,
-    pub ch: broadcast::Sender<Event>
+    pub database: Database,
+    pub ch: broadcast::Sender<Event>,
+    pub openai: Openai
 }
 
 impl Clone for Context {
     fn clone(&self) -> Self {
         Self { 
-            chats: self.chats.clone(),
+            openai: self.openai.clone(),
+            database: self.database.clone(),
             ch: self.ch.clone()
         }
     }
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(openai: Openai) -> Self {
         let (ch, _) = broadcast::channel::<Event>(100);
 
         Self { 
-            chats: Arc::new(RwLock::new(vec![])),
-            ch: ch
+            openai: openai,
+            ch: ch,
+            database: Database::new()
         }
     }
 }

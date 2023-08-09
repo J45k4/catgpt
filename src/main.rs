@@ -14,8 +14,9 @@ use hyper::Response;
 use hyper::Server;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
-use openai::stream_openai_chat;
+use reqwest::Client;
 use tokio::fs;
+use tokio::sync::broadcast;
 use types::Context;
 use types::OpenaiChatMessage;
 use types::OpenaiChatReq;
@@ -23,6 +24,10 @@ use types::OpenaiChatReq;
 use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
 use crate::config::Config;
+use crate::database::Database;
+use crate::openai::Openai;
+use crate::openai::OpenaiBuilder;
+use crate::types::Event;
 use crate::ws_server::WsServer;
 
 
@@ -33,6 +38,7 @@ mod ws_server;
 mod random;
 mod openai;
 mod config;
+mod database;
 
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     // Use the connection pool here
@@ -98,6 +104,24 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let mut config = Config::provide();
+    
+    let client = Client::new();
+
+    let (ch, _) = broadcast::channel::<Event>(100);
+    let db = Database::new();
+
+    let openai = OpenaiBuilder {
+        ch: ch.clone(),
+        client: client,
+        db: db.clone(),
+        token: config.openai_apikey.clone(),
+    }.build();
+
+    let ctx = Context {
+        ch: ch,
+        database: db,
+        openai: openai.clone()
+    };
 
     log::debug!("hello there!");
 
@@ -115,7 +139,7 @@ async fn main() -> anyhow::Result<()> {
                 ..Default::default()
             };
 
-            let mut stream = stream_openai_chat(req).await;
+            let mut stream = openai.stream_openai_chat(req).await;
 
             let stdout = io::stdout();
             let mut handle = stdout.lock();
@@ -130,8 +154,6 @@ async fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Server => {
-            let ctx = Context::new();
-
             let make_scv = make_service_fn(move |_| {
                 let ctx = ctx.clone();
                 async move {

@@ -6,7 +6,7 @@ use hyper_tungstenite::tungstenite::Message;
 use serde_json::from_str;
 use serde_json::to_string;
 
-use crate::openai::create_openai_resp;
+use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
 use crate::types::Chat;
 use crate::types::ChatIds;
@@ -41,12 +41,10 @@ impl WsServer {
                 return;
             },
         };
-
-        println!("parsed msg: {:?}", msg);
     
         match msg {
             MsgToSrv::SendMsg(msg) => {
-                log::debug!("{:?}", msg);
+                log::debug!("send {:?}", msg);
 
                 let chatmsg = ChatMsg {
                     id: msg.msg_cli_id,
@@ -56,17 +54,24 @@ impl WsServer {
                     datetime: Utc::now()
                 };
 
-                let mut chats = self.ctx.chats.write().await;
-
-                chats[0].messages.push(chatmsg);
+                self.ctx.database.add_msg(&msg.chat_id, chatmsg).await;
 
                 match msg.model.as_str() {
                     MODEL_RANDOM => {
-                        tokio::spawn(create_random_resp(self.ctx.clone()));
+                        let chat_id = msg.chat_id.clone();
+                        tokio::spawn(create_random_resp(self.ctx.clone(), chat_id));
                     },
                     MODEL_GPT_3_5 | MODEL_GPT_4 => {
                         let model = msg.model.clone();
-                        tokio::spawn(create_openai_resp(self.ctx.clone(), model, msg.instructions));
+                        let openai = self.ctx.openai.clone();
+                        tokio::spawn(async move {
+                            let req = CreateOpenaiReq {
+                                model: model,
+                                ins: msg.instructions,
+                                chat_id: msg.chat_id,
+                            };
+                            openai.create_openai_resp(req).await;
+                        });
                     }
                     _ => {}
                 }
@@ -74,12 +79,10 @@ impl WsServer {
             MsgToSrv::GetChats(args) => {
                 log::debug!("{:?}", args);
 
-                let chats = self.ctx.chats.read().await;
-
+                let chat_ids = self.ctx.database.get_chat_ids().await;
                 let msg = ChatIds {
-                    ids: chats.iter().map(|c| c.id.clone()).collect()
+                    ids: chat_ids
                 };
-
                 let msg = MsgToCli::ChatIds(msg);
                 let msg = to_string(&msg).unwrap();
                 let msg = Message::text(msg);
@@ -88,19 +91,17 @@ impl WsServer {
             MsgToSrv::CreateChat(args) => {
                 log::debug!("{:?}", args);
 
-                let mut chats = self.ctx.chats.write().await;
-                let chat = Chat {
-                    id: args.chat_id,
-                    messages: vec![],
-                };
-                chats.push(chat);
+                self.ctx.database.add_chat(
+                    Chat {
+                        id: args.chat_id.clone(),
+                        messages: vec![],
+                    }
+                ).await;
             }
             MsgToSrv::GetChat { chat_id } => {
                 log::debug!("{:?}", chat_id);
 
-                let chats = self.ctx.chats.read().await;
-
-                let chat = chats.iter().find(|c| c.id == chat_id);
+                let chat = self.ctx.database.get_chat(&chat_id).await;
 
                 if let Some(chat) = chat {
                     let msg = MsgToCli::Chat(chat.clone());
