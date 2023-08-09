@@ -20,6 +20,9 @@ use types::Context;
 use types::OpenaiChatMessage;
 use types::OpenaiChatReq;
 
+use crate::args::ConfigCommands;
+use crate::args::ConfigKeys;
+use crate::config::Config;
 use crate::ws_server::WsServer;
 
 
@@ -94,6 +97,8 @@ async fn main() -> anyhow::Result<()> {
 
     let args = Args::parse();
 
+    let mut config = Config::provide();
+
     log::debug!("hello there!");
 
     match args.command {
@@ -151,6 +156,30 @@ async fn main() -> anyhow::Result<()> {
         
             let addr = SocketAddr::from(([127, 0, 0, 1], 5566));
             Server::bind(&addr).serve(make_scv).await?;       
+        },
+        Commands::Config(args) => {
+            match args.command {
+                ConfigCommands::Set(args) => {
+                    match args.key {
+                        ConfigKeys::OpenaiApikey => {
+                            config.openai_apikey = Some(args.value);
+                        }
+                    }
+
+                    config.save_default();
+                },
+                ConfigCommands::Get(args) => {
+                    match args.key {
+                        ConfigKeys::OpenaiApikey => {
+                            if let Some(apikey) = &config.openai_apikey {
+                                println!("{}", apikey);
+                            } else {
+                                println!("not set");
+                            }
+                        }
+                    }
+                },
+            }
         }
     }
 
