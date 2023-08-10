@@ -213,7 +213,7 @@ class ChatMessages {
         if (existingChatMessage) {
             const textComponent = existingChatMessage.children[1]
 
-            textComponent.innerHTML += msgDelta.delta
+            textComponent.innerHTML += formatMsgText(msgDelta.delta)
 
             return
         }
