@@ -108,61 +108,6 @@ const createWs = (args: {
     }
 }
 
-const createChatMessage = (args: {
-    id: string
-    author: string
-    msg: string
-
-}) => {
-    const div = document.createElement("div")
-    div.id = args.id
-    div.style.marginLeft = "5px"
-    div.style.marginRight = "5px"
-    div.style.marginTop = "10px"
-    div.style.marginBottom = "10px"
-
-    const headerDiv = document.createElement("div")
-    headerDiv.innerHTML = args.author
-    headerDiv.style.fontSize = "20px"
-    headerDiv.style.fontWeight = "2px"
-
-    const bodyDiv = document.createElement("div")
-    bodyDiv.innerHTML = args.msg
-    bodyDiv.className = "msgText"
-
-    div.appendChild(headerDiv)
-    div.appendChild(bodyDiv)
-
-    return div
-}
-
-const updateChatMessage = (args: {
-    container: Element
-    id: string
-    author: string
-    msg: string
-}) => {
-    const existingChatMessage = document.getElementById(args.id)
-
-    if (existingChatMessage) {
-        const textComponent = existingChatMessage.children[1]
-
-        textComponent.innerHTML += args.msg
-
-        return
-    }
-
-    console.log("create new chatMsg", args)
-
-    const el = createChatMessage({
-        id: args.id,
-        author: args.author,
-        msg: args.msg
-    })
-
-    args.container.appendChild(el)
-}
-
 const updateQueryParam = (param: string, value: string) => {
     const url = new URL(window.location.href)
     url.searchParams.set(param, value)
@@ -258,6 +203,28 @@ class ChatMessages {
         this.root.appendChild(div)
     }
 
+    public add_delta(msgDelta: MsgDelta) {
+        const existingChatMessage = document.getElementById(msgDelta.msgId)
+
+        if (existingChatMessage) {
+            const textComponent = existingChatMessage.children[1]
+
+            textComponent.innerHTML += msgDelta.delta
+
+            return
+        }
+
+        console.log("create new chatMsg", msgDelta)
+
+        this.addMessage({
+            id: msgDelta.msgId,
+            user: msgDelta.author,
+            bot: true,
+            message: msgDelta.delta,
+            datetime: new Date().toISOString()
+        })
+    }
+
     public clear() {
         this.root.innerHTML = ""
     }
@@ -327,12 +294,7 @@ window.onload = () => {
         },
         onMsg: msg => {
             if (msg.type === "MsgDelta") {
-                updateChatMessage({
-                    container: messagesBox,
-                    author: msg.author,
-                    id: msg.msgId,
-                    msg: msg.delta
-                })
+                messages.add_delta(msg)
             }
 
             if (msg.type === "ChatIds") {
@@ -355,6 +317,7 @@ window.onload = () => {
                 console.log("chat", msg)
                 otherChats.addPlaceholder(msg.id)
                 messages.setChat(msg)
+                updateQueryParam("chatId", msg.id)
             }
         }
     })
@@ -372,12 +335,13 @@ window.onload = () => {
 
         const msgClientId = v4()
 
-        const chatMsgComponent = createChatMessage({
+        messages.addMessage({
             id: msgClientId,
-            author: "User",
-            msg: msg
+            user: "User",
+            bot: false,
+            message: msg,
+            datetime: new Date().toISOString()
         })
-        messagesBox.appendChild(chatMsgComponent)
 
         console.log("instructions", instructionTextrea.value)
 
