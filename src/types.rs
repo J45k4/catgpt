@@ -11,8 +11,8 @@ use crate::openai::Openai;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Msg {
-    pub chat_id: String,
+pub struct SendMsg {
+    pub chat_id: Option<String>,
     pub msg_cli_id: String, 
     pub model: String,
     pub instructions: Option<String>,
@@ -41,7 +41,7 @@ pub struct CreateChat {
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToSrv {
-    SendMsg(Msg),
+    SendMsg(SendMsg),
     GetChats(GetChats),
     CreateChat(CreateChat),
     #[serde(rename_all = "camelCase")]
@@ -171,7 +171,7 @@ pub struct Chat {
 // }
 
 pub struct Context {
-    pub database: Database,
+    pub db: Database,
     pub ch: broadcast::Sender<Event>,
     pub openai: Openai
 }
@@ -180,7 +180,7 @@ impl Clone for Context {
     fn clone(&self) -> Self {
         Self { 
             openai: self.openai.clone(),
-            database: self.database.clone(),
+            db: self.db.clone(),
             ch: self.ch.clone()
         }
     }
@@ -193,7 +193,7 @@ impl Context {
         Self { 
             openai: openai,
             ch: ch,
-            database: Database::new()
+            db: Database::new()
         }
     }
 }

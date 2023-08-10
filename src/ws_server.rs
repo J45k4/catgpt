@@ -5,6 +5,7 @@ use hyper_tungstenite::WebSocketStream;
 use hyper_tungstenite::tungstenite::Message;
 use serde_json::from_str;
 use serde_json::to_string;
+use uuid::Uuid;
 
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
@@ -54,11 +55,52 @@ impl WsServer {
                     datetime: Utc::now()
                 };
 
-                self.ctx.database.add_msg(&msg.chat_id, chatmsg).await;
+                let chat_id = match msg.chat_id {
+                    Some(chat_id) => {
+                        match self.ctx.db.get_chat(&chat_id).await {
+                            Some(_) => {
+                                Some(chat_id)
+                            },
+                            None => None
+                        }
+                    },
+                    None => None
+                };
+
+                // if chat_found {
+                //     self.ctx.db.add_msg(&msg.chat_id.unwrap(), chatmsg.clone()).await;
+                // } else {
+                //     let new_chat = Chat {
+                //         id: msg.chat_id.unwrap(),
+                //         messages: vec![chatmsg.clone()],
+                //     };
+                //     self.ctx.db.add_chat(new_chat.clone()).await;
+
+                //     let msg = MsgToCli::Chat(new_chat);
+                //     self.send_msg(msg).await;
+                // }
+
+                let chat_id = match chat_id {
+                    Some(chat_id) => {
+                        self.ctx.db.add_msg(&chat_id, chatmsg.clone()).await;
+                        chat_id
+                    },
+                    None => {
+                        let chat_id = Uuid::new_v4().to_string();
+                        let new_chat = Chat {
+                            id: chat_id.clone(),
+                            messages: vec![chatmsg.clone()],
+                        };
+                        self.ctx.db.add_chat(new_chat.clone()).await;
+
+                        let msg = MsgToCli::Chat(new_chat);
+                        self.send_msg(msg).await;
+                        chat_id 
+                    }
+                };
 
                 match msg.model.as_str() {
                     MODEL_RANDOM => {
-                        let chat_id = msg.chat_id.clone();
                         tokio::spawn(create_random_resp(self.ctx.clone(), chat_id));
                     },
                     MODEL_GPT_3_5 | MODEL_GPT_4 => {
@@ -68,7 +110,7 @@ impl WsServer {
                             let req = CreateOpenaiReq {
                                 model: model,
                                 ins: msg.instructions,
-                                chat_id: msg.chat_id,
+                                chat_id: chat_id,
                             };
                             openai.create_openai_resp(req).await;
                         });
@@ -79,7 +121,7 @@ impl WsServer {
             MsgToSrv::GetChats(args) => {
                 log::debug!("{:?}", args);
 
-                let chat_ids = self.ctx.database.get_chat_ids().await;
+                let chat_ids = self.ctx.db.get_chat_ids().await;
                 let msg = ChatIds {
                     ids: chat_ids
                 };
@@ -91,7 +133,7 @@ impl WsServer {
             MsgToSrv::CreateChat(args) => {
                 log::debug!("{:?}", args);
 
-                self.ctx.database.add_chat(
+                self.ctx.db.add_chat(
                     Chat {
                         id: args.chat_id.clone(),
                         messages: vec![],
@@ -101,7 +143,7 @@ impl WsServer {
             MsgToSrv::GetChat { chat_id } => {
                 log::debug!("{:?}", chat_id);
 
-                let chat = self.ctx.database.get_chat(&chat_id).await;
+                let chat = self.ctx.db.get_chat(&chat_id).await;
 
                 if let Some(chat) = chat {
                     let msg = MsgToCli::Chat(chat.clone());
@@ -111,6 +153,12 @@ impl WsServer {
                 }
             }
         }
+    }
+
+    async fn send_msg(&mut self, msg: MsgToCli) {
+        let msg = to_string(&msg).unwrap();
+        let msg = Message::text(msg);
+        self.ws.send(msg).await;
     }
 
     async fn handle_event(&mut self, event: Event) {

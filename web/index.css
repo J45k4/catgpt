@@ -8,3 +8,7 @@
 .leftContent {
 
 }
+
+#otherChats {
+    white-space: nowrap;
+}

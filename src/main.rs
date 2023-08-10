@@ -119,7 +119,7 @@ async fn main() -> anyhow::Result<()> {
 
     let ctx = Context {
         ch: ch,
-        database: db,
+        db: db,
         openai: openai.clone()
     };
 

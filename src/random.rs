@@ -62,5 +62,5 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         sleep(Duration::from_millis(20)).await;
     }
 
-    ctx.database.add_msg(&chat_id, msg).await;
+    ctx.db.add_msg(&chat_id, msg).await;
 }

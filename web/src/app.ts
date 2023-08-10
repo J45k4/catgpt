@@ -163,6 +163,23 @@ const updateChatMessage = (args: {
     args.container.appendChild(el)
 }
 
+const updateQueryParam = (param: string, value: string) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set(param, value)
+    window.history.replaceState({}, "", url.toString())
+}
+
+const clearQueryParam = (param: string) => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete(param)
+    window.history.replaceState({}, "", url.toString())
+}
+
+const getQueryParam = (param: string) => {
+    const url = new URL(window.location.href)
+    return url.searchParams.get(param)
+}
+
 class OtherChats {
     private root: HTMLDivElement
     private onChatClicked: (chatId: string) => void
@@ -178,7 +195,15 @@ class OtherChats {
     public addPlaceholder(chatId: string) {
         console.log("addPlaceholder")
 
+        let id = "chat_" + chatId
+
+        if (document.getElementById(id)) {
+            console.log("already exists")
+            return
+        }
+
         const div = document.createElement("div")
+        div.id = id
         div.innerHTML = chatId
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
@@ -233,6 +258,9 @@ class ChatMessages {
         this.root.appendChild(div)
     }
 
+    public clear() {
+        this.root.innerHTML = ""
+    }
 }
 
 enum Model {
@@ -266,6 +294,8 @@ window.onload = () => {
                 type: "GetChat",
                 chatId
             })
+
+            updateQueryParam("chatId", chatId)
         }
     })
 
@@ -274,6 +304,13 @@ window.onload = () => {
     const messages = new ChatMessages({
         root: document.getElementById("messagesBox") as HTMLDivElement
     })
+
+    const newChatBtn = document.getElementById("newChatButton")
+    newChatBtn.onclick = () => {
+        currentChatId = ""
+        messages.clear()
+        clearQueryParam("chatId")
+    }
 
     let ws = createWs({
         onOpen: () => {
@@ -302,11 +339,21 @@ window.onload = () => {
                 for (const chatId of msg.ids) {
                     otherChats.addPlaceholder(chatId)
                 }
+
+                const chatId = getQueryParam("chatId")
+
+                if (chatId) {
+                    currentChatId = chatId
+                    ws.sendMsg({
+                        type: "GetChat",
+                        chatId
+                    })
+                }
             }
 
             if (msg.type === "Chat") {
                 console.log("chat", msg)
-
+                otherChats.addPlaceholder(msg.id)
                 messages.setChat(msg)
             }
         }
@@ -333,14 +380,6 @@ window.onload = () => {
         messagesBox.appendChild(chatMsgComponent)
 
         console.log("instructions", instructionTextrea.value)
-
-        if (!currentChatId) {
-            currentChatId = v4()
-            ws.sendMsg({
-                type: "CreateChat",
-                chatId: currentChatId
-            })
-        }
 
         ws.sendMsg({
             type: "SendMsg",

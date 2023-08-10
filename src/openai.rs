@@ -56,7 +56,7 @@ pub struct OpenaiBuilder {
 impl OpenaiBuilder {
     pub fn build(self) -> Openai {
         Openai {
-            token: self.token,
+            apikey: self.token,
             client: self.client,
             ch: self.ch,
             db: self.db
@@ -65,7 +65,7 @@ impl OpenaiBuilder {
 }
 
 pub struct Openai {
-    token: Option<String>,
+    apikey: Option<String>,
     client: Client,
     ch: broadcast::Sender<Event>,
     db: Database
@@ -74,7 +74,7 @@ pub struct Openai {
 impl Clone for Openai {
     fn clone(&self) -> Self {
         Self {
-            token: self.token.clone(),
+            apikey: self.apikey.clone(),
             client: self.client.clone(),
             ch: self.ch.clone(),
             db: self.db.clone()
@@ -84,14 +84,14 @@ impl Clone for Openai {
 
 impl Openai {
     pub async fn stream_openai_chat(&self, req: OpenaiChatReq) ->  OpenaiChatStreamRes {
-        let apikey = match std::env::var("OPENAI_APIKEY") {
-            Ok(r) => r,
-            Err(_) => panic!("OPENAI_APIKEY not set"),
+        let apikey = match self.apikey.clone() {
+            Some(apikey) => apikey,
+            None => return OpenaiChatStreamRes::new(mpsc::channel(0).1)
         };
     
         let body_str = to_string(&req).unwrap();
     
-        println!("body_str: {}", body_str);
+        log::debug!("body_str: {}", body_str);
     
         let (tx, rx) = mpsc::channel(30);
         
@@ -207,9 +207,9 @@ impl Openai {
         let mut text = String::new();
         
         while let Some(r) = stream.next().await {
+            log::debug!("{:?}", r);
+
             let first_choise = &r.choices[0];
-    
-            println!("first_choise: {:?}", first_choise);
     
             if let Some(d) = &first_choise.delta.content {
                 text += d;
