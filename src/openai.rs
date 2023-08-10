@@ -156,19 +156,10 @@ impl Openai {
     
         let mut word_count = 0;
     
-        if let Some(instructions) = &req.ins {
-            openai_chat_req.messages.push(
-                OpenaiChatMessage { 
-                    role: OpenaiChatRole::System, 
-                    content: instructions.to_string()
-                }
-            );
-        }
-    
         let req = {
             let chat = self.db.get_chat(&req.chat_id).await.unwrap();
     
-            for msg in chat.messages.iter().into_iter() {
+            for msg in chat.messages.iter().into_iter().rev() {
                 let len = msg.message.len();
     
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
@@ -199,6 +190,17 @@ impl Openai {
     
             req
         };
+
+        if let Some(instructions) = &req.ins {
+            openai_chat_req.messages.push(
+                OpenaiChatMessage { 
+                    role: OpenaiChatRole::System, 
+                    content: instructions.to_string()
+                }
+            );
+        }
+
+        openai_chat_req.messages.reverse();
     
         let msg_id = uuid::Uuid::new_v4().to_string();
     
