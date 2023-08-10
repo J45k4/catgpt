@@ -163,6 +163,10 @@ class OtherChats {
     }
 }
 
+const formatMsgText = (text: string) => {
+    return text.replace(/\n/g, "<br>")
+}
+
 class ChatMessages {
     private root: HTMLDivElement
     
@@ -194,7 +198,7 @@ class ChatMessages {
         headerDiv.style.fontWeight = "2px"
     
         const bodyDiv = document.createElement("div")
-        bodyDiv.innerHTML = msg.message
+        bodyDiv.innerHTML = formatMsgText(msg.message)
         bodyDiv.className = "msgText"
     
         div.appendChild(headerDiv)
