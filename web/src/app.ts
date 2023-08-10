@@ -317,6 +317,7 @@ window.onload = () => {
                 console.log("chat", msg)
                 otherChats.addPlaceholder(msg.id)
                 messages.setChat(msg)
+                currentChatId = msg.id
                 updateQueryParam("chatId", msg.id)
             }
         }
@@ -326,10 +327,10 @@ window.onload = () => {
 
     console.log(body)
 
-    const newMessageInput = document.querySelector("#newMessageInput") as HTMLInputElement
+    const newMessageInput = document.getElementById("newMessageInput") as HTMLInputElement
     const sendButton = document.querySelector("#sendButton") as HTMLButtonElement
     
-    sendButton.onclick = () => {
+    const sendMessageAction = () => {
         const msg = newMessageInput.value
         console.log("send message ", msg)
 
@@ -355,7 +356,15 @@ window.onload = () => {
         })
 
         newMessageInput.value = ""
-        // messagesBox.innerHTML = ""
     }
 
+
+    sendButton.onclick = () => sendMessageAction()
+
+    
+    newMessageInput.onkeydown = e => {
+        if (e.key === "Enter") {
+            sendMessageAction()
+        }
+    }
 }
