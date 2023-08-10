@@ -164,7 +164,7 @@ class OtherChats {
 }
 
 const formatMsgText = (text: string) => {
-    return text.replace(/\n/g, "<br>")
+    return text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;")
 }
 
 class ChatMessages {
