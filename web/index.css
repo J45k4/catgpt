@@ -28,3 +28,15 @@ body {
 .codeBlock {
     border: solid 1px #ccc;
 }
+
+.sendMsgContainer {
+    display: flex;
+}
+
+.msgInputContainer {
+    flex-grow: 1;
+}
+
+.msgBtnContainer {
+    margin-left: 10px;
+}
