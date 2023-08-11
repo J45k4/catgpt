@@ -1,7 +1,5 @@
 
 body {
-    /* width: 100%; */
-    max-width: 100%;
     padding: 0px;
     margin: 0px;
 }
@@ -9,8 +7,7 @@ body {
 .mainContent {
     display: flex;
     flex-direction: row;
-    /* width: 100%; */
-    max-width: 1000px;
+    max-width: 1500px;
 }
 
 .leftContent {
@@ -30,8 +27,45 @@ body {
 }
 
 .codeBlock {
+    width: 300px;
     border: solid 1px #ccc;
 }
+
+@media (min-width: 300px) {
+    .codeBlock {
+        width: 300px;
+        border: solid 1px #ccc;
+    }
+}
+
+
+@media (min-width: 480px) {
+    .codeBlock {
+        width: 480px;
+        border: solid 1px #ccc;
+    }
+}
+
+@media (min-width: 768px) {
+    .codeBlock {
+        width: 769px;
+        border: solid 1px #ccc;
+    }
+}
+
+@media (min-width: 1200px) {
+    .codeBlock {
+        width: 1200px;
+        border: solid 1px #ccc;
+    }
+}
+
+/* @media (min-width: 1201px) {
+    .codeBlock {
+        max-width: 1200px;
+        border: solid 1px #ccc;
+    }
+} */
 
 .sendMsgContainer {
     display: flex;
