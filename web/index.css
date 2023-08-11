@@ -1,6 +1,6 @@
 
 body {
-    width: 100%;
+    /* width: 100%; */
     max-width: 100%;
     padding: 0px;
     margin: 0px;
@@ -9,7 +9,7 @@ body {
 .mainContent {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    /* width: 100%; */
     max-width: 1000px;
 }
 
@@ -22,5 +22,9 @@ body {
 }
 
 .msgText {
-    width: 100%;
+    /* width: 100%; */
+}
+
+.codeBlock {
+    border: solid 1px #ccc;
 }

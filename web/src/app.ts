@@ -186,23 +186,25 @@ const formatMsgText = (text: string) => {
     let whiteSpaceSize = 0
     let backtickCount = 0
     let state = ParsingState.Normal
+    let language = ""
     for (const char of text) {
         if (char === "`") {
             backtickCount += 1
+
+            if (backtickCount === 3) {
+                if (state === ParsingState.Normal) {
+                    formattedText += `<div class="codeBlock"><pre style="overflow: auto;">`
+                    state = ParsingState.ExpectLanguage
+                }
+    
+                if (state === ParsingState.CodeBlock) {
+                    formattedText += "</pre></div>"
+                }
+            }
+            continue
         } else {
             backtickCount = 0
-        }
-
-        if (backtickCount === 3) {
-            if (state === ParsingState.Normal) {
-                formattedText += `<div"><code>`
-                state = ParsingState.ExpectLanguage
-            }
-
-            if (state === ParsingState.CodeBlock) {
-                formattedText += "</code></div>"
-            }
-        }
+        }  
 
         if (char === "\n") {
             if (state === ParsingState.ExpectLanguage) {
@@ -225,6 +227,11 @@ const formatMsgText = (text: string) => {
         //     formattedText += " "
         //     whiteSpaceSize = 0
         // }
+
+        if (state === ParsingState.ExpectLanguage) {
+            language += char
+            continue
+        }
 
         formattedText += char
     }
