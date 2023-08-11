@@ -324,7 +324,12 @@ window.onload = () => {
     modelSelect.onchange = e => {
         currentModel = e.target.value
         console.log("currentMode", currentModel)
+        updateQueryParam("model", currentModel)
     }
+
+    const model = getQueryParam("model")
+    modelSelect.value = model || Model.random
+    currentModel = model as Model || Model.random
 
     const otherChats = new OtherChats({
         root: document.getElementById("otherChats") as HTMLDivElement,
