@@ -1,14 +1,26 @@
 
+body {
+    width: 100%;
+    max-width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
 .mainContent {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    width: 100%;
+    max-width: 1000px;
 }
 
 .leftContent {
-
+    /* flex-grow: 1; */
 }
 
 #otherChats {
     white-space: nowrap;
+}
+
+.msgText {
+    width: 100%;
 }

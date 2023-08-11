@@ -161,10 +161,74 @@ class OtherChats {
 
         this.root.appendChild(div)
     }
+
+    public hide() {
+        this.root.style.display = "none"
+    }
+
+    public isHidden() {
+        return this.root.style.display === "none"
+    }
+
+    public show() {
+        this.root.style.display = "block"
+    }
+}
+
+enum ParsingState {
+    Normal,
+    ExpectLanguage,
+    CodeBlock
 }
 
 const formatMsgText = (text: string) => {
-    return text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;")
+    let formattedText = ""
+    let whiteSpaceSize = 0
+    let backtickCount = 0
+    let state = ParsingState.Normal
+    for (const char of text) {
+        if (char === "`") {
+            backtickCount += 1
+        } else {
+            backtickCount = 0
+        }
+
+        if (backtickCount === 3) {
+            if (state === ParsingState.Normal) {
+                formattedText += `<div"><code>`
+                state = ParsingState.ExpectLanguage
+            }
+
+            if (state === ParsingState.CodeBlock) {
+                formattedText += "</code></div>"
+            }
+        }
+
+        if (char === "\n") {
+            if (state === ParsingState.ExpectLanguage) {
+                state = ParsingState.CodeBlock
+            }
+
+            formattedText += "<br>"
+            continue
+        }
+
+        // if (char === " ") {
+        //     whiteSpaceSize += 1
+        //     continue
+        // }
+
+        // if (whiteSpaceSize > 1) {
+        //     formattedText += `<span style="margin-left: ${whiteSpaceSize * 2}px"></span>`
+        //     whiteSpaceSize = 0
+        // } else if (whiteSpaceSize === 1) {
+        //     formattedText += " "
+        //     whiteSpaceSize = 0
+        // }
+
+        formattedText += char
+    }
+    return formattedText
 }
 
 class ChatMessages {
@@ -332,6 +396,7 @@ window.onload = () => {
     console.log(body)
 
     const newMessageInput = document.getElementById("newMessageInput") as HTMLInputElement
+    newMessageInput.style.width = "100%"
     const sendButton = document.querySelector("#sendButton") as HTMLButtonElement
     
     const sendMessageAction = () => {
@@ -371,4 +436,23 @@ window.onload = () => {
             sendMessageAction()
         }
     }
+
+    // window.onresize = () => {
+    //     const width = window.innerWidth
+    //     if (width < 650) {
+    //         if (!otherChats.isHidden()) {
+    //             otherChats.hide()
+    //         }
+    //     } else {
+    //         if (otherChats.isHidden()) {
+    //             otherChats.show()
+    //         }
+    //     }
+    // }
+
+    // if (window.innerWidth < 650) {
+    //     otherChats.hide()
+    // }
+
+    otherChats.hide()
 }
