@@ -449,22 +449,20 @@ window.onload = () => {
         }
     }
 
-    // window.onresize = () => {
-    //     const width = window.innerWidth
-    //     if (width < 650) {
-    //         if (!otherChats.isHidden()) {
-    //             otherChats.hide()
-    //         }
-    //     } else {
-    //         if (otherChats.isHidden()) {
-    //             otherChats.show()
-    //         }
-    //     }
-    // }
+    window.onresize = () => {
+        const width = window.innerWidth
+        if (width < 650) {
+            if (!otherChats.isHidden()) {
+                otherChats.hide()
+            }
+        } else {
+            if (otherChats.isHidden()) {
+                otherChats.show()
+            }
+        }
+    }
 
-    // if (window.innerWidth < 650) {
-    //     otherChats.hide()
-    // }
-
-    otherChats.hide()
+    if (window.innerWidth < 650) {
+        otherChats.hide()
+    }
 }
