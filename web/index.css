@@ -14,10 +14,14 @@ body {
 }
 
 .leftContent {
-    /* flex-grow: 1; */
+    flex-grow: 1;
 }
 
 #otherChats {
+    white-space: nowrap;
+}
+
+#newChatBtn {
     white-space: nowrap;
 }
 

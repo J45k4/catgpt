@@ -347,7 +347,7 @@ window.onload = () => {
         root: document.getElementById("messagesBox") as HTMLDivElement
     })
 
-    const newChatBtn = document.getElementById("newChatButton")
+    const newChatBtn = document.getElementById("newChatBtn")
     newChatBtn.onclick = () => {
         currentChatId = ""
         messages.clear()
