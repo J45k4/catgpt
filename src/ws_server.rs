@@ -223,6 +223,11 @@ impl WsServer {
                 log::debug!("del personality {}", id);
                 self.ctx.db.del_personality(&id).await;
                 self.send_msg(MsgToCli::PersonalityDeleted { id: id }).await;
+            },
+            MsgToSrv::DelMsg { chat_id, msg_id } => {
+                log::debug!("del msg {} from chat {}", msg_id, chat_id);
+                self.ctx.db.del_msg(&chat_id, &msg_id).await;
+                self.send_msg(MsgToCli::MsgDeleted { chat_id: chat_id, msg_id: msg_id }).await;
             }
         }
     }

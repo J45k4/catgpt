@@ -75,6 +75,12 @@ export type NewChat = {
     chat: Chat
 }
 
+export type MsgDeleted = {
+    type: "MsgDeleted"
+    chatId: string
+    msgId: string
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats | 
     ChatIds | 
@@ -84,7 +90,8 @@ export type MsgFromSrv = MsgDelta |
     PersonalityDeleted |
     NewMsg |
     ChatCreated |
-    NewChat
+    NewChat |
+    MsgDeleted
 
 export type SendMsg = {
     type: "SendMsg"
@@ -128,6 +135,12 @@ export type DelPersonality = {
     id: string
 }
 
+export type DelMsg = {
+    type: "DelMsg"
+    chatId: string
+    msgId: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -135,4 +148,5 @@ export type MsgToSrv = SendMsg |
     GetChat |
     SavePeronality |
     GetPersonalities |
-    DelPersonality
+    DelPersonality |
+    DelMsg

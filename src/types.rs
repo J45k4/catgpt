@@ -57,6 +57,11 @@ pub enum MsgToSrv {
     DelPersonality {
         id: String
     },
+    #[serde(rename_all = "camelCase")]
+    DelMsg {
+        chat_id: String,
+        msg_id: String
+    },
 }
 
 pub struct ChatMetadata {
@@ -108,6 +113,11 @@ pub enum MsgToCli {
     },
     NewChat {
         chat: Chat
+    },
+    #[serde(rename_all = "camelCase")]
+    MsgDeleted {
+        chat_id: String,
+        msg_id: String
     },
 }
 

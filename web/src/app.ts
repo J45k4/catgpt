@@ -190,11 +190,14 @@ const formatMsgText = (text: string) => {
 
 class ChatMessages {
     private root: HTMLDivElement
-    
+    private onDeleteMessage: (msgId: string) => void
+
     constructor(args: {
         root: HTMLDivElement
+        onDeleteMessage: (msgId: string) => void
     }) {
         this.root = args.root
+        this.onDeleteMessage = args.onDeleteMessage
     }
 
     public setChat(chat: Chat) {
@@ -212,11 +215,34 @@ class ChatMessages {
         div.style.marginRight = "5px"
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
+        div.style.padding = "3px"
+        div.style.backgroundColor = msg.bot ? "#e6e6e6" : "white"
     
         const headerDiv = document.createElement("div")
-        headerDiv.innerHTML = msg.user
-        headerDiv.style.fontSize = "20px"
-        headerDiv.style.fontWeight = "2px"
+        headerDiv.style.display = "flex"
+        headerDiv.style.flexDirection = "row"
+    
+        const userDiv = document.createElement("div")
+        userDiv.innerHTML = msg.user
+        userDiv.style.fontWeight = "bold"
+        userDiv.style.fontSize = "20px"
+        userDiv.style.fontWeight = "2px"
+        userDiv.style.flexGrow = "1"
+        headerDiv.appendChild(userDiv)
+
+        const btnDiv = document.createElement("div")
+        headerDiv.appendChild(btnDiv)
+
+        const deleteBtn = document.createElement("button")
+        deleteBtn.innerHTML = "Delete"
+        deleteBtn.onclick = () => {
+            this.onDeleteMessage(msg.id)
+        }
+        btnDiv.appendChild(deleteBtn)
+
+        // headerDiv.innerHTML = msg.user
+        // headerDiv.style.fontSize = "20px"
+        // headerDiv.style.fontWeight = "2px"
     
         const bodyDiv = document.createElement("div")
         bodyDiv.innerHTML = formatMsgText(msg.message)
@@ -226,6 +252,11 @@ class ChatMessages {
         div.appendChild(bodyDiv)
 
         this.root.appendChild(div)
+    }
+
+    public del_msg(msgId: string) {
+        const div = document.getElementById(msgId)
+        div.remove()
     }
 
     public add_delta(msgDelta: MsgDelta) {
@@ -340,7 +371,14 @@ window.onload = () => {
     // const messagesBox = document.querySelector("#messagesBox")
 
     const messages = new ChatMessages({
-        root: document.getElementById("messagesBox") as HTMLDivElement
+        root: document.getElementById("messagesBox") as HTMLDivElement,
+        onDeleteMessage: msgId => {
+            ws.sendMsg({
+                type: "DelMsg",
+                chatId: currentChatId,
+                msgId
+            })
+        }
     })
 
     const newChatBtn = document.getElementById("newChatBtn")
@@ -445,6 +483,16 @@ window.onload = () => {
             if (msg.type === "NewChat") {
                 otherChats.addPlaceholder(msg.chat.id)
             }
+
+            if (msg.type === "MsgDeleted") {
+                console.log("msgDeleted", msg)
+                if (msg.chatId !== currentChatId) {
+                    console.debug("msgDeleted for another chat")
+                    return
+                }
+
+                messages.del_msg(msg.msgId)
+            }
         }
     })
 
@@ -464,6 +512,7 @@ window.onload = () => {
 
         messages.addMessage({
             id: msgClientId,
+            chatId: currentChatId,
             user: "User",
             bot: false,
             message: msg,

@@ -86,4 +86,26 @@ impl Database {
         let mut personalities = self.personalities.write().await;
         personalities.remove(id);
     }
+
+    pub async fn del_msg(&self, chat_id: &str, msg_id: &str) {
+        log::debug!("del_msg");
+        let mut chats = self.chats.write().await;
+        let chat = chats.iter_mut().find(|c| c.id == chat_id);
+        match chat {
+            Some(chat) => {
+                let msg = chat.messages.iter().position(|m| m.id == msg_id);
+                match msg {
+                    Some(msg) => {
+                        chat.messages.remove(msg);
+                    },
+                    None => {
+                        log::error!("msg {} not found", msg_id);
+                    }
+                }
+            },
+            None => {
+                log::error!("chat {} not found", chat_id);
+            }
+        }
+    }
 }
