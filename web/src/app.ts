@@ -80,7 +80,10 @@ const createWs = (args: {
     let ws
 
     const createConn = () => {
-        ws = new WebSocket("ws://localhost:5566/ws")
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+        const host = window.location.host
+        const url = `${protocol}://${host}/ws`
+        ws = new WebSocket(url)
 
         ws.onopen = () => {
             console.log("onopen")
@@ -449,20 +452,20 @@ window.onload = () => {
         }
     }
 
-    window.onresize = () => {
-        const width = window.innerWidth
-        if (width < 650) {
-            if (!otherChats.isHidden()) {
-                otherChats.hide()
-            }
-        } else {
-            if (otherChats.isHidden()) {
-                otherChats.show()
-            }
-        }
-    }
+    // window.onresize = () => {
+    //     const width = window.innerWidth
+    //     if (width < 650) {
+    //         if (!otherChats.isHidden()) {
+    //             otherChats.hide()
+    //         }
+    //     } else {
+    //         if (otherChats.isHidden()) {
+    //             otherChats.show()
+    //         }
+    //     }
+    // }
 
-    if (window.innerWidth < 650) {
-        otherChats.hide()
-    }
+    // if (window.innerWidth < 650) {
+    //     otherChats.hide()
+    // }
 }

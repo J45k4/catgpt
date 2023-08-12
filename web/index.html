@@ -2,7 +2,8 @@
     <head>
         <title>aki</title>
         <script src="/app.js"></script>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- <meta name="viewport" content="width=device-width, initial-scale=1" /> -->
+        <meta name = "viewport" content = "width=device-width, minimum-scale=1.0, maximum-scale = 1.0, user-scalable = no">
         <link rel="stylesheet" href="/index.css" />
     </head>
     <body>
@@ -10,29 +11,64 @@
             <div class="leftContent">
                 <div style="color: red;" id="connectionStatus">
                     Not connected
-                </div>
-                <select id="modelSelect" sel>
-                    <option value="gpt4">GPT-4</option>
-                    <option value="gpt3.5">GPT-3.5</option>
-                    <option value="random">Random</option>
-                </select>
-        
+                </div>                
                 <div>
                     <div>
-                        <label>
-                            Assistant instructions
-                        </label>
+                        <h1>
+                            Previous chats
+                        </h1>
+                        <button id="newChatBtn">
+                            New chat
+                        </button>
+                        <div id="otherChats">
+        
+                        </div>
                     </div>
-                    <div>
+                    <h1>
+                        Settings
+                    </h1>
+                    <h2>Model</h2>
+                    <select id="modelSelect" sel>
+                        <option value="gpt4">GPT-4</option>
+                        <option value="gpt3.5">GPT-3.5</option>
+                        <option value="random">Random</option>
+                    </select>
+                    <h2>Instructions</h2>
+                    <div style="margin-bottom: 10px;">
                         <textarea id="instructionText"></textarea>
                     </div>
-                </div>
-        
-                <div>
-                    <label>
-                        Messages
-                    </label>
+                    <button>Save</button>
+                    <h3>
+                        Saved instructions
+                    </h3>
+                    <div id="insContainer">
+                        <div class="insText">
+                            qwrqwqwfwqqwfqwfqwf
+                        </div>
+                        <div class="insText">
+                            qwrqwqwfwqqwfqwfqwf
+                        </div>
+                        <div class="insText">
+                            qwrqwqwfwqqwfqwfqwf
+                        </div>
+                        <div class="insText">
+                            qwrqwqwfwqqwfqwfqwf
+                            cvcvvc
+
+                            vcvcvcvc
+                            vc
+                            vc
+                            vc
+                            vcvcvcvcvc
+                            zcvzdssdfdsf
+                            sdfsfdfsddfsdfs
+                        </div>
+                    </div>
+                    <h1>
+                        Current chat
+                    </h1>
                     <div id="messagesBox">
+                        No messages yet
                     </div>
                     <div class="sendMsgContainer">
                         <div class="msgInputContainer">
@@ -44,14 +80,6 @@
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div>
-                <button id="newChatBtn">
-                    New chat
-                </button>
-                <div id="otherChats">
-
                 </div>
             </div>
         </div>

@@ -176,7 +176,7 @@ async fn main() -> anyhow::Result<()> {
         
             println!("listen port: 5566");
         
-            let addr = SocketAddr::from(([127, 0, 0, 1], 5566));
+            let addr = SocketAddr::from(([0, 0, 0, 0], 5566));
             Server::bind(&addr).serve(make_scv).await?;       
         },
         Commands::Config(args) => {

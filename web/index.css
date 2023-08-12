@@ -1,6 +1,6 @@
 
 body {
-    padding: 0px;
+    padding: 10px;
     margin: 0px;
 }
 
@@ -31,10 +31,30 @@ body {
     border: solid 1px #ccc;
 }
 
-@media (min-width: 300px) {
+#insContainer {
+    overflow: auto;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.insText {
+    border: 1px solid black;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.insText:hover {
+    background-color: #eee;
+}
+
+/* @media (min-width: 300px) {
     .codeBlock {
         width: 300px;
         border: solid 1px #ccc;
+    }
+
+    #insContainer {
+        width: 150px;
     }
 }
 
@@ -44,21 +64,42 @@ body {
         width: 480px;
         border: solid 1px #ccc;
     }
-}
+
+    #insContainer {
+        width: 300px;
+    }
+} */
 
 @media (min-width: 768px) {
     .codeBlock {
         width: 769px;
         border: solid 1px #ccc;
     }
+
+
+
+    /* #insContainer {
+        max-width: 400px;
+    } */
 }
 
-@media (min-width: 1200px) {
+@media (max-width: 500px) {
+    #instructionText {
+        width: 100%;
+        height: 100px;
+    }
+}
+
+/* @media (min-width: 1200px) {
     .codeBlock {
         width: 1200px;
         border: solid 1px #ccc;
     }
-}
+
+    #insContainer {
+        width: 700px;
+    }
+} */
 
 /* @media (min-width: 1201px) {
     .codeBlock {
@@ -78,4 +119,10 @@ body {
 
 .msgBtnContainer {
     margin-left: 10px;
+}
+
+#messagesBox {
+    border: solid 1px #ccc;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
