@@ -24,6 +24,9 @@ jobs:
         with:
           node-version: 18
 
+      - name: Change directory to web
+        run: cd web
+
       - name: Install NPM dependencies
         run: npm ci
 
