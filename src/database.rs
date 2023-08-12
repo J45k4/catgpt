@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use log::error;
 use tokio::sync::RwLock;
 
 use crate::types::Chat;
@@ -29,16 +30,16 @@ impl Database {
         }
     }
 
-    pub async fn add_msg(&self, id: &str, msg: ChatMsg) {
-        log::debug!("add_msg {}", id);
+    pub async fn save_msg(&self, msg: ChatMsg) {
+        log::debug!("add_msg to chat {}", msg.chat_id);
         let mut chats = self.chats.write().await;
-        let chat = chats.iter_mut().find(|c| c.id == id);
+        let chat = chats.iter_mut().find(|c| c.id == msg.chat_id);
         match chat {
             Some(chat) => {
                 chat.messages.push(msg);
             },
             None => {
-                log::error!("chat not found {}", id);
+                log::error!("chat {} not found", msg.chat_id);
             }
         }
     }

@@ -48,27 +48,41 @@ impl WsServer {
     
         match msg {
             MsgToSrv::SendMsg(msg) => {
-                log::debug!("send {:?}", msg);
+                log::debug!("{:?}", msg);
+
+                let chat_id = match msg.chat_id {
+                    Some(chat_id) => self.ctx.db.get_chat(&chat_id).await.map(|c| c.id),
+                    None => None
+                };
+
+                let chat_id = match chat_id {
+                    Some(chat_id) => chat_id,
+                    None => {
+                        let id = Uuid::new_v4().to_string();
+
+                        log::info!("chat_id not found, create new chat {}", id);
+
+                        let new_chat = Chat {
+                            id: id.clone(),
+                            messages: vec![]
+                        };
+                        self.ctx.db.add_chat(new_chat.clone()).await;
+                        self.send_msg(MsgToCli::ChatCreated { chat: new_chat.clone() }).await;
+                        self.ctx.ch.send(Event::NewChat { chat: new_chat });
+                        id
+                    }
+                };
 
                 let chatmsg = ChatMsg {
                     id: msg.msg_cli_id,
+                    chat_id: chat_id.clone(),
                     message: msg.txt,
                     bot: false,
                     user: "User".to_string(),
                     datetime: Utc::now()
                 };
 
-                let chat_id = match msg.chat_id {
-                    Some(chat_id) => {
-                        match self.ctx.db.get_chat(&chat_id).await {
-                            Some(_) => {
-                                Some(chat_id)
-                            },
-                            None => None
-                        }
-                    },
-                    None => None
-                };
+                self.ctx.db.save_msg(chatmsg.clone()).await;
 
                 // if chat_found {
                 //     self.ctx.db.add_msg(&msg.chat_id.unwrap(), chatmsg.clone()).await;
@@ -83,24 +97,24 @@ impl WsServer {
                 //     self.send_msg(msg).await;
                 // }
 
-                let chat_id = match chat_id {
-                    Some(chat_id) => {
-                        self.ctx.db.add_msg(&chat_id, chatmsg.clone()).await;
-                        chat_id
-                    },
-                    None => {
-                        let chat_id = Uuid::new_v4().to_string();
-                        let new_chat = Chat {
-                            id: chat_id.clone(),
-                            messages: vec![chatmsg.clone()],
-                        };
-                        self.ctx.db.add_chat(new_chat.clone()).await;
+                // let chat_id = match chat_id {
+                //     Some(chat_id) => {
+                //         self.ctx.db.add_msg(&chat_id, chatmsg.clone()).await;
+                //         chat_id
+                //     },
+                //     None => {
+                //         let chat_id = Uuid::new_v4().to_string();
+                //         let new_chat = Chat {
+                //             id: chat_id.clone(),
+                //             messages: vec![chatmsg.clone()],
+                //         };
+                //         self.ctx.db.add_chat(new_chat.clone()).await;
 
-                        let msg = MsgToCli::Chat(new_chat);
-                        self.send_msg(msg).await;
-                        chat_id 
-                    }
-                };
+                //         let msg = MsgToCli::Chat(new_chat);
+                //         self.send_msg(msg).await;
+                //         chat_id 
+                //     }
+                // };
 
                 match msg.model.as_str() {
                     MODEL_RANDOM => {
@@ -129,19 +143,19 @@ impl WsServer {
                     ids: chat_ids
                 };
                 let msg = MsgToCli::ChatIds(msg);
-                let msg = to_string(&msg).unwrap();
-                let msg = Message::text(msg);
-                self.ws.send(msg).await;
+                self.send_msg(msg).await;
             }
             MsgToSrv::CreateChat(args) => {
                 log::debug!("{:?}", args);
 
-                self.ctx.db.add_chat(
-                    Chat {
-                        id: args.chat_id.clone(),
-                        messages: vec![],
-                    }
-                ).await;
+                let chat = Chat {
+                    id: args.chat_id.clone(),
+                    messages: vec![],
+                };
+
+                self.ctx.db.add_chat(chat.clone()).await;
+
+                self.send_msg(MsgToCli::ChatCreated { chat: chat }).await;
             }
             MsgToSrv::GetChat { chat_id } => {
                 log::debug!("{:?}", chat_id);
@@ -215,7 +229,7 @@ impl WsServer {
 
     async fn send_msg(&mut self, msg: MsgToCli) {
         let msg = to_string(&msg).unwrap();
-        log::debug!("send msg: {}", msg);
+        log::debug!("send to client: {}", msg);
         let msg = Message::text(msg);
         self.ws.send(msg).await;
     }
@@ -224,10 +238,16 @@ impl WsServer {
         match event {
             Event::MsgDelta(delta) => {
                 let msg = MsgToCli::MsgDelta(delta);
-                let msg = to_string(&msg).unwrap();
-                let msg = Message::text(msg);
-                self.ws.send(msg).await;
+                self.send_msg(msg).await;
             },
+            Event::NewMsg { msg } => {
+                let msg = MsgToCli::NewMsg { msg: msg };
+                self.send_msg(msg).await;
+            },
+            Event::NewChat { chat } => {
+                let msg = MsgToCli::NewChat { chat: chat };
+                self.send_msg(msg).await;
+            }
         }
     }
 

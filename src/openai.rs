@@ -205,20 +205,29 @@ impl Openai {
         let msg_id = uuid::Uuid::new_v4().to_string();
     
         let mut stream = self.stream_openai_chat(openai_chat_req).await;
-    
-        let mut text = String::new();
+
+        let mut new_msg = ChatMsg {
+            id: msg_id.clone(),
+            chat_id: req.chat_id.clone(),
+            datetime: Utc::now(),
+            message: "".to_string(),
+            bot: true,
+            user: model.to_string()
+        };
         
+        self.ch.send(Event::NewMsg { msg: new_msg.clone() });
+
         while let Some(r) = stream.next().await {
             log::debug!("{:?}", r);
 
             let first_choise = &r.choices[0];
     
             if let Some(d) = &first_choise.delta.content {
-                text += d;
+                new_msg.message.push_str(d);
                 let event = Event::MsgDelta(
                     MsgDelta {
+                        chat_id: req.chat_id.clone(),
                         msg_id: msg_id.clone(),
-                        author: "ChatGPT".to_string(),
                         delta: d.to_string()
                     }
                 );
@@ -227,12 +236,6 @@ impl Openai {
             }
         }
 
-        self.db.add_msg(&req.chat_id, ChatMsg {
-            id: msg_id,
-            datetime: Utc::now(),
-            message: text,
-            bot: true,
-            user: "ChatGPT".to_string()
-        }).await;
+        self.db.save_msg(new_msg).await;
     }
 }

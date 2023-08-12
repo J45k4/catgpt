@@ -22,9 +22,9 @@ pub struct SendMsg {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MsgDelta {
+    pub chat_id: String,
     pub msg_id: String,
-    pub author: String,
-    pub delta: String
+    pub delta: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -99,12 +99,27 @@ pub enum MsgToCli {
     NewPersonality(NewPersonality),
     PersonalityDeleted {
         id: String
-    }
+    },
+    ChatCreated {
+        chat: Chat
+    },
+    NewMsg {
+        msg: ChatMsg
+    },
+    NewChat {
+        chat: Chat
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    MsgDelta(MsgDelta)
+    MsgDelta(MsgDelta),
+    NewMsg {
+        msg: ChatMsg
+    },
+    NewChat {
+        chat: Chat
+    },
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -187,8 +202,10 @@ pub struct OpenaiStreamResMsg {
 }
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ChatMsg {
     pub id: String,
+    pub chat_id: String,
     pub message: String,
     pub user: String,
     pub datetime: DateTime<Utc>,

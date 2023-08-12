@@ -96,6 +96,10 @@ class OtherChats {
     }
 
     public setActive(chatId: string) {
+        if (this.activateChatId) {
+            this.removeActive()
+        }
+
         this.activateChatId = chatId
         const div = document.getElementById("chat_" + chatId)
         div.style.border = "1px solid blue"
@@ -227,23 +231,13 @@ class ChatMessages {
     public add_delta(msgDelta: MsgDelta) {
         const existingChatMessage = document.getElementById(msgDelta.msgId)
 
-        if (existingChatMessage) {
-            const textComponent = existingChatMessage.children[1]
-
-            textComponent.innerHTML += formatMsgText(msgDelta.delta)
-
+        if (!existingChatMessage) {
             return
         }
 
-        console.log("create new chatMsg", msgDelta)
+        const textComponent = existingChatMessage.children[1]
 
-        this.addMessage({
-            id: msgDelta.msgId,
-            user: msgDelta.author,
-            bot: true,
-            message: msgDelta.delta,
-            datetime: new Date().toISOString()
-        })
+        textComponent.innerHTML += formatMsgText(msgDelta.delta) 
     }
 
     public clear() {
@@ -385,6 +379,13 @@ window.onload = () => {
         },
         onMsg: msg => {
             if (msg.type === "MsgDelta") {
+                if (msg.chatId !== currentChatId) {
+                    console.debug("msgDelta for another chat")
+                    return
+                }
+
+                console.debug("msgDelta", msg)
+
                 messages.add_delta(msg)
             }
 
@@ -423,6 +424,26 @@ window.onload = () => {
 
             if (msg.type === "PersonalityDeleted") {
                 personalitiesContainer.deletePersonality(msg.id)
+            }
+
+            if (msg.type === "NewMsg") {
+                console.log("newMsg", msg)
+                if (msg.msg.chatId !== currentChatId) {
+                    console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
+                    return
+                }
+
+                messages.addMessage(msg.msg)
+            }
+
+            if (msg.type === "ChatCreated") {
+                console.log("chatCreated", msg)
+                currentChatId = msg.chat.id
+                updateQueryParam("chatId", currentChatId)
+            }
+
+            if (msg.type === "NewChat") {
+                otherChats.addPlaceholder(msg.chat.id)
             }
         }
     })

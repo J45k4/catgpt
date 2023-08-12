@@ -1,9 +1,8 @@
 export type MsgDelta = {
     type: "MsgDelta"
+    chatId: string
     msgId: string
     delta: string
-    index:  number
-    author: string
 }
 
 export type StartWriting = {
@@ -16,6 +15,7 @@ export type FinishWrite = {
 
 export type ChatMsg = {
     id: string,
+    chatId: string
     message: string,
     user: string,
     datetime: string,
@@ -60,13 +60,31 @@ export type PersonalityDeleted = {
     id: string
 }
 
+export type NewMsg = {
+    type: "NewMsg",
+    msg: ChatMsg
+}
+
+export type ChatCreated = {
+    type: "ChatCreated"
+    chat: Chat
+}
+
+export type NewChat = {
+    type: "NewChat"
+    chat: Chat
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats | 
     ChatIds | 
     Chat | 
     Personalities | 
     NewPersonality |
-    PersonalityDeleted
+    PersonalityDeleted |
+    NewMsg |
+    ChatCreated |
+    NewChat
 
 export type SendMsg = {
     type: "SendMsg"
