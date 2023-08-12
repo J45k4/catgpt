@@ -45,6 +45,10 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
     log::info!("handle_request {}", req.uri());
 
+
+    // print agent
+    log::debug!("agent: {:?}", req.headers().get("user-agent"));
+
     if hyper_tungstenite::is_upgrade_request(&req) {
         log::info!("there is upgrade request");
 
