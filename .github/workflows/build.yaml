@@ -28,10 +28,14 @@ jobs:
         run: cd web
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: |
+            cd web
+            npm ci
 
       - name: Build NPM project
-        run: npx spack
+        run: |
+            cd web
+            npx spack
 
       - name: Build Rust project
         run: cargo build --release
