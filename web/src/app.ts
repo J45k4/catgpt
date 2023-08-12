@@ -23,14 +23,14 @@ const createWs = (args: {
             args.onClose()
             setTimeout(createConn, 1000)
         }
+
+        ws.onmessage = data => {
+            const msg = JSON.parse(data.data)
+            args.onMsg(msg)
+        }
     }
 
     createConn()
-
-    ws.onmessage = data => {
-        const msg = JSON.parse(data.data)
-        args.onMsg(msg)
-    }
 
     return {
         sendMsg: (msg: MsgToSrv) => {
