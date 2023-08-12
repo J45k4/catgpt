@@ -47,7 +47,16 @@ pub enum MsgToSrv {
     #[serde(rename_all = "camelCase")]
     GetChat {
         chat_id: String
-    }
+    },
+    #[serde(rename_all = "camelCase")]
+    SavePersonality {
+        id: Option<String>,
+        txt: String
+    },
+    GetPersonalities,
+    DelPersonality {
+        id: String
+    },
 }
 
 pub struct ChatMetadata {
@@ -59,12 +68,38 @@ pub struct ChatIds {
     pub ids: Vec<String>
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct Personality {
+    pub id: String,
+    pub txt: String
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Personalities {
+    pub personalities: Vec<Personality>
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct NewPersonality {
+    pub personality: Personality
+}
+
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// pub struct PersonalityDeleted {
+//     pub id: String
+// }
+
 #[derive(serde::Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToCli {
     MsgDelta(MsgDelta),
     ChatIds(ChatIds),
-    Chat(Chat)
+    Chat(Chat),
+    Personalities(Personalities),
+    NewPersonality(NewPersonality),
+    PersonalityDeleted {
+        id: String
+    }
 }
 
 #[derive(Debug, Clone)]

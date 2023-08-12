@@ -19,6 +19,9 @@ use crate::types::MODEL_GPT_4;
 use crate::types::MODEL_RANDOM;
 use crate::types::MsgToCli;
 use crate::types::MsgToSrv;
+use crate::types::NewPersonality;
+use crate::types::Personalities;
+use crate::types::Personality;
 
 
 pub struct WsServer {
@@ -151,12 +154,68 @@ impl WsServer {
                     let msg = Message::text(msg);
                     self.ws.send(msg).await;
                 }
+            },
+            MsgToSrv::SavePersonality { id, txt } => {
+                log::debug!("{:?}", txt);
+
+                let personality = match id {
+                    Some(id) => {
+                        let personality = self.ctx.db.get_personality(&id).await;
+
+                        match personality {
+                            Some(mut personality) => {
+                                personality.txt = txt;
+                                self.ctx.db.save_personality(personality.clone()).await;
+                                personality
+                            },
+                            None => {
+                                let new_personality = Personality {
+                                    id: id,
+                                    txt: txt
+                                };
+
+                                self.ctx.db.save_personality(new_personality.clone()).await;
+                                new_personality
+                            }
+                        }
+                    },
+                    None => {
+                        let new_personality = Personality {
+                            id: Uuid::new_v4().to_string(),
+                            txt: txt
+                        };
+
+                        self.ctx.db.save_personality(new_personality.clone()).await;
+                        new_personality
+                    }
+                };
+
+                let msg = MsgToCli::NewPersonality(NewPersonality {
+                    personality: personality
+                });
+                self.send_msg(msg).await;
+            },
+            MsgToSrv::GetPersonalities => {
+                log::debug!("get personalities");
+
+                let personalities = self.ctx.db.get_personalities().await;
+                let msg = Personalities {
+                    personalities: personalities
+                };
+                let msg = MsgToCli::Personalities(msg);
+                self.send_msg(msg).await;
+            },
+            MsgToSrv::DelPersonality { id } => {
+                log::debug!("del personality {}", id);
+                self.ctx.db.del_personality(&id).await;
+                self.send_msg(MsgToCli::PersonalityDeleted { id: id }).await;
             }
         }
     }
 
     async fn send_msg(&mut self, msg: MsgToCli) {
         let msg = to_string(&msg).unwrap();
+        log::debug!("send msg: {}", msg);
         let msg = Message::text(msg);
         self.ws.send(msg).await;
     }

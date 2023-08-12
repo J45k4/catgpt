@@ -1,76 +1,5 @@
 import { v4 } from "uuid"
-
-type MsgDelta = {
-    type: "MsgDelta"
-    msgId: string
-    delta: string
-    index:  number
-    author: string
-}
-
-type StartWriting = {
-    type: string
-}
-
-type FinishWrite = {
-    type: string
-}
-
-type ChatMsg = {
-    id: string,
-    message: string,
-    user: string,
-    datetime: string,
-    bot: boolean
-}
-
-type Chat = {
-    type: "Chat"
-    id: string
-    title: String
-    messages: ChatMsg[]
-}
-
-type Chats = {
-    type: "Chats"
-    chats: Chat[]
-}
-
-type ChatIds = {
-    type: "ChatIds"
-    ids: string[]
-}
-
-type MsgFromSrv = MsgDelta | Chats | ChatIds | Chat
-
-type SendMsg = {
-    type: "SendMsg"
-    chatId: string
-    msgCliId: string
-    txt: string
-    model: string
-    instructions?: string
-}
-
-type StopGen = {
-    type: "StopGen"
-}
-
-type GetChats = {
-    type: "GetChats"
-}
-
-type CreateChat = {
-    type: "CreateChat"
-    chatId: string
-}
-
-type GetChat = {
-    type: "GetChat"
-    chatId: string
-}
-
-type MsgToSrv = SendMsg | StopGen | GetChats | CreateChat | GetChat
+import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
 
 const createWs = (args: {
     onOpen: () => void
@@ -130,6 +59,7 @@ const getQueryParam = (param: string) => {
 
 class OtherChats {
     private root: HTMLDivElement
+    private activateChatId: string
     private onChatClicked: (chatId: string) => void
     
     constructor(args: {
@@ -163,6 +93,19 @@ class OtherChats {
         }
 
         this.root.appendChild(div)
+    }
+
+    public setActive(chatId: string) {
+        this.activateChatId = chatId
+        const div = document.getElementById("chat_" + chatId)
+        div.style.border = "1px solid blue"
+    }
+
+    public removeActive() {
+        if (this.activateChatId) {
+            const div = document.getElementById("chat_" + this.activateChatId)
+            div.style.border = "none"
+        }
     }
 
     public hide() {
@@ -308,6 +251,54 @@ class ChatMessages {
     }
 }
 
+class PersonalitiesContainer {
+    private root: HTMLDivElement
+    private onPersonalityClicked: (personality: Personality) => void
+    
+    constructor(args: {
+        root: HTMLDivElement
+        onPersonalityClicked: (personality: Personality) => void
+    }) {
+        this.root = args.root
+        this.onPersonalityClicked = args.onPersonalityClicked
+    }
+
+    public setPersonalities(personalities: Personality[]) {
+        this.root.innerHTML = ""
+
+        for (const personality of personalities) {
+            this.addPersonality(personality)
+        }
+    }
+
+    public addPersonality(personality: Personality) {
+        const existingPersonality = document.getElementById(personality.id)
+
+        if (existingPersonality) {
+            existingPersonality.innerHTML = personality.txt
+            return
+        }
+
+        const div = document.createElement("div")
+        div.innerHTML = personality.txt
+        div.id = personality.id
+        div.style.marginTop = "10px"
+        div.style.marginBottom = "10px"
+        div.style.cursor = "pointer"
+        div.style.color = "blue"
+        div.onclick = () => {
+            this.onPersonalityClicked(personality)
+        }
+
+        this.root.appendChild(div)
+    }
+
+    public deletePersonality(personalityId: string) {
+        const div = document.getElementById(personalityId)
+        div.remove()
+    }
+}
+
 enum Model {
     gpt4 = "gpt4",
     gpt3_5 = "gpt3.5",
@@ -316,9 +307,10 @@ enum Model {
 
 window.onload = () => {
     let currentChatId = null
+    let currentPersonalityId = null
 
     const connectionStatus = document.getElementById("connectionStatus")
-    const instructionTextrea = document.getElementById("instructionText") as HTMLTextAreaElement
+    const personalityTxt = document.getElementById("instructionText") as HTMLTextAreaElement
 
     const modelSelect = document.querySelector("#modelSelect") as HTMLSelectElement
     let currentModel =  Model.random
@@ -346,6 +338,8 @@ window.onload = () => {
             })
 
             updateQueryParam("chatId", chatId)
+
+            otherChats.setActive(chatId)
         }
     })
 
@@ -360,7 +354,17 @@ window.onload = () => {
         currentChatId = ""
         messages.clear()
         clearQueryParam("chatId")
+        otherChats.removeActive()
     }
+
+    const personalitiesContainer = new PersonalitiesContainer({
+        root: document.getElementById("personalitiesContainer") as HTMLDivElement,
+        onPersonalityClicked: personality => {
+            console.log("personality clicked", personality)
+            personalityTxt.value = personality.txt
+            currentPersonalityId = personality.id
+        }
+    })
 
     let ws = createWs({
         onOpen: () => {
@@ -369,6 +373,10 @@ window.onload = () => {
 
             ws.sendMsg({
                 type: "GetChats"
+            })
+
+            ws.sendMsg({
+                type: "GetPersonalities"
             })
         },
         onClose: () => {
@@ -401,7 +409,20 @@ window.onload = () => {
                 otherChats.addPlaceholder(msg.id)
                 messages.setChat(msg)
                 currentChatId = msg.id
+                otherChats.setActive(msg.id)
                 updateQueryParam("chatId", msg.id)
+            }
+
+            if (msg.type === "Personalities") {
+                personalitiesContainer.setPersonalities(msg.personalities)
+            }
+
+            if (msg.type === "NewPersonality") {
+                personalitiesContainer.addPersonality(msg.personality)
+            }
+
+            if (msg.type === "PersonalityDeleted") {
+                personalitiesContainer.deletePersonality(msg.id)
             }
         }
     })
@@ -428,7 +449,7 @@ window.onload = () => {
             datetime: new Date().toISOString()
         })
 
-        console.log("instructions", instructionTextrea.value)
+        console.log("instructions", personalityTxt.value)
 
         ws.sendMsg({
             type: "SendMsg",
@@ -436,7 +457,7 @@ window.onload = () => {
             msgCliId: msgClientId,
             model: currentModel,
             txt: msg,
-            instructions: instructionTextrea.value
+            instructions: personalityTxt.value
         })
 
         newMessageInput.value = ""
@@ -450,6 +471,29 @@ window.onload = () => {
         if (e.key === "Enter") {
             sendMessageAction()
         }
+    }
+
+    const savePersonalityBtn = document.getElementById("savePersonalityBtn") as HTMLButtonElement
+    savePersonalityBtn.onclick = () => {
+        ws.sendMsg({
+            type: "SavePersonality",
+            id: currentPersonalityId,
+            txt: personalityTxt.value
+        })
+    }
+
+    const newPersonalityBtn = document.getElementById("newPersonalityBtn") as HTMLButtonElement
+    newPersonalityBtn.onclick = () => {
+        personalityTxt.value = ""
+    }
+
+    const deletePersonalityBtn = document.getElementById("deletePersonalityBtn") as HTMLButtonElement
+    deletePersonalityBtn.onclick = () => {
+        ws.sendMsg({
+            type: "DelPersonality",
+            id: currentPersonalityId
+        })
+        personalityTxt.value = ""
     }
 
     // window.onresize = () => {
