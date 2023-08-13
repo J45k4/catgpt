@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use chrono::Utc;
 use rand::seq::SliceRandom;
-use tokio::fs;
 use tokio::time::sleep;
 use uuid::Uuid;
 
