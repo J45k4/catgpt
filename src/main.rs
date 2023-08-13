@@ -3,6 +3,7 @@ use std::convert::Infallible;
 use std::io;
 use std::io::Write;
 use std::net::SocketAddr;
+use std::path::Path;
 
 use anyhow::bail;
 use args::Args;
@@ -40,23 +41,46 @@ mod openai;
 mod config;
 mod database;
 
+macro_rules! serve_static_file {
+    ($path:expr) => {{
+        let body = match std::option_env!("STATIC_ASSETS") {
+            Some(_) => {
+                log::debug!("Using included asset");
+                Body::from(include_str!($path))
+            },
+            None => {
+                log::debug!("Using file asset");
+                let path = Path::new("./src").join($path);
+                Body::from(tokio::fs::read_to_string(path).await?)
+            }
+        };
+
+        if $path.ends_with(".js") {
+            Response::builder()
+                .header("Content-Type", "application/javascript")
+                .body(body)?
+        } else if $path.ends_with(".css") {
+            Response::builder()
+                .header("Content-Type", "text/css")
+                .body(body)?
+        } else if $path.ends_with(".html") {
+            Response::builder()
+                .header("Content-Type", "text/html")
+                .body(body)?
+        } else {
+            Response::new(body)
+        }
+    }};
+}
+
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
-    // Use the connection pool here
-
     log::info!("handle_request {}", req.uri());
-
-
-    // print agent
     log::debug!("agent: {:?}", req.headers().get("user-agent"));
 
     if hyper_tungstenite::is_upgrade_request(&req) {
         log::info!("there is upgrade request");
-
         let (response, ws) = hyper_tungstenite::upgrade(&mut req, None)?;
-
         log::info!("websocket upgraded");
-
-        // let id = ctx.next_client_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         match req.uri().path() {
             "/ws" => {
@@ -81,23 +105,15 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
         "/app.js" => {
             log::debug!("using app.js");
 
-            let app_js = fs::read_to_string("./web/dist/app.js").await?;
-            let response = Response::builder()
-                .header("Content-Type", "application/javascript")
-                .body(Body::from(app_js))?;
-            Ok(response)
+            Ok(serve_static_file!("../web/dist/app.js"))
         },
         "/index.css" => {
             log::debug!("using index.css");
-
-            let index_css = fs::read_to_string("./web/index.css").await?;
-            Ok(Response::new(Body::from(index_css)))
+            Ok(serve_static_file!("../web/index.css"))
         },
         _ => {
             log::debug!("using index.html");
-
-            let index_html = fs::read_to_string("./web/index.html").await?;
-            Ok(Response::new(Body::from(index_html)))
+            Ok(serve_static_file!("../web/index.html"))
         }
     }
 }
