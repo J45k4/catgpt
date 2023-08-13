@@ -38,17 +38,17 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         user: "Random".to_string()
     };
     
-    ctx.ch.send(Event::NewMsg { msg: new_msg.clone() });
+    ctx.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
 
     for _ in 0..number_of_words {
         let word = pick_random_item(&words).unwrap();
 
-        new_msg.message.push_str(&format!("{} ", word.to_string()));
+        new_msg.message.push_str(&format!("{} ", word));
 
         let e = Event::MsgDelta(
             MsgDelta {
                 chat_id: chat_id.clone(),
-                delta: format!("{} ", word.to_string()),
+                delta: format!("{} ", word),
                 msg_id: msg_id.clone(),
             }
         );

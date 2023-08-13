@@ -1,8 +1,8 @@
-use std::sync::Arc;
+
 
 use chrono::DateTime;
 use chrono::Utc;
-use tokio::sync::RwLock;
+
 use tokio::sync::broadcast;
 
 use crate::database::Database;
@@ -61,10 +61,6 @@ pub enum MsgToSrv {
         chat_id: String,
         msg_id: String
     },
-}
-
-pub struct ChatMetadata {
-
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -252,8 +248,8 @@ impl Context {
         let (ch, _) = broadcast::channel::<Event>(100);
 
         Self { 
-            openai: openai,
-            ch: ch,
+            openai,
+            ch,
             db: Database::new()
         }
     }

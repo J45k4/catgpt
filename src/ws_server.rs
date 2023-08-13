@@ -32,8 +32,8 @@ pub struct WsServer {
 impl WsServer {
     pub fn new(ws: WebSocketStream<hyper::upgrade::Upgraded>, ctx: Context) -> WsServer {
         WsServer { 
-            ws: ws,
-            ctx: ctx 
+            ws,
+            ctx 
         }
     }
 
@@ -68,7 +68,7 @@ impl WsServer {
                         };
                         self.ctx.db.add_chat(new_chat.clone()).await;
                         self.send_msg(MsgToCli::ChatCreated { chat: new_chat.clone() }).await;
-                        self.ctx.ch.send(Event::NewChat { chat: new_chat });
+                        self.ctx.ch.send(Event::NewChat { chat: new_chat }).unwrap();
                         id
                     }
                 };
@@ -84,38 +84,6 @@ impl WsServer {
 
                 self.ctx.db.save_msg(chatmsg.clone()).await;
 
-                // if chat_found {
-                //     self.ctx.db.add_msg(&msg.chat_id.unwrap(), chatmsg.clone()).await;
-                // } else {
-                //     let new_chat = Chat {
-                //         id: msg.chat_id.unwrap(),
-                //         messages: vec![chatmsg.clone()],
-                //     };
-                //     self.ctx.db.add_chat(new_chat.clone()).await;
-
-                //     let msg = MsgToCli::Chat(new_chat);
-                //     self.send_msg(msg).await;
-                // }
-
-                // let chat_id = match chat_id {
-                //     Some(chat_id) => {
-                //         self.ctx.db.add_msg(&chat_id, chatmsg.clone()).await;
-                //         chat_id
-                //     },
-                //     None => {
-                //         let chat_id = Uuid::new_v4().to_string();
-                //         let new_chat = Chat {
-                //             id: chat_id.clone(),
-                //             messages: vec![chatmsg.clone()],
-                //         };
-                //         self.ctx.db.add_chat(new_chat.clone()).await;
-
-                //         let msg = MsgToCli::Chat(new_chat);
-                //         self.send_msg(msg).await;
-                //         chat_id 
-                //     }
-                // };
-
                 match msg.model.as_str() {
                     MODEL_RANDOM => {
                         tokio::spawn(create_random_resp(self.ctx.clone(), chat_id));
@@ -125,9 +93,9 @@ impl WsServer {
                         let openai = self.ctx.openai.clone();
                         tokio::spawn(async move {
                             let req = CreateOpenaiReq {
-                                model: model,
+                                model,
                                 ins: msg.instructions,
-                                chat_id: chat_id,
+                                chat_id,
                             };
                             openai.create_openai_resp(req).await;
                         });
@@ -155,7 +123,7 @@ impl WsServer {
 
                 self.ctx.db.add_chat(chat.clone()).await;
 
-                self.send_msg(MsgToCli::ChatCreated { chat: chat }).await;
+                self.send_msg(MsgToCli::ChatCreated { chat }).await;
             }
             MsgToSrv::GetChat { chat_id } => {
                 log::debug!("{:?}", chat_id);
@@ -166,7 +134,7 @@ impl WsServer {
                     let msg = MsgToCli::Chat(chat.clone());
                     let msg = to_string(&msg).unwrap();
                     let msg = Message::text(msg);
-                    self.ws.send(msg).await;
+                    self.ws.send(msg).await.unwrap();
                 }
             },
             MsgToSrv::SavePersonality { id, txt } => {
@@ -184,8 +152,8 @@ impl WsServer {
                             },
                             None => {
                                 let new_personality = Personality {
-                                    id: id,
-                                    txt: txt
+                                    id,
+                                    txt
                                 };
 
                                 self.ctx.db.save_personality(new_personality.clone()).await;
@@ -196,7 +164,7 @@ impl WsServer {
                     None => {
                         let new_personality = Personality {
                             id: Uuid::new_v4().to_string(),
-                            txt: txt
+                            txt
                         };
 
                         self.ctx.db.save_personality(new_personality.clone()).await;
@@ -205,7 +173,7 @@ impl WsServer {
                 };
 
                 let msg = MsgToCli::NewPersonality(NewPersonality {
-                    personality: personality
+                    personality
                 });
                 self.send_msg(msg).await;
             },
@@ -214,7 +182,7 @@ impl WsServer {
 
                 let personalities = self.ctx.db.get_personalities().await;
                 let msg = Personalities {
-                    personalities: personalities
+                    personalities
                 };
                 let msg = MsgToCli::Personalities(msg);
                 self.send_msg(msg).await;
@@ -222,12 +190,12 @@ impl WsServer {
             MsgToSrv::DelPersonality { id } => {
                 log::debug!("del personality {}", id);
                 self.ctx.db.del_personality(&id).await;
-                self.send_msg(MsgToCli::PersonalityDeleted { id: id }).await;
+                self.send_msg(MsgToCli::PersonalityDeleted { id }).await;
             },
             MsgToSrv::DelMsg { chat_id, msg_id } => {
                 log::debug!("del msg {} from chat {}", msg_id, chat_id);
                 self.ctx.db.del_msg(&chat_id, &msg_id).await;
-                self.send_msg(MsgToCli::MsgDeleted { chat_id: chat_id, msg_id: msg_id }).await;
+                self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
             }
         }
     }
@@ -236,7 +204,7 @@ impl WsServer {
         let msg = to_string(&msg).unwrap();
         log::debug!("send to client: {}", msg);
         let msg = Message::text(msg);
-        self.ws.send(msg).await;
+        self.ws.send(msg).await.unwrap();
     }
 
     async fn handle_event(&mut self, event: Event) {
@@ -246,11 +214,11 @@ impl WsServer {
                 self.send_msg(msg).await;
             },
             Event::NewMsg { msg } => {
-                let msg = MsgToCli::NewMsg { msg: msg };
+                let msg = MsgToCli::NewMsg { msg };
                 self.send_msg(msg).await;
             },
             Event::NewChat { chat } => {
-                let msg = MsgToCli::NewChat { chat: chat };
+                let msg = MsgToCli::NewChat { chat };
                 self.send_msg(msg).await;
             }
         }
@@ -300,8 +268,4 @@ impl WsServer {
             }
         }
     }
-}
-
-async fn handle_ws_msg(msg: String) {
-
 }

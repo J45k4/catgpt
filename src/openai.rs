@@ -10,8 +10,10 @@ use crate::database::Database;
 use crate::sse::SSEvent;
 use crate::sse::parse_events;
 use crate::types::ChatMsg;
-use crate::types::Context;
+
 use crate::types::Event;
+use crate::types::MODEL_GPT_3_5;
+use crate::types::MODEL_GPT_4;
 use crate::types::MsgDelta;
 use crate::types::OpenaiChatMessage;
 use crate::types::OpenaiChatReq;
@@ -25,7 +27,7 @@ pub struct OpenaiChatStreamRes {
 impl OpenaiChatStreamRes {
     pub fn new(rx: mpsc::Receiver<OpenaiStreamResMsg>) -> OpenaiChatStreamRes {
         Self {
-            rx: rx
+            rx
         }
     }
 
@@ -111,7 +113,7 @@ impl Openai {
                 };
                 let chunk = match String::from_utf8(chunk.to_vec()) {
                     Ok(utf8_string) => utf8_string,
-                    Err(error) => break,
+                    Err(_error) => break,
                 };
     
                 let events = parse_events(&chunk);
@@ -138,11 +140,11 @@ impl Openai {
             }
         });
     
-        OpenaiChatStreamRes{ rx: rx }
+        OpenaiChatStreamRes{ rx }
     }
 
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
-        let model = match &req.model {
+        let model = match req.model.as_str() {
             MODEL_GPT_3_5 => "gpt-3.5-turbo",
             MODEL_GPT_4 => "gpt-4",
             _ => todo!("model not supported")
@@ -159,7 +161,7 @@ impl Openai {
         let req = {
             let chat = self.db.get_chat(&req.chat_id).await.unwrap();
     
-            for msg in chat.messages.iter().into_iter().rev() {
+            for msg in chat.messages.iter().rev() {
                 let len = msg.message.len();
     
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
@@ -170,7 +172,7 @@ impl Openai {
         
                     openai_chat_req.messages.push(
                         OpenaiChatMessage {
-                            role: role,
+                            role,
                             content: msg.message[diff..].to_string()
                         }
                     );
@@ -180,7 +182,7 @@ impl Openai {
         
                 openai_chat_req.messages.push(
                     OpenaiChatMessage { 
-                        role: role, 
+                        role, 
                         content: msg.message.to_string() 
                     }
                 );
@@ -215,7 +217,7 @@ impl Openai {
             user: model.to_string()
         };
         
-        self.ch.send(Event::NewMsg { msg: new_msg.clone() });
+        self.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
 
         while let Some(r) = stream.next().await {
             log::debug!("{:?}", r);
@@ -232,7 +234,7 @@ impl Openai {
                     }
                 );
     
-                self.ch.send(event);
+                self.ch.send(event).unwrap();
             }
         }
 

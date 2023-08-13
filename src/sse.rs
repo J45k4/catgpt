@@ -8,7 +8,7 @@ pub enum SSEvent {
 pub fn parse_events(str: &str) -> Vec<SSEvent>  {
     let mut res = vec![];
 
-    for row in str.split("\n").map(|p| p.trim()).filter(|p| !p.is_empty()) {
+    for row in str.split('\n').map(|p| p.trim()).filter(|p| !p.is_empty()) {
         if row.starts_with("data:") {
             let data = &row[6..];
 

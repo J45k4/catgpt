@@ -25,7 +25,7 @@ use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
 use crate::config::Config;
 use crate::database::Database;
-use crate::openai::Openai;
+
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
 use crate::ws_server::WsServer;
@@ -104,7 +104,7 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let builder = env_logger::Builder::new()
+    env_logger::Builder::new()
         .filter_level(log::LevelFilter::Debug)
         .init();
 
@@ -119,14 +119,14 @@ async fn main() -> anyhow::Result<()> {
 
     let openai = OpenaiBuilder {
         ch: ch.clone(),
-        client: client,
+        client,
         db: db.clone(),
         token: config.openai_apikey.clone(),
     }.build();
 
     let ctx = Context {
-        ch: ch,
-        db: db,
+        ch,
+        db,
         openai: openai.clone()
     };
 
@@ -156,7 +156,7 @@ async fn main() -> anyhow::Result<()> {
                 let first_choice = &msg.choices[0];
                 if let Some(content) = &first_choice.delta.content {
                     handle.write_all(content.as_bytes())?;
-                    handle.flush();
+                    handle.flush().unwrap();
                 }
             }
         },
