@@ -74,7 +74,7 @@ impl WsServer {
                 };
 
                 let chatmsg = ChatMsg {
-                    id: msg.msg_cli_id,
+                    id: Uuid::new_v4().to_string(),
                     chat_id: chat_id.clone(),
                     message: msg.txt,
                     bot: false,

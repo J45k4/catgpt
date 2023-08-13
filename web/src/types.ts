@@ -96,7 +96,7 @@ export type MsgFromSrv = MsgDelta |
 export type SendMsg = {
     type: "SendMsg"
     chatId: string
-    msgCliId: string
+    // msgCliId: string
     txt: string
     model: string
     instructions?: string

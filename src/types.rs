@@ -13,7 +13,6 @@ use crate::openai::Openai;
 #[serde(rename_all = "camelCase")]
 pub struct SendMsg {
     pub chat_id: Option<String>,
-    pub msg_cli_id: String, 
     pub model: String,
     pub instructions: Option<String>,
     pub txt: String

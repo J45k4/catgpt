@@ -1,4 +1,3 @@
-import { v4 } from "uuid"
 import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
 
 const createWs = (args: {
@@ -333,6 +332,7 @@ enum Model {
 window.onload = () => {
     let currentChatId = null
     let currentPersonalityId = null
+    let clientMsgId = 1
 
     const connectionStatus = document.getElementById("connectionStatus")
     const personalityTxt = document.getElementById("instructionText") as HTMLTextAreaElement
@@ -341,7 +341,7 @@ window.onload = () => {
     let currentModel =  Model.random
     modelSelect.value = currentModel
 
-    modelSelect.onchange = e => {
+    modelSelect.onchange = (e: any) => {
         currentModel = e.target.value
         console.log("currentMode", currentModel)
         updateQueryParam("model", currentModel)
@@ -508,10 +508,8 @@ window.onload = () => {
         const msg = newMessageInput.value
         console.log("send message ", msg)
 
-        const msgClientId = v4()
-
         messages.addMessage({
-            id: msgClientId,
+            id: String(clientMsgId++),
             chatId: currentChatId,
             user: "User",
             bot: false,
@@ -524,7 +522,6 @@ window.onload = () => {
         ws.sendMsg({
             type: "SendMsg",
             chatId: currentChatId,
-            msgCliId: msgClientId,
             model: currentModel,
             txt: msg,
             instructions: personalityTxt.value
