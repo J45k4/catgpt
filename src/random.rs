@@ -22,7 +22,7 @@ fn pick_random_item<T>(items: &[T]) -> Option<&T> {
 
 
 pub async fn create_random_resp(ctx: Context, chat_id: String) {
-    let vocabulary = fs::read_to_string("./vocabulary.txt").await.unwrap();
+    let vocabulary = include_str!("../vocabulary.txt");
     let words = vocabulary.lines().collect::<Vec<_>>();
 
     let number_of_words = 50;
