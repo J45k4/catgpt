@@ -5,3 +5,4 @@ workdir
 /target
 .DS_Store
 server.sh
+models

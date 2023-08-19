@@ -1,8 +1,10 @@
 
 use std::convert::Infallible;
+use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::net::SocketAddr;
+use std::time::Instant;
 
 use anyhow::bail;
 use args::Args;
@@ -20,6 +22,9 @@ use tokio::sync::broadcast;
 use types::Context;
 use types::OpenaiChatMessage;
 use types::OpenaiChatReq;
+use whisper_rs::FullParams;
+use whisper_rs::SamplingStrategy;
+use whisper_rs::WhisperContext;
 
 use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
@@ -28,6 +33,7 @@ use crate::database::Database;
 use crate::openai::Openai;
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
+use crate::wisper::transcribe_file;
 use crate::ws_server::WsServer;
 
 
@@ -39,6 +45,7 @@ mod random;
 mod openai;
 mod config;
 mod database;
+mod wisper;
 
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     // Use the connection pool here
@@ -202,6 +209,9 @@ async fn main() -> anyhow::Result<()> {
                     }
                 },
             }
+        },
+        Commands::Transcribe { input, output } => {
+            transcribe_file(input, output);
         }
     }
 

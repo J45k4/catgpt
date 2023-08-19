@@ -17,7 +17,11 @@ pub enum Commands {
     Ask(AskArgs),
     #[clap(name = "server")]
     Server,
-    Config(ConfigArgs)
+    Config(ConfigArgs),
+    Transcribe {
+        input: String,
+        output: String
+    }
 }
 
 #[derive(Debug, Parser)]
