@@ -1,10 +1,8 @@
 
 use std::convert::Infallible;
-use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::net::SocketAddr;
-use std::time::Instant;
 use std::path::Path;
 
 use anyhow::bail;
@@ -22,9 +20,6 @@ use tokio::sync::broadcast;
 use types::Context;
 use types::OpenaiChatMessage;
 use types::OpenaiChatReq;
-use whisper_rs::FullParams;
-use whisper_rs::SamplingStrategy;
-use whisper_rs::WhisperContext;
 
 use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
