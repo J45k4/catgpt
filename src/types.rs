@@ -1,8 +1,8 @@
-use std::sync::Arc;
+
 
 use chrono::DateTime;
 use chrono::Utc;
-use tokio::sync::RwLock;
+
 use tokio::sync::broadcast;
 
 use crate::database::Database;
@@ -13,7 +13,6 @@ use crate::openai::Openai;
 #[serde(rename_all = "camelCase")]
 pub struct SendMsg {
     pub chat_id: Option<String>,
-    pub msg_cli_id: String, 
     pub model: String,
     pub instructions: Option<String>,
     pub txt: String
@@ -22,9 +21,9 @@ pub struct SendMsg {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MsgDelta {
+    pub chat_id: String,
     pub msg_id: String,
-    pub author: String,
-    pub delta: String
+    pub delta: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -47,11 +46,21 @@ pub enum MsgToSrv {
     #[serde(rename_all = "camelCase")]
     GetChat {
         chat_id: String
-    }
-}
-
-pub struct ChatMetadata {
-
+    },
+    #[serde(rename_all = "camelCase")]
+    SavePersonality {
+        id: Option<String>,
+        txt: String
+    },
+    GetPersonalities,
+    DelPersonality {
+        id: String
+    },
+    #[serde(rename_all = "camelCase")]
+    DelMsg {
+        chat_id: String,
+        msg_id: String
+    },
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -59,17 +68,63 @@ pub struct ChatIds {
     pub ids: Vec<String>
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct Personality {
+    pub id: String,
+    pub txt: String
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Personalities {
+    pub personalities: Vec<Personality>
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct NewPersonality {
+    pub personality: Personality
+}
+
+// #[derive(Debug, serde::Serialize, serde::Deserialize)]
+// pub struct PersonalityDeleted {
+//     pub id: String
+// }
+
 #[derive(serde::Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToCli {
     MsgDelta(MsgDelta),
     ChatIds(ChatIds),
-    Chat(Chat)
+    Chat(Chat),
+    Personalities(Personalities),
+    NewPersonality(NewPersonality),
+    PersonalityDeleted {
+        id: String
+    },
+    ChatCreated {
+        chat: Chat
+    },
+    NewMsg {
+        msg: ChatMsg
+    },
+    NewChat {
+        chat: Chat
+    },
+    #[serde(rename_all = "camelCase")]
+    MsgDeleted {
+        chat_id: String,
+        msg_id: String
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    MsgDelta(MsgDelta)
+    MsgDelta(MsgDelta),
+    NewMsg {
+        msg: ChatMsg
+    },
+    NewChat {
+        chat: Chat
+    },
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -152,8 +207,10 @@ pub struct OpenaiStreamResMsg {
 }
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ChatMsg {
     pub id: String,
+    pub chat_id: String,
     pub message: String,
     pub user: String,
     pub datetime: DateTime<Utc>,
@@ -191,8 +248,8 @@ impl Context {
         let (ch, _) = broadcast::channel::<Event>(100);
 
         Self { 
-            openai: openai,
-            ch: ch,
+            openai,
+            ch,
             db: Database::new()
         }
     }

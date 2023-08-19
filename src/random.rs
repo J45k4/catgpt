@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use chrono::Utc;
 use rand::seq::SliceRandom;
-use tokio::fs;
 use tokio::time::sleep;
 use uuid::Uuid;
 
@@ -22,32 +21,33 @@ fn pick_random_item<T>(items: &[T]) -> Option<&T> {
 
 
 pub async fn create_random_resp(ctx: Context, chat_id: String) {
-    let vocabulary = fs::read_to_string("./vocabulary.txt").await.unwrap();
+    let vocabulary = include_str!("../vocabulary.txt");
     let words = vocabulary.lines().collect::<Vec<_>>();
 
     let number_of_words = 50;
 
-    // let mut sequence = Vec::with_capacity(number_of_words);
+    let msg_id = Uuid::new_v4().to_string();
 
-    let msg_id = uuid::Uuid::new_v4().to_string().replace("-", "");
-
-    let mut msg = ChatMsg {
-        bot: true,
-        user: "Random".to_string(),
+    let mut new_msg = ChatMsg {
+        id: msg_id.clone(),
+        chat_id: chat_id.clone(),
         datetime: Utc::now(),
-        id: Uuid::new_v4().to_string(),
-        ..Default::default()
+        message: "".to_string(),
+        bot: true,
+        user: "Random".to_string()
     };
+    
+    ctx.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
 
     for _ in 0..number_of_words {
         let word = pick_random_item(&words).unwrap();
 
-        msg.message.push_str(&format!("{} ", word.to_string()));
+        new_msg.message.push_str(&format!("{} ", word));
 
         let e = Event::MsgDelta(
             MsgDelta {
-                author: "Random".to_string(),
-                delta: format!("{} ", word.to_string()),
+                chat_id: chat_id.clone(),
+                delta: format!("{} ", word),
                 msg_id: msg_id.clone(),
             }
         );
@@ -62,5 +62,5 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         sleep(Duration::from_millis(20)).await;
     }
 
-    ctx.db.add_msg(&chat_id, msg).await;
+    ctx.db.save_msg(new_msg).await;
 }

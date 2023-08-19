@@ -5,6 +5,7 @@ use std::io;
 use std::io::Write;
 use std::net::SocketAddr;
 use std::time::Instant;
+use std::path::Path;
 
 use anyhow::bail;
 use args::Args;
@@ -17,7 +18,6 @@ use hyper::Server;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
 use reqwest::Client;
-use tokio::fs;
 use tokio::sync::broadcast;
 use types::Context;
 use types::OpenaiChatMessage;
@@ -30,7 +30,7 @@ use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
 use crate::config::Config;
 use crate::database::Database;
-use crate::openai::Openai;
+
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
 use crate::wisper::transcribe_file;
@@ -47,19 +47,46 @@ mod config;
 mod database;
 mod wisper;
 
-pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
-    // Use the connection pool here
+macro_rules! serve_static_file {
+    ($path:expr) => {{
+        let body = match std::option_env!("STATIC_ASSETS") {
+            Some(_) => {
+                log::debug!("Using included asset");
+                Body::from(include_str!($path))
+            },
+            None => {
+                log::debug!("Using file asset");
+                let path = Path::new("./src").join($path);
+                Body::from(tokio::fs::read_to_string(path).await?)
+            }
+        };
 
+        if $path.ends_with(".js") {
+            Response::builder()
+                .header("Content-Type", "application/javascript")
+                .body(body)?
+        } else if $path.ends_with(".css") {
+            Response::builder()
+                .header("Content-Type", "text/css")
+                .body(body)?
+        } else if $path.ends_with(".html") {
+            Response::builder()
+                .header("Content-Type", "text/html")
+                .body(body)?
+        } else {
+            Response::new(body)
+        }
+    }};
+}
+
+pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     log::info!("handle_request {}", req.uri());
+    log::debug!("agent: {:?}", req.headers().get("user-agent"));
 
     if hyper_tungstenite::is_upgrade_request(&req) {
         log::info!("there is upgrade request");
-
         let (response, ws) = hyper_tungstenite::upgrade(&mut req, None)?;
-
         log::info!("websocket upgraded");
-
-        // let id = ctx.next_client_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         match req.uri().path() {
             "/ws" => {
@@ -84,27 +111,22 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
         "/app.js" => {
             log::debug!("using app.js");
 
-            let app_js = fs::read_to_string("./web/dist/app.js").await?;
-            Ok(Response::new(Body::from(app_js)))
+            Ok(serve_static_file!("../web/dist/app.js"))
         },
         "/index.css" => {
             log::debug!("using index.css");
-
-            let index_css = fs::read_to_string("./web/index.css").await?;
-            Ok(Response::new(Body::from(index_css)))
+            Ok(serve_static_file!("../web/index.css"))
         },
         _ => {
             log::debug!("using index.html");
-
-            let index_html = fs::read_to_string("./web/index.html").await?;
-            Ok(Response::new(Body::from(index_html)))
+            Ok(serve_static_file!("../web/index.html"))
         }
     }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let builder = env_logger::Builder::new()
+    env_logger::Builder::new()
         .filter_level(log::LevelFilter::Debug)
         .init();
 
@@ -119,14 +141,14 @@ async fn main() -> anyhow::Result<()> {
 
     let openai = OpenaiBuilder {
         ch: ch.clone(),
-        client: client,
+        client,
         db: db.clone(),
         token: config.openai_apikey.clone(),
     }.build();
 
     let ctx = Context {
-        ch: ch,
-        db: db,
+        ch,
+        db,
         openai: openai.clone()
     };
 
@@ -156,7 +178,7 @@ async fn main() -> anyhow::Result<()> {
                 let first_choice = &msg.choices[0];
                 if let Some(content) = &first_choice.delta.content {
                     handle.write_all(content.as_bytes())?;
-                    handle.flush();
+                    handle.flush().unwrap();
                 }
             }
         },
@@ -183,7 +205,7 @@ async fn main() -> anyhow::Result<()> {
         
             println!("listen port: 5566");
         
-            let addr = SocketAddr::from(([127, 0, 0, 1], 5566));
+            let addr = SocketAddr::from(([0, 0, 0, 0], 5566));
             Server::bind(&addr).serve(make_scv).await?;       
         },
         Commands::Config(args) => {

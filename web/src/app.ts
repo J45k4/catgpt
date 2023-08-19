@@ -1,76 +1,4 @@
-import { v4 } from "uuid"
-
-type MsgDelta = {
-    type: "MsgDelta"
-    msgId: string
-    delta: string
-    index:  number
-    author: string
-}
-
-type StartWriting = {
-    type: string
-}
-
-type FinishWrite = {
-    type: string
-}
-
-type ChatMsg = {
-    id: string,
-    message: string,
-    user: string,
-    datetime: string,
-    bot: boolean
-}
-
-type Chat = {
-    type: "Chat"
-    id: string
-    title: String
-    messages: ChatMsg[]
-}
-
-type Chats = {
-    type: "Chats"
-    chats: Chat[]
-}
-
-type ChatIds = {
-    type: "ChatIds"
-    ids: string[]
-}
-
-type MsgFromSrv = MsgDelta | Chats | ChatIds | Chat
-
-type SendMsg = {
-    type: "SendMsg"
-    chatId: string
-    msgCliId: string
-    txt: string
-    model: string
-    instructions?: string
-}
-
-type StopGen = {
-    type: "StopGen"
-}
-
-type GetChats = {
-    type: "GetChats"
-}
-
-type CreateChat = {
-    type: "CreateChat"
-    chatId: string
-}
-
-type GetChat = {
-    type: "GetChat"
-    chatId: string
-}
-
-type MsgToSrv = SendMsg | StopGen | GetChats | CreateChat | GetChat
+import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
 
 const createWs = (args: {
     onOpen: () => void
@@ -80,7 +8,10 @@ const createWs = (args: {
     let ws
 
     const createConn = () => {
-        ws = new WebSocket("ws://localhost:5566/ws")
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+        const host = window.location.host
+        const url = `${protocol}://${host}/ws`
+        ws = new WebSocket(url)
 
         ws.onopen = () => {
             console.log("onopen")
@@ -91,14 +22,14 @@ const createWs = (args: {
             args.onClose()
             setTimeout(createConn, 1000)
         }
+
+        ws.onmessage = data => {
+            const msg = JSON.parse(data.data)
+            args.onMsg(msg)
+        }
     }
 
     createConn()
-
-    ws.onmessage = data => {
-        const msg = JSON.parse(data.data)
-        args.onMsg(msg)
-    }
 
     return {
         sendMsg: (msg: MsgToSrv) => {
@@ -127,6 +58,7 @@ const getQueryParam = (param: string) => {
 
 class OtherChats {
     private root: HTMLDivElement
+    private activateChatId: string
     private onChatClicked: (chatId: string) => void
     
     constructor(args: {
@@ -161,19 +93,110 @@ class OtherChats {
 
         this.root.appendChild(div)
     }
+
+    public setActive(chatId: string) {
+        if (this.activateChatId) {
+            this.removeActive()
+        }
+
+        this.activateChatId = chatId
+        const div = document.getElementById("chat_" + chatId)
+        div.style.border = "1px solid blue"
+    }
+
+    public removeActive() {
+        if (this.activateChatId) {
+            const div = document.getElementById("chat_" + this.activateChatId)
+            div.style.border = "none"
+        }
+    }
+
+    public hide() {
+        this.root.style.display = "none"
+    }
+
+    public isHidden() {
+        return this.root.style.display === "none"
+    }
+
+    public show() {
+        this.root.style.display = "block"
+    }
+}
+
+enum ParsingState {
+    Normal,
+    ExpectLanguage,
+    CodeBlock
 }
 
 const formatMsgText = (text: string) => {
-    return text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;")
+    let formattedText = ""
+    let whiteSpaceSize = 0
+    let backtickCount = 0
+    let state = ParsingState.Normal
+    let language = ""
+    for (const char of text) {
+        if (char === "`") {
+            backtickCount += 1
+
+            if (backtickCount === 3) {
+                if (state === ParsingState.Normal) {
+                    formattedText += `<div class="codeBlock"><pre style="overflow: auto;">`
+                    state = ParsingState.ExpectLanguage
+                }
+    
+                if (state === ParsingState.CodeBlock) {
+                    formattedText += "</pre></div>"
+                }
+            }
+            continue
+        } else {
+            backtickCount = 0
+        }  
+
+        if (char === "\n") {
+            if (state === ParsingState.ExpectLanguage) {
+                state = ParsingState.CodeBlock
+            }
+
+            formattedText += "<br>"
+            continue
+        }
+
+        // if (char === " ") {
+        //     whiteSpaceSize += 1
+        //     continue
+        // }
+
+        // if (whiteSpaceSize > 1) {
+        //     formattedText += `<span style="margin-left: ${whiteSpaceSize * 2}px"></span>`
+        //     whiteSpaceSize = 0
+        // } else if (whiteSpaceSize === 1) {
+        //     formattedText += " "
+        //     whiteSpaceSize = 0
+        // }
+
+        if (state === ParsingState.ExpectLanguage) {
+            language += char
+            continue
+        }
+
+        formattedText += char
+    }
+    return formattedText
 }
 
 class ChatMessages {
     private root: HTMLDivElement
-    
+    private onDeleteMessage: (msgId: string) => void
+
     constructor(args: {
         root: HTMLDivElement
+        onDeleteMessage: (msgId: string) => void
     }) {
         this.root = args.root
+        this.onDeleteMessage = args.onDeleteMessage
     }
 
     public setChat(chat: Chat) {
@@ -191,11 +214,34 @@ class ChatMessages {
         div.style.marginRight = "5px"
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
+        div.style.padding = "3px"
+        div.style.backgroundColor = msg.bot ? "#e6e6e6" : "white"
     
         const headerDiv = document.createElement("div")
-        headerDiv.innerHTML = msg.user
-        headerDiv.style.fontSize = "20px"
-        headerDiv.style.fontWeight = "2px"
+        headerDiv.style.display = "flex"
+        headerDiv.style.flexDirection = "row"
+    
+        const userDiv = document.createElement("div")
+        userDiv.innerHTML = msg.user
+        userDiv.style.fontWeight = "bold"
+        userDiv.style.fontSize = "20px"
+        userDiv.style.fontWeight = "2px"
+        userDiv.style.flexGrow = "1"
+        headerDiv.appendChild(userDiv)
+
+        const btnDiv = document.createElement("div")
+        headerDiv.appendChild(btnDiv)
+
+        const deleteBtn = document.createElement("button")
+        deleteBtn.innerHTML = "Delete"
+        deleteBtn.onclick = () => {
+            this.onDeleteMessage(msg.id)
+        }
+        btnDiv.appendChild(deleteBtn)
+
+        // headerDiv.innerHTML = msg.user
+        // headerDiv.style.fontSize = "20px"
+        // headerDiv.style.fontWeight = "2px"
     
         const bodyDiv = document.createElement("div")
         bodyDiv.innerHTML = formatMsgText(msg.message)
@@ -207,30 +253,73 @@ class ChatMessages {
         this.root.appendChild(div)
     }
 
+    public del_msg(msgId: string) {
+        const div = document.getElementById(msgId)
+        div.remove()
+    }
+
     public add_delta(msgDelta: MsgDelta) {
         const existingChatMessage = document.getElementById(msgDelta.msgId)
 
-        if (existingChatMessage) {
-            const textComponent = existingChatMessage.children[1]
-
-            textComponent.innerHTML += formatMsgText(msgDelta.delta)
-
+        if (!existingChatMessage) {
             return
         }
 
-        console.log("create new chatMsg", msgDelta)
+        const textComponent = existingChatMessage.children[1]
 
-        this.addMessage({
-            id: msgDelta.msgId,
-            user: msgDelta.author,
-            bot: true,
-            message: msgDelta.delta,
-            datetime: new Date().toISOString()
-        })
+        textComponent.innerHTML += formatMsgText(msgDelta.delta) 
     }
 
     public clear() {
         this.root.innerHTML = ""
+    }
+}
+
+class PersonalitiesContainer {
+    private root: HTMLDivElement
+    private onPersonalityClicked: (personality: Personality) => void
+    
+    constructor(args: {
+        root: HTMLDivElement
+        onPersonalityClicked: (personality: Personality) => void
+    }) {
+        this.root = args.root
+        this.onPersonalityClicked = args.onPersonalityClicked
+    }
+
+    public setPersonalities(personalities: Personality[]) {
+        this.root.innerHTML = ""
+
+        for (const personality of personalities) {
+            this.addPersonality(personality)
+        }
+    }
+
+    public addPersonality(personality: Personality) {
+        const existingPersonality = document.getElementById(personality.id)
+
+        if (existingPersonality) {
+            existingPersonality.innerHTML = personality.txt
+            return
+        }
+
+        const div = document.createElement("div")
+        div.innerHTML = personality.txt
+        div.id = personality.id
+        div.style.marginTop = "10px"
+        div.style.marginBottom = "10px"
+        div.style.cursor = "pointer"
+        div.style.color = "blue"
+        div.onclick = () => {
+            this.onPersonalityClicked(personality)
+        }
+
+        this.root.appendChild(div)
+    }
+
+    public deletePersonality(personalityId: string) {
+        const div = document.getElementById(personalityId)
+        div.remove()
     }
 }
 
@@ -242,18 +331,25 @@ enum Model {
 
 window.onload = () => {
     let currentChatId = null
+    let currentPersonalityId = null
+    let clientMsgId = 1
 
     const connectionStatus = document.getElementById("connectionStatus")
-    const instructionTextrea = document.getElementById("instructionText") as HTMLTextAreaElement
+    const personalityTxt = document.getElementById("instructionText") as HTMLTextAreaElement
 
     const modelSelect = document.querySelector("#modelSelect") as HTMLSelectElement
     let currentModel =  Model.random
     modelSelect.value = currentModel
 
-    modelSelect.onchange = e => {
+    modelSelect.onchange = (e: any) => {
         currentModel = e.target.value
         console.log("currentMode", currentModel)
+        updateQueryParam("model", currentModel)
     }
+
+    const model = getQueryParam("model")
+    modelSelect.value = model || Model.random
+    currentModel = model as Model || Model.random
 
     const otherChats = new OtherChats({
         root: document.getElementById("otherChats") as HTMLDivElement,
@@ -267,21 +363,40 @@ window.onload = () => {
             })
 
             updateQueryParam("chatId", chatId)
+
+            otherChats.setActive(chatId)
         }
     })
 
     // const messagesBox = document.querySelector("#messagesBox")
 
     const messages = new ChatMessages({
-        root: document.getElementById("messagesBox") as HTMLDivElement
+        root: document.getElementById("messagesBox") as HTMLDivElement,
+        onDeleteMessage: msgId => {
+            ws.sendMsg({
+                type: "DelMsg",
+                chatId: currentChatId,
+                msgId
+            })
+        }
     })
 
-    const newChatBtn = document.getElementById("newChatButton")
+    const newChatBtn = document.getElementById("newChatBtn")
     newChatBtn.onclick = () => {
         currentChatId = ""
         messages.clear()
         clearQueryParam("chatId")
+        otherChats.removeActive()
     }
+
+    const personalitiesContainer = new PersonalitiesContainer({
+        root: document.getElementById("personalitiesContainer") as HTMLDivElement,
+        onPersonalityClicked: personality => {
+            console.log("personality clicked", personality)
+            personalityTxt.value = personality.txt
+            currentPersonalityId = personality.id
+        }
+    })
 
     let ws = createWs({
         onOpen: () => {
@@ -291,6 +406,10 @@ window.onload = () => {
             ws.sendMsg({
                 type: "GetChats"
             })
+
+            ws.sendMsg({
+                type: "GetPersonalities"
+            })
         },
         onClose: () => {
             connectionStatus.innerHTML = "Not connected"
@@ -298,6 +417,13 @@ window.onload = () => {
         },
         onMsg: msg => {
             if (msg.type === "MsgDelta") {
+                if (msg.chatId !== currentChatId) {
+                    console.debug("msgDelta for another chat")
+                    return
+                }
+
+                console.debug("msgDelta", msg)
+
                 messages.add_delta(msg)
             }
 
@@ -322,7 +448,50 @@ window.onload = () => {
                 otherChats.addPlaceholder(msg.id)
                 messages.setChat(msg)
                 currentChatId = msg.id
+                otherChats.setActive(msg.id)
                 updateQueryParam("chatId", msg.id)
+            }
+
+            if (msg.type === "Personalities") {
+                personalitiesContainer.setPersonalities(msg.personalities)
+            }
+
+            if (msg.type === "NewPersonality") {
+                personalitiesContainer.addPersonality(msg.personality)
+            }
+
+            if (msg.type === "PersonalityDeleted") {
+                personalitiesContainer.deletePersonality(msg.id)
+            }
+
+            if (msg.type === "NewMsg") {
+                console.log("newMsg", msg)
+                if (msg.msg.chatId !== currentChatId) {
+                    console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
+                    return
+                }
+
+                messages.addMessage(msg.msg)
+            }
+
+            if (msg.type === "ChatCreated") {
+                console.log("chatCreated", msg)
+                currentChatId = msg.chat.id
+                updateQueryParam("chatId", currentChatId)
+            }
+
+            if (msg.type === "NewChat") {
+                otherChats.addPlaceholder(msg.chat.id)
+            }
+
+            if (msg.type === "MsgDeleted") {
+                console.log("msgDeleted", msg)
+                if (msg.chatId !== currentChatId) {
+                    console.debug("msgDeleted for another chat")
+                    return
+                }
+
+                messages.del_msg(msg.msgId)
             }
         }
     })
@@ -332,31 +501,30 @@ window.onload = () => {
     console.log(body)
 
     const newMessageInput = document.getElementById("newMessageInput") as HTMLInputElement
+    newMessageInput.style.width = "100%"
     const sendButton = document.querySelector("#sendButton") as HTMLButtonElement
     
     const sendMessageAction = () => {
         const msg = newMessageInput.value
         console.log("send message ", msg)
 
-        const msgClientId = v4()
-
         messages.addMessage({
-            id: msgClientId,
+            id: String(clientMsgId++),
+            chatId: currentChatId,
             user: "User",
             bot: false,
             message: msg,
             datetime: new Date().toISOString()
         })
 
-        console.log("instructions", instructionTextrea.value)
+        console.log("instructions", personalityTxt.value)
 
         ws.sendMsg({
             type: "SendMsg",
             chatId: currentChatId,
-            msgCliId: msgClientId,
             model: currentModel,
             txt: msg,
-            instructions: instructionTextrea.value
+            instructions: personalityTxt.value
         })
 
         newMessageInput.value = ""
@@ -371,4 +539,44 @@ window.onload = () => {
             sendMessageAction()
         }
     }
+
+    const savePersonalityBtn = document.getElementById("savePersonalityBtn") as HTMLButtonElement
+    savePersonalityBtn.onclick = () => {
+        ws.sendMsg({
+            type: "SavePersonality",
+            id: currentPersonalityId,
+            txt: personalityTxt.value
+        })
+    }
+
+    const newPersonalityBtn = document.getElementById("newPersonalityBtn") as HTMLButtonElement
+    newPersonalityBtn.onclick = () => {
+        personalityTxt.value = ""
+    }
+
+    const deletePersonalityBtn = document.getElementById("deletePersonalityBtn") as HTMLButtonElement
+    deletePersonalityBtn.onclick = () => {
+        ws.sendMsg({
+            type: "DelPersonality",
+            id: currentPersonalityId
+        })
+        personalityTxt.value = ""
+    }
+
+    // window.onresize = () => {
+    //     const width = window.innerWidth
+    //     if (width < 650) {
+    //         if (!otherChats.isHidden()) {
+    //             otherChats.hide()
+    //         }
+    //     } else {
+    //         if (otherChats.isHidden()) {
+    //             otherChats.show()
+    //         }
+    //     }
+    // }
+
+    // if (window.innerWidth < 650) {
+    //     otherChats.hide()
+    // }
 }
