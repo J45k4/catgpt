@@ -40,6 +40,7 @@ use crate::database::Database;
 
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
+use crate::wisper::transcribe_file;
 use crate::ws_server::WsServer;
 
 
@@ -51,6 +52,7 @@ mod random;
 mod openai;
 mod config;
 mod database;
+mod wisper;
 
 macro_rules! serve_static_file {
     ($path:expr) => {{
@@ -314,6 +316,9 @@ async fn main() -> anyhow::Result<()> {
                     }
                 },
             }
+        },
+        Commands::Transcribe { input, output } => {
+            transcribe_file(input, output);
         }
     }
 
