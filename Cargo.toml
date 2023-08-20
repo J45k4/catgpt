@@ -22,3 +22,4 @@ chrono = { version = "0.4.26", features = ["serde"] }
 uuid = { version = "1.4", features = ["v4"] }
 rand = "0.8"
 dirs = "5.0.1"
+jsonwebtoken = "8.3.0"

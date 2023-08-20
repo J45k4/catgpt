@@ -10,12 +10,24 @@ use args::Args;
 use args::Commands;
 use clap::Parser;
 use hyper::Body;
+use hyper::HeaderMap;
 use hyper::Request;
 use hyper::Response;
 use hyper::Server;
+use hyper::http::HeaderValue;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
+use jsonwebtoken::Algorithm;
+use jsonwebtoken::DecodingKey;
+use jsonwebtoken::EncodingKey;
+use jsonwebtoken::Header;
+use jsonwebtoken::Validation;
+use jsonwebtoken::decode;
+use jsonwebtoken::encode;
+use jsonwebtoken::errors::ErrorKind;
 use reqwest::Client;
+use serde::Deserialize;
+use serde::Serialize;
 use tokio::sync::broadcast;
 use types::Context;
 use types::OpenaiChatMessage;
@@ -72,6 +84,80 @@ macro_rules! serve_static_file {
     }};
 }
 
+struct User {
+
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    sub: String,
+    company: String,
+    exp: usize,
+}
+
+async fn encode_token() {
+    let my_claims = Claims { 
+        sub: "b@b.com".to_owned(), 
+        company: "ACME".to_owned(), 
+        exp: 10000000000 
+    };
+    let key = b"secret";
+
+    let header = Header { 
+        kid: Some("signing_key".to_owned()), 
+        alg: Algorithm::HS512, 
+        ..Default::default() 
+    };
+
+    let token = match encode(&header, &my_claims, &EncodingKey::from_secret(key)) {
+        Ok(t) => t,
+        Err(_) => panic!(), // in practice you would return the error
+    };
+    println!("{:?}", token);
+}
+
+async fn decode_token(token: &str) {
+
+
+    let key = b"secret";
+    let token_data = match decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(key),
+        &Validation::new(Algorithm::HS512),
+    ) {
+        Ok(c) => c,
+        Err(err) => match *err.kind() {
+            ErrorKind::InvalidToken => panic!(), // Example on how to handle a specific error
+            _ => panic!(),
+        },
+    };
+}
+
+
+async fn validate_token(headers: &HeaderMap<HeaderValue>) -> Option<User> {
+    let authorization = headers.get("authorization");
+
+    match authorization {
+        Some(v) => {
+            let v = match v.to_str() {
+                Ok(v) => v,
+                Err(_) => return None,
+            };
+
+            let v = v.trim();
+
+            if v.starts_with("Bearer ") {
+                let token = v.trim_start_matches("Bearer ");
+
+                
+            }
+
+            Some(User {})
+        },
+        None => None,
+    }
+}
+
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     log::info!("handle_request {}", req.uri());
     log::debug!("agent: {:?}", req.headers().get("user-agent"));
@@ -109,6 +195,10 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
         "/index.css" => {
             log::debug!("using index.css");
             Ok(serve_static_file!("../web/index.css"))
+        },
+        "/login" => {
+            log::debug!("using login.html");
+            Ok(serve_static_file!("../web/login.html"))
         },
         _ => {
             log::debug!("using index.html");
@@ -196,7 +286,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             });
         
-            println!("listen port: 5566");
+            log::info!("listen port: 5566");
         
             let addr = SocketAddr::from(([0, 0, 0, 0], 5566));
             Server::bind(&addr).serve(make_scv).await?;       
