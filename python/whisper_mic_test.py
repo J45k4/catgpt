@@ -80,6 +80,7 @@ class WhisperMic:
         with self.source:
             self.recorder.adjust_for_ambient_noise(self.source)
 
+        subprocess.run(["say", "ready to listen"])
         self.recorder.listen_in_background(self.source, self.record_callback, phrase_time_limit=2)
         self.logger.info("Mic setup complete, you can now talk")
 
@@ -199,7 +200,6 @@ def speak():
 while True:
     mic = WhisperMic()
     result = mic.listen(timeout=6)
-    # result = "hello"
     print('You: {}'.format(result))
     messages.append({
         "role": "user",
