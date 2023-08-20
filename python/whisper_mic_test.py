@@ -13,6 +13,10 @@ import os
 import numpy as np
 from typing_extensions import Literal
 from rich.logging import RichHandler
+from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
+from datasets import load_dataset
+import soundfile as sf
+import threading
 
 def get_logger(name: str, level: Literal["info", "warning", "debug"]) -> logging.Logger:
     rich_handler = RichHandler(level=logging.INFO, rich_tracebacks=True, markup=True)
@@ -120,7 +124,7 @@ class WhisperMic:
         # else:
         #     result = self.audio_model.transcribe(audio_data)
 
-        result = self.audio_model.transcribe(audio_data,language='finnish')
+        result = self.audio_model.transcribe(audio_data,language='english')
 
         predicted_text = result["text"]
         if not self.verbose:
@@ -163,8 +167,34 @@ class WhisperMic:
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-messages = []
+processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
+model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
+vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
 
+system_msg = '''You are cat you speak like a cat. You randomly meow and purr.
+If you say number 1 say it as one. or like 25 say it as twenty five.  etc... This is very important!!'''
+
+messages = [{
+    "role": "system",
+    "content": system_msg
+}]
+
+def speak():
+    while True:
+        files = os.listdir(".")
+
+        speech_files = [f for f in files if f.startswith("speech")]
+        sorted_files = sorted(speech_files, key=lambda x: int(x.split("speech")[1].split(".wav")[0]))
+
+        if len(sorted_files) == 0:
+            break
+
+        while len(sorted_files) > 0:
+            file = sorted_files.pop(0)
+            subprocess.run(["afplay", file])
+            os.remove(file)
 
 while True:
     mic = WhisperMic()
@@ -177,11 +207,14 @@ while True:
     })
 
     if len(messages) > 4:
-        messages = messages[-4:]
+        messages = [{
+            "role": "system",
+            "content": system_msg
+        }] + messages[-4:]
 
     print("sending messages", messages)
 
-    subprocess.run(["say", "-v", "Satu", "ajattelen"])
+    subprocess.run(["say", "thingking"])
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages,
@@ -190,6 +223,9 @@ while True:
 
     # print(response)
     response_text = ""
+    sentence = ""
+    sentence_index = 1
+    player_thread = None
     print("GPT3: ", end="")
     for chunk in response:
         delta = chunk["choices"][0]["delta"]
@@ -199,11 +235,30 @@ while True:
             if content != "":
                 print(content, end="")
                 response_text += content
+                sentence += content
                 sys.stdout.flush()
 
-    print("start speaking")
-    subprocess.run(["say", "-v", "Satu", response_text])
-    print("done speaking")
+                if "." in content or "?" in content or "!" in content or ":" in content or ";" in content:
+                    inputs = processor(text='''{}'''.format(sentence), return_tensors="pt")      
+                    # embeddings_dataset = load_dataset("magnustragardh/speecht5_finetuned_voxpopuli_fi", split="validation")
+                    speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
+
+                    sf.write('speech{}.wav'.format(sentence_index), speech.numpy(), samplerate=16000)
+                    sentence_index += 1
+                    # subprocess.run(["say", sentence])
+                    # subprocess.run(["afplay", "speech.wav"])
+                    sentence = ""
+
+                    if player_thread is None or not player_thread.is_alive():
+                        player_thread = threading.Thread(target=speak)
+                        player_thread.start()
+                        
+                
+    player_thread.join()
+
+    # print("start speaking")
+    # subprocess.run(["say", response_text])
+    # print("done speaking")
 
     messages.append({
         "role": "assistant",
