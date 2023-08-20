@@ -317,8 +317,8 @@ async fn main() -> anyhow::Result<()> {
                 },
             }
         },
-        Commands::Transcribe { input, output } => {
-            transcribe_file(input, output);
+        Commands::Transcribe { model, input, output } => {
+            transcribe_file(model, input, output);
         }
     }
 

@@ -19,6 +19,8 @@ pub enum Commands {
     Server,
     Config(ConfigArgs),
     Transcribe {
+        #[clap(long)]
+        model: String,
         input: String,
         output: String
     }
