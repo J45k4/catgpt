@@ -18,6 +18,7 @@ conda install -c conda-forge datasets
 conda install -c anaconda chardet 
 conda install -c conda-forge cchardet
 conda install -c conda-forge pysoundfile
+conda install -c auto pyttsx 
 ```
 
 ## Web
