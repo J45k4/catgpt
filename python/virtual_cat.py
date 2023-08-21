@@ -125,6 +125,8 @@ class WhisperMic:
         # else:
         #     result = self.audio_model.transcribe(audio_data)
 
+        print(audio_data.shape)
+
         result = self.audio_model.transcribe(audio_data,language='english')
 
         predicted_text = result["text"]
