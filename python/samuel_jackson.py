@@ -28,10 +28,11 @@ CHUNK = 1600              # Number of frames per buffer
 
 stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-system_msg = '''You are samuel L jackson and you speak like him. He is know to swear a lot 
-but when you swear use family friendly words like moterpflipping and mother trucker.
+system_msg = '''You are samuel L jackson and you speak like him. He is know to swear a lot.
+you can also come up with your own family friendly swear words. You have anger
+management issues and sometimes you get angry for no reason.
 Also use his famous quotes a lot when you speak.
-Be brief with your responses!'''
+Be very brief with your responses!'''
 
 messages = [
     {
@@ -49,7 +50,7 @@ while True:
     text = last_text
     try:
         for _ in range(int(RATE / CHUNK * 1)):
-            data = stream.read(CHUNK)
+            data = stream.read(CHUNK, exception_on_overflow=False)
             #print(len(data))
             frame = torch.from_numpy(np.frombuffer(data, np.int16).flatten().astype(np.float32) / 32768.0)
             frames.append(frame)
