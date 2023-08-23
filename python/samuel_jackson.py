@@ -118,6 +118,11 @@ while True:
                     if "." in content or "?" in content or "!" in content or ":" in content or ";" in content:
                         subprocess.run(["say", sentence])
                         sentence = ""
+
+        messages.append({
+            "role": "assistant",
+            "content": response_text
+        })
                         
 
     # segents = result["segments"]
