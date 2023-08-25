@@ -4,12 +4,13 @@ use chrono::DateTime;
 use chrono::Utc;
 
 use tokio::sync::broadcast;
-
 use crate::database::Database;
 use crate::openai::Openai;
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct User {
-
+    pub username: String,
+    pub password: String
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -127,7 +128,8 @@ pub enum MsgToCli {
     Authenticated {
         token: String
     },
-    AuthError
+    AuthError,
+    AuthTokenInvalid
 }
 
 #[derive(Debug, Clone)]
@@ -244,7 +246,7 @@ pub struct Chat {
 pub struct Context {
     pub db: Database,
     pub ch: broadcast::Sender<Event>,
-    pub openai: Openai
+    pub openai: Openai,
 }
 
 impl Clone for Context {
@@ -252,7 +254,7 @@ impl Clone for Context {
         Self { 
             openai: self.openai.clone(),
             db: self.db.clone(),
-            ch: self.ch.clone()
+            ch: self.ch.clone(),
         }
     }
 }
@@ -268,6 +270,13 @@ impl Context {
         }
     }
 }
+
+// pub struct ReqCtx {
+//     pub db: Database,
+//     pub ch: broadcast::Sender<Event>,
+//     pub openai: Openai,
+//     pub config: Config
+// }
 
 pub const MODEL_RANDOM: &str = "random";
 pub const MODEL_GPT_3_5: &str = "gpt3.5";

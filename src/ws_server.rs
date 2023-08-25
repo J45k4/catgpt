@@ -8,8 +8,11 @@ use serde_json::from_str;
 use serde_json::to_string;
 use uuid::Uuid;
 
-use crate::auth::decode_token;
-use crate::auth::encode_token;
+use crate::auth::JwtDecodeResult;
+use crate::auth::decode_hs512_token;
+use crate::auth::encode_hs512_token;
+use crate::config::Config;
+use crate::config::JWTKeyType;
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
 use crate::types::Chat;
@@ -30,15 +33,19 @@ use crate::types::Personality;
 pub struct WsServer {
     ws: WebSocketStream<hyper::upgrade::Upgraded>,
     ctx: Context,
-    authenicated: bool
+    authenicated: bool,
+    config: Config
 }
 
 impl WsServer {
     pub fn new(ws: WebSocketStream<hyper::upgrade::Upgraded>, ctx: Context) -> WsServer {
+        let config = Config::provide();
+
         WsServer { 
             ws,
             ctx,
-            authenicated: false
+            authenicated: false,
+            config
         }
     }
 
@@ -50,26 +57,95 @@ impl WsServer {
                 bail!("parse err");
             },
         };
+        if let Some(true) = self.config.login_required {
+            if !self.authenicated {
+                match &msg {
+                    MsgToSrv::Authenticate { token } => {
+                        match self.config.jwt_key_type {
+                            Some(JWTKeyType::HS512) | None => {
+                                let key = match &self.config.jwt_hs512_key {
+                                    Some(key) => key,
+                                    None => {
+                                        log::error!("no jwt key");
+                                        bail!("no jwt key");
+                                    }
+                                };
 
-        if !self.authenicated {
-            match &msg {
-                MsgToSrv::Authenticate { token } => {
-                    decode_token(token).await?;
+                                match decode_hs512_token(key.as_bytes(), token).await {
+                                    JwtDecodeResult::InvalidToken => {
+                                        log::error!("invalid token");
+                                        let msg = MsgToCli::AuthTokenInvalid;
+                                        self.send_msg(msg).await;
+                                    },  
+                                    JwtDecodeResult::InvalidSignature => {
+                                        log::error!("invalid signature");
+                                        let msg = MsgToCli::AuthTokenInvalid;
+                                        self.send_msg(msg).await;
+                                    },
+                                    JwtDecodeResult::ExpiredSignature => {
+                                        log::error!("expired signature");
+                                        let msg = MsgToCli::AuthTokenInvalid;
+                                        self.send_msg(msg).await;
+                                    },
+                                    JwtDecodeResult::GeneralError(err) => bail!(err),
+                                    JwtDecodeResult::Claims(_) => {
+                                        log::info!("auth success");
+                                        let msg = MsgToCli::Authenticated { token: token.clone() };
+                                        self.authenicated = true;
+                                        self.send_msg(msg).await;
+                                    },
+                                }
+                            },
+                            _ => todo!()
+                        }
+                    },
+                    MsgToSrv::Login { username, password } => {
+                        let user = match &self.config.users {
+                            Some(users) => {
+                                match users.iter().find(|u| u.username == *username) {
+                                    Some(user) => user,
+                                    None => {
+                                        log::error!("user not found");
+                                        bail!("user not found");
+                                    }
+                                }
+                            },
+                            None => {
+                                log::error!("no users");
+                                bail!("no users");
+                            }
+                        };                    
 
-                    let msg = MsgToCli::Authenticated { token: token.clone() };
-                    self.authenicated = true;
-                    self.send_msg(msg).await;
-                },
-                MsgToSrv::Login { username, password: _ } => {
-                    let token = encode_token(username).await?;
-                    let msg = MsgToCli::Authenticated { token: token.clone() };
-                    self.authenicated = true;
-                    self.send_msg(msg).await;
-                },
-                _ => {
-                    log::error!("not authenticated");
-                    let msg = MsgToCli::AuthError;
-                    self.send_msg(msg).await;
+                        if user.password != *password {
+                            log::error!("password not match");
+                            let msg = MsgToCli::AuthError;
+                            self.send_msg(msg).await;
+                            bail!("password not match");
+                        }
+
+                        match self.config.jwt_key_type {
+                            Some(JWTKeyType::HS512) | None => {
+                                let key = match &self.config.jwt_hs512_key {
+                                    Some(key) => key,
+                                    None => {
+                                        log::error!("no jwt key");
+                                        bail!("no jwt key");
+                                    }
+                                };
+
+                                let token = encode_hs512_token(key.as_bytes(), &user.username).await?;
+                                let msg = MsgToCli::Authenticated { token: token.clone() };
+                                self.authenicated = true;
+                                self.send_msg(msg).await;
+                            },
+                            _ => todo!()
+                        }
+                    },
+                    _ => {
+                        log::error!("not authenticated");
+                        let msg = MsgToCli::AuthError;
+                        self.send_msg(msg).await;
+                    }
                 }
             }
         }
@@ -224,6 +300,11 @@ impl WsServer {
                 log::debug!("del msg {} from chat {}", msg_id, chat_id);
                 self.ctx.db.del_msg(&chat_id, &msg_id).await;
                 self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
+            },
+            MsgToSrv::Authenticate { token } => {
+                log::debug!("authenticate {}", token);
+                let msg = MsgToCli::Authenticated { token };
+                self.send_msg(msg).await;
             },
             _ => {}
         }

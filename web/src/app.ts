@@ -393,6 +393,11 @@ window.onload = () => {
             })
         }
 
+        if (msg.type === "AuthTokenInvalid") {
+            localStorage.removeItem("token")
+            window.location.href = "/login"
+        }
+
         if (msg.type === "MsgDelta") {
             if (msg.chatId !== currentChatId) {
                 console.debug("msgDelta for another chat")

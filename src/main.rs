@@ -28,6 +28,7 @@ use crate::database::Database;
 
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
+use crate::types::User;
 use crate::wisper::transcribe_file;
 use crate::ws_server::WsServer;
 
@@ -189,6 +190,24 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         },
+        Commands::AddUser { username, password } => {
+            let user = User {
+                username,
+                password
+            };
+
+            config.users = match config.users {
+                Some(mut users) => {
+                    users.push(user);
+                    Some(users)
+                },
+                None => {
+                    Some(vec![user])
+                }
+            };
+
+            config.save_default();
+        },
         Commands::Server => {
             let make_scv = make_service_fn(move |_| {
                 let ctx = ctx.clone();
@@ -232,6 +251,9 @@ async fn main() -> anyhow::Result<()> {
                             };
 
                             config.login_required = Some(value);
+                        },
+                        ConfigKeys::HS512Key => {
+                            config.jwt_hs512_key = Some(args.value);
                         }
                     }
 
@@ -249,6 +271,13 @@ async fn main() -> anyhow::Result<()> {
                         ConfigKeys::LoginRequired => {
                             if let Some(login_required) = &config.login_required {
                                 println!("{}", login_required);
+                            } else {
+                                println!("not set");
+                            }
+                        },
+                        ConfigKeys::HS512Key => {
+                            if let Some(key) = &config.jwt_hs512_key {
+                                println!("{}", key);
                             } else {
                                 println!("not set");
                             }

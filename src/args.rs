@@ -18,6 +18,10 @@ pub enum Commands {
     #[clap(name = "server")]
     Server,
     Config(ConfigArgs),
+    AddUser {
+        username: String,
+        password: String
+    },
     Transcribe {
         #[clap(long)]
         model: String,
@@ -40,13 +44,14 @@ pub struct ConfigArgs {
 #[derive(Debug, Clone, Subcommand)]
 pub enum ConfigCommands {
     Set(SetArgs),
-    Get(GetArgs)
+    Get(GetArgs),
 }
 
 #[derive(Debug, Clone, Parser, ValueEnum)]
 pub enum ConfigKeys {
     OpenaiApikey,
-    LoginRequired
+    LoginRequired,
+    HS512Key
 }
 
 #[derive(Debug, Clone, Parser)]

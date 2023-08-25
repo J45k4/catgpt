@@ -1,4 +1,4 @@
-use anyhow::Ok;
+use anyhow::anyhow;
 use jsonwebtoken::Algorithm;
 use jsonwebtoken::DecodingKey;
 use jsonwebtoken::EncodingKey;
@@ -6,27 +6,25 @@ use jsonwebtoken::Header;
 use jsonwebtoken::Validation;
 use jsonwebtoken::decode;
 use jsonwebtoken::encode;
+use jsonwebtoken::errors::ErrorKind;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::types::User;
-
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
+pub struct Claims {
     sub: String,
     company: String,
     exp: usize,
     user: String
 }
 
-pub async fn encode_token(username: &str) -> anyhow::Result<String> {
-    let my_claims = Claims { 
+pub async fn encode_hs512_token(key: &[u8], username: &str) -> anyhow::Result<String> {
+    let my_claims: Claims = Claims { 
         sub: "b@b.com".to_owned(), 
         company: "ACME".to_owned(), 
         exp: 10000000000,
         user: username.to_string()
     };
-    let key = b"secret";
 
     let header = Header { 
         kid: Some("signing_key".to_owned()), 
@@ -35,22 +33,39 @@ pub async fn encode_token(username: &str) -> anyhow::Result<String> {
     };
 
     let token = encode(&header, &my_claims, &EncodingKey::from_secret(key))?;
-    println!("{:?}", token);
 
     Ok(token)
 }
 
-pub async fn decode_token(token: &str) -> anyhow::Result<User> {
-    let key = b"secret";
-    let token_data = decode::<Claims>(
+pub enum JwtDecodeResult {
+    InvalidToken,
+    InvalidSignature,
+    ExpiredSignature,
+    GeneralError(anyhow::Error),
+    Claims(Claims)
+}
+
+pub async fn decode_hs512_token(key: &[u8], token: &str) -> JwtDecodeResult {
+    let decode_res = decode::<Claims>(
         &token,
         &DecodingKey::from_secret(key),
         &Validation::new(Algorithm::HS512),
-    )?;
-
-    println!("{:?}", token_data.claims);
-
-    Ok(User {})
+    );
+    match decode_res {
+        Ok(t) => {
+            JwtDecodeResult::Claims(t.claims)
+        },
+        Err(e) => {
+            match &e.kind() {
+                ErrorKind::InvalidToken => JwtDecodeResult::InvalidToken,
+                ErrorKind::InvalidSignature => JwtDecodeResult::InvalidSignature,
+                ErrorKind::ExpiredSignature => JwtDecodeResult::ExpiredSignature,
+                _ => {
+                    JwtDecodeResult::GeneralError(anyhow!(e))
+                } 
+            }
+        }
+    }
 }
 
 

@@ -86,6 +86,10 @@ export type Authenticated = {
     token: string
 }
 
+export type AuthTokenInvalid = {
+    type: "AuthTokenInvalid"
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats | 
     ChatIds | 
@@ -97,7 +101,8 @@ export type MsgFromSrv = MsgDelta |
     ChatCreated |
     NewChat |
     MsgDeleted |
-    Authenticated
+    Authenticated |
+    AuthTokenInvalid 
 
 export type SendMsg = {
     type: "SendMsg"

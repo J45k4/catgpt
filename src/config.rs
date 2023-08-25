@@ -4,11 +4,27 @@ use dirs::home_dir;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::types::User;
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum JWTKeyType {
+    HS512,
+    RSA
+}
+
+impl Default for JWTKeyType {
+    fn default() -> Self {
+        JWTKeyType::HS512
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Config {
     pub openai_apikey: Option<String>,
-    pub login_required: Option<bool>
+    pub login_required: Option<bool>,
+    pub users: Option<Vec<User>>,
+    pub jwt_key_type: Option<JWTKeyType>,
+    pub jwt_hs512_key: Option<String>
 }
 
 impl Config {
