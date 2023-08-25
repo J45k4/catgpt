@@ -286,12 +286,11 @@ async fn main() -> anyhow::Result<()> {
                 },
             }
         },
+        #[cfg(feature = "whisper")]
         Commands::Transcribe { model, input, output } => {
-            #[cfg(feature = "whisper")]
-            {
-                transcribe_file(model, input, output);
-            }
+            transcribe_file(model, input, output);  
         }
+        _ => {}
     }
 
     Ok(())
