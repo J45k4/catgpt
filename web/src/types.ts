@@ -81,6 +81,11 @@ export type MsgDeleted = {
     msgId: string
 }
 
+export type Authenticated = {
+    type: "Authenticated"
+    token: string
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats | 
     ChatIds | 
@@ -91,7 +96,8 @@ export type MsgFromSrv = MsgDelta |
     NewMsg |
     ChatCreated |
     NewChat |
-    MsgDeleted
+    MsgDeleted |
+    Authenticated
 
 export type SendMsg = {
     type: "SendMsg"
@@ -141,6 +147,17 @@ export type DelMsg = {
     msgId: string
 }
 
+export type Login = {
+    type: "Login"
+    username: string
+    password: string
+}
+
+export type Authenticate = {
+    type: "Authenticate"
+    token: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -149,4 +166,6 @@ export type MsgToSrv = SendMsg |
     SavePeronality |
     GetPersonalities |
     DelPersonality |
-    DelMsg
+    DelMsg |
+    Login |
+    Authenticate

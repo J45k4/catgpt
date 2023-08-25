@@ -8,6 +8,9 @@ use tokio::sync::broadcast;
 use crate::database::Database;
 use crate::openai::Openai;
 
+pub struct User {
+
+}
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -61,6 +64,13 @@ pub enum MsgToSrv {
         chat_id: String,
         msg_id: String
     },
+    Login {
+        username: String,
+        password: String
+    },
+    Authenticate {
+        token: String
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -114,6 +124,10 @@ pub enum MsgToCli {
         chat_id: String,
         msg_id: String
     },
+    Authenticated {
+        token: String
+    },
+    AuthError
 }
 
 #[derive(Debug, Clone)]

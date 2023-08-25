@@ -1,3 +1,4 @@
+use anyhow::bail;
 use chrono::Utc;
 use futures_util::SinkExt;
 use futures_util::StreamExt;
@@ -7,6 +8,8 @@ use serde_json::from_str;
 use serde_json::to_string;
 use uuid::Uuid;
 
+use crate::auth::decode_token;
+use crate::auth::encode_token;
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
 use crate::types::Chat;
@@ -26,25 +29,50 @@ use crate::types::Personality;
 
 pub struct WsServer {
     ws: WebSocketStream<hyper::upgrade::Upgraded>,
-    ctx: Context
+    ctx: Context,
+    authenicated: bool
 }
 
 impl WsServer {
     pub fn new(ws: WebSocketStream<hyper::upgrade::Upgraded>, ctx: Context) -> WsServer {
         WsServer { 
             ws,
-            ctx 
+            ctx,
+            authenicated: false
         }
     }
 
-    async fn handle_ws_msg(&mut self, msg: String) {
+    async fn handle_ws_msg(&mut self, msg: String) -> anyhow::Result<()> {
         let msg: MsgToSrv = match from_str(&msg) {
             Ok(m) => m,
             Err(err) => {
                 log::error!("{} parse err: {:?}", msg, err);
-                return;
+                bail!("parse err");
             },
         };
+
+        if !self.authenicated {
+            match &msg {
+                MsgToSrv::Authenticate { token } => {
+                    decode_token(token).await?;
+
+                    let msg = MsgToCli::Authenticated { token: token.clone() };
+                    self.authenicated = true;
+                    self.send_msg(msg).await;
+                },
+                MsgToSrv::Login { username, password: _ } => {
+                    let token = encode_token(username).await?;
+                    let msg = MsgToCli::Authenticated { token: token.clone() };
+                    self.authenicated = true;
+                    self.send_msg(msg).await;
+                },
+                _ => {
+                    log::error!("not authenticated");
+                    let msg = MsgToCli::AuthError;
+                    self.send_msg(msg).await;
+                }
+            }
+        }
     
         match msg {
             MsgToSrv::SendMsg(msg) => {
@@ -101,7 +129,7 @@ impl WsServer {
                         });
                     }
                     _ => {}
-                }
+                };
             }
             MsgToSrv::GetChats(args) => {
                 log::debug!("{:?}", args);
@@ -196,8 +224,11 @@ impl WsServer {
                 log::debug!("del msg {} from chat {}", msg_id, chat_id);
                 self.ctx.db.del_msg(&chat_id, &msg_id).await;
                 self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
-            }
+            },
+            _ => {}
         }
+
+        Ok(())
     }
 
     async fn send_msg(&mut self, msg: MsgToCli) {
@@ -240,7 +271,13 @@ impl WsServer {
                     };
 
                     match msg {
-                        Message::Text(text) =>  self.handle_ws_msg(text).await,
+                        Message::Text(text) => match self.handle_ws_msg(text).await {
+                            Ok(_) => {},
+                            Err(err) => {
+                                log::error!("ws msg error: {:?}", err);
+                                break;
+                            }
+                        },
                         Message::Binary(_) => continue,
                         Message::Ping(_) => {
                             println!("ping");

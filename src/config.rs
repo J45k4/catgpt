@@ -8,6 +8,7 @@ use serde::Serialize;
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Config {
     pub openai_apikey: Option<String>,
+    pub login_required: Option<bool>
 }
 
 impl Config {

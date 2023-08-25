@@ -45,7 +45,8 @@ pub enum ConfigCommands {
 
 #[derive(Debug, Clone, Parser, ValueEnum)]
 pub enum ConfigKeys {
-    OpenaiApikey
+    OpenaiApikey,
+    LoginRequired
 }
 
 #[derive(Debug, Clone, Parser)]

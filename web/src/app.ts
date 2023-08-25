@@ -1,43 +1,5 @@
 import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
-
-const createWs = (args: {
-    onOpen: () => void
-    onClose: () => void
-    onMsg: (msg: MsgFromSrv) => void
-}) => {
-    let ws
-
-    const createConn = () => {
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
-        const host = window.location.host
-        const url = `${protocol}://${host}/ws`
-        ws = new WebSocket(url)
-
-        ws.onopen = () => {
-            console.log("onopen")
-            args.onOpen()
-        }
-    
-        ws.onclose = () => {
-            args.onClose()
-            setTimeout(createConn, 1000)
-        }
-
-        ws.onmessage = data => {
-            const msg = JSON.parse(data.data)
-            args.onMsg(msg)
-        }
-    }
-
-    createConn()
-
-    return {
-        sendMsg: (msg: MsgToSrv) => {
-            let text = JSON.stringify(msg)
-            ws.send(text)
-        }
-    }
-}
+import { ws } from "./ws"
 
 const updateQueryParam = (param: string, value: string) => {
     const url = new URL(window.location.href)
@@ -330,6 +292,13 @@ enum Model {
 }
 
 window.onload = () => {
+    const currentToken = localStorage.getItem("token")
+
+    if (!currentToken) {
+        window.location.href = "/login"
+        return
+    }
+
     let currentChatId = null
     let currentPersonalityId = null
     let clientMsgId = 1
@@ -357,7 +326,7 @@ window.onload = () => {
             currentChatId = chatId
             console.log("currentChatId", currentChatId)
 
-            ws.sendMsg({
+            ws.send({
                 type: "GetChat",
                 chatId
             })
@@ -373,7 +342,7 @@ window.onload = () => {
     const messages = new ChatMessages({
         root: document.getElementById("messagesBox") as HTMLDivElement,
         onDeleteMessage: msgId => {
-            ws.sendMsg({
+            ws.send({
                 type: "DelMsg",
                 chatId: currentChatId,
                 msgId
@@ -398,103 +367,208 @@ window.onload = () => {
         }
     })
 
-    let ws = createWs({
-        onOpen: () => {
-            connectionStatus.innerHTML = "Connected"
-            connectionStatus.style.color = "green"
+    ws.on_open = () => {
+        connectionStatus.innerHTML = "Connected"
+        connectionStatus.style.color = "green"
 
-            ws.sendMsg({
+        ws.send({
+            type: "Authenticate",
+            token: localStorage.getItem("token")
+        })
+    }
+
+    ws.on_close = () => {
+        connectionStatus.innerHTML = "Not connected"
+        connectionStatus.style.color = "red"
+    }
+
+    ws.on_msg = msg => {
+        if (msg.type === "Authenticated") {
+            ws.send({
                 type: "GetChats"
             })
-
-            ws.sendMsg({
+    
+            ws.send({
                 type: "GetPersonalities"
             })
-        },
-        onClose: () => {
-            connectionStatus.innerHTML = "Not connected"
-            connectionStatus.style.color = "red"
-        },
-        onMsg: msg => {
-            if (msg.type === "MsgDelta") {
-                if (msg.chatId !== currentChatId) {
-                    console.debug("msgDelta for another chat")
-                    return
-                }
+        }
 
-                console.debug("msgDelta", msg)
-
-                messages.add_delta(msg)
+        if (msg.type === "MsgDelta") {
+            if (msg.chatId !== currentChatId) {
+                console.debug("msgDelta for another chat")
+                return
             }
 
-            if (msg.type === "ChatIds") {
-                for (const chatId of msg.ids) {
-                    otherChats.addPlaceholder(chatId)
-                }
+            console.debug("msgDelta", msg)
 
-                const chatId = getQueryParam("chatId")
+            messages.add_delta(msg)
+        }
 
-                if (chatId) {
-                    currentChatId = chatId
-                    ws.sendMsg({
-                        type: "GetChat",
-                        chatId
-                    })
-                }
+        if (msg.type === "ChatIds") {
+            for (const chatId of msg.ids) {
+                otherChats.addPlaceholder(chatId)
             }
 
-            if (msg.type === "Chat") {
-                console.log("chat", msg)
-                otherChats.addPlaceholder(msg.id)
-                messages.setChat(msg)
-                currentChatId = msg.id
-                otherChats.setActive(msg.id)
-                updateQueryParam("chatId", msg.id)
-            }
+            const chatId = getQueryParam("chatId")
 
-            if (msg.type === "Personalities") {
-                personalitiesContainer.setPersonalities(msg.personalities)
-            }
-
-            if (msg.type === "NewPersonality") {
-                personalitiesContainer.addPersonality(msg.personality)
-            }
-
-            if (msg.type === "PersonalityDeleted") {
-                personalitiesContainer.deletePersonality(msg.id)
-            }
-
-            if (msg.type === "NewMsg") {
-                console.log("newMsg", msg)
-                if (msg.msg.chatId !== currentChatId) {
-                    console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
-                    return
-                }
-
-                messages.addMessage(msg.msg)
-            }
-
-            if (msg.type === "ChatCreated") {
-                console.log("chatCreated", msg)
-                currentChatId = msg.chat.id
-                updateQueryParam("chatId", currentChatId)
-            }
-
-            if (msg.type === "NewChat") {
-                otherChats.addPlaceholder(msg.chat.id)
-            }
-
-            if (msg.type === "MsgDeleted") {
-                console.log("msgDeleted", msg)
-                if (msg.chatId !== currentChatId) {
-                    console.debug("msgDeleted for another chat")
-                    return
-                }
-
-                messages.del_msg(msg.msgId)
+            if (chatId) {
+                currentChatId = chatId
+                ws.send({
+                    type: "GetChat",
+                    chatId
+                })
             }
         }
-    })
+
+        if (msg.type === "Chat") {
+            console.log("chat", msg)
+            otherChats.addPlaceholder(msg.id)
+            messages.setChat(msg)
+            currentChatId = msg.id
+            otherChats.setActive(msg.id)
+            updateQueryParam("chatId", msg.id)
+        }
+
+        if (msg.type === "Personalities") {
+            personalitiesContainer.setPersonalities(msg.personalities)
+        }
+
+        if (msg.type === "NewPersonality") {
+            personalitiesContainer.addPersonality(msg.personality)
+        }
+
+        if (msg.type === "PersonalityDeleted") {
+            personalitiesContainer.deletePersonality(msg.id)
+        }
+
+        if (msg.type === "NewMsg") {
+            console.log("newMsg", msg)
+            if (msg.msg.chatId !== currentChatId) {
+                console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
+                return
+            }
+
+            messages.addMessage(msg.msg)
+        }
+
+        if (msg.type === "ChatCreated") {
+            console.log("chatCreated", msg)
+            currentChatId = msg.chat.id
+            updateQueryParam("chatId", currentChatId)
+        }
+
+        if (msg.type === "NewChat") {
+            otherChats.addPlaceholder(msg.chat.id)
+        }
+
+        if (msg.type === "MsgDeleted") {
+            console.log("msgDeleted", msg)
+            if (msg.chatId !== currentChatId) {
+                console.debug("msgDeleted for another chat")
+                return
+            }
+
+            messages.del_msg(msg.msgId)
+        }
+    }
+
+    // let ws = createWs({
+    //     onOpen: () => {
+    //         connectionStatus.innerHTML = "Connected"
+    //         connectionStatus.style.color = "green"
+
+    //         ws.sendMsg({
+    //             type: "GetChats"
+    //         })
+
+    //         ws.sendMsg({
+    //             type: "GetPersonalities"
+    //         })
+    //     },
+    //     onClose: () => {
+    //         connectionStatus.innerHTML = "Not connected"
+    //         connectionStatus.style.color = "red"
+    //     },
+    //     onMsg: msg => {
+    //         if (msg.type === "MsgDelta") {
+    //             if (msg.chatId !== currentChatId) {
+    //                 console.debug("msgDelta for another chat")
+    //                 return
+    //             }
+
+    //             console.debug("msgDelta", msg)
+
+    //             messages.add_delta(msg)
+    //         }
+
+    //         if (msg.type === "ChatIds") {
+    //             for (const chatId of msg.ids) {
+    //                 otherChats.addPlaceholder(chatId)
+    //             }
+
+    //             const chatId = getQueryParam("chatId")
+
+    //             if (chatId) {
+    //                 currentChatId = chatId
+    //                 ws.sendMsg({
+    //                     type: "GetChat",
+    //                     chatId
+    //                 })
+    //             }
+    //         }
+
+    //         if (msg.type === "Chat") {
+    //             console.log("chat", msg)
+    //             otherChats.addPlaceholder(msg.id)
+    //             messages.setChat(msg)
+    //             currentChatId = msg.id
+    //             otherChats.setActive(msg.id)
+    //             updateQueryParam("chatId", msg.id)
+    //         }
+
+    //         if (msg.type === "Personalities") {
+    //             personalitiesContainer.setPersonalities(msg.personalities)
+    //         }
+
+    //         if (msg.type === "NewPersonality") {
+    //             personalitiesContainer.addPersonality(msg.personality)
+    //         }
+
+    //         if (msg.type === "PersonalityDeleted") {
+    //             personalitiesContainer.deletePersonality(msg.id)
+    //         }
+
+    //         if (msg.type === "NewMsg") {
+    //             console.log("newMsg", msg)
+    //             if (msg.msg.chatId !== currentChatId) {
+    //                 console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
+    //                 return
+    //             }
+
+    //             messages.addMessage(msg.msg)
+    //         }
+
+    //         if (msg.type === "ChatCreated") {
+    //             console.log("chatCreated", msg)
+    //             currentChatId = msg.chat.id
+    //             updateQueryParam("chatId", currentChatId)
+    //         }
+
+    //         if (msg.type === "NewChat") {
+    //             otherChats.addPlaceholder(msg.chat.id)
+    //         }
+
+    //         if (msg.type === "MsgDeleted") {
+    //             console.log("msgDeleted", msg)
+    //             if (msg.chatId !== currentChatId) {
+    //                 console.debug("msgDeleted for another chat")
+    //                 return
+    //             }
+
+    //             messages.del_msg(msg.msgId)
+    //         }
+    //     }
+    // })
 
     const body = document.querySelector("body")
 
@@ -519,7 +593,7 @@ window.onload = () => {
 
         console.log("instructions", personalityTxt.value)
 
-        ws.sendMsg({
+        ws.send({
             type: "SendMsg",
             chatId: currentChatId,
             model: currentModel,
@@ -542,7 +616,7 @@ window.onload = () => {
 
     const savePersonalityBtn = document.getElementById("savePersonalityBtn") as HTMLButtonElement
     savePersonalityBtn.onclick = () => {
-        ws.sendMsg({
+        ws.send({
             type: "SavePersonality",
             id: currentPersonalityId,
             txt: personalityTxt.value
@@ -556,7 +630,7 @@ window.onload = () => {
 
     const deletePersonalityBtn = document.getElementById("deletePersonalityBtn") as HTMLButtonElement
     deletePersonalityBtn.onclick = () => {
-        ws.sendMsg({
+        ws.send({
             type: "DelPersonality",
             id: currentPersonalityId
         })
