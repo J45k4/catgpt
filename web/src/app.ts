@@ -317,8 +317,8 @@ window.onload = () => {
     }
 
     const model = getQueryParam("model")
-    modelSelect.value = model || Model.random
-    currentModel = model as Model || Model.random
+    modelSelect.value = model || Model.gpt3_5
+    currentModel = model as Model || Model.gpt3_5
 
     const otherChats = new OtherChats({
         root: document.getElementById("otherChats") as HTMLDivElement,
