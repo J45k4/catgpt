@@ -29,7 +29,6 @@ use crate::database::Database;
 use crate::openai::OpenaiBuilder;
 use crate::types::Event;
 use crate::types::User;
-use crate::wisper::transcribe_file;
 use crate::ws_server::WsServer;
 
 
@@ -41,6 +40,7 @@ mod random;
 mod openai;
 mod config;
 mod database;
+#[cfg(feature = "whisper")]
 mod wisper;
 mod auth;
 
@@ -287,7 +287,10 @@ async fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Transcribe { model, input, output } => {
-            transcribe_file(model, input, output);
+            #[cfg(feature = "whisper")]
+            {
+                transcribe_file(model, input, output);
+            }
         }
     }
 
