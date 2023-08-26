@@ -1,3 +1,4 @@
+pkill aki
 git pull
 cd web
 npm install
