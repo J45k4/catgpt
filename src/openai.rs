@@ -1,12 +1,9 @@
-use std::any;
 use std::vec;
-
 use anyhow::bail;
 use chrono::Utc;
 use futures_util::StreamExt;
 use reqwest::Client;
 use serde_json::from_str;
-use serde_json::json;
 use serde_json::to_string;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
@@ -20,7 +17,6 @@ use crate::types::Event;
 use crate::types::MODEL_GPT_3_5;
 use crate::types::MODEL_GPT_4;
 use crate::types::MsgDelta;
-use crate::types::OpenaiChatFunc;
 use crate::types::OpenaiChatMessage;
 use crate::types::OpenaiChatReq;
 use crate::types::OpenaiChatRole;
@@ -189,18 +185,18 @@ impl Openai {
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
         let model = parse_model(&req.model);
 
-        let set_title_func = OpenaiChatFunc {
-            name: "set_title".to_string(),
-            description: "This function does nothing".to_string(),
-            parameters: json!({
-                "type": "object",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    }
-                }
-            })
-        };
+        // let set_title_func = OpenaiChatFunc {
+        //     name: "set_title".to_string(),
+        //     description: "This function does nothing".to_string(),
+        //     parameters: json!({
+        //         "type": "object",
+        //         "properties": {
+        //             "title": {
+        //                 "type": "string"
+        //             }
+        //         }
+        //     })
+        // };
     
         let mut openai_chat_req = OpenaiChatReq { 
             model: model.to_string(), 

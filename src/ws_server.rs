@@ -16,7 +16,6 @@ use crate::config::JWTKeyType;
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
 use crate::types::Chat;
-use crate::types::ChatIds;
 use crate::types::Context;
 use crate::types::ChatMsg;
 use crate::types::Event;
