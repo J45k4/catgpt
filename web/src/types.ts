@@ -25,7 +25,7 @@ export type ChatMsg = {
 export type Chat = {
     type: "Chat"
     id: string
-    title: String
+    title?: String
     messages: ChatMsg[]
 }
 

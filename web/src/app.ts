@@ -292,13 +292,6 @@ enum Model {
 }
 
 window.onload = () => {
-    const currentToken = localStorage.getItem("token")
-
-    if (!currentToken) {
-        window.location.href = "/login"
-        return
-    }
-
     let currentChatId = null
     let currentPersonalityId = null
     let clientMsgId = 1
@@ -373,7 +366,7 @@ window.onload = () => {
 
         ws.send({
             type: "Authenticate",
-            token: localStorage.getItem("token")
+            token: localStorage.getItem("token") ?? ""
         })
     }
 

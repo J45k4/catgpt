@@ -168,7 +168,8 @@ impl WsServer {
 
                         let new_chat = Chat {
                             id: id.clone(),
-                            messages: vec![]
+                            messages: vec![],
+                            ..Default::default()
                         };
                         self.ctx.db.add_chat(new_chat.clone()).await;
                         self.send_msg(MsgToCli::ChatCreated { chat: new_chat.clone() }).await;
@@ -223,6 +224,7 @@ impl WsServer {
                 let chat = Chat {
                     id: args.chat_id.clone(),
                     messages: vec![],
+                    ..Default::default()
                 };
 
                 self.ctx.db.add_chat(chat.clone()).await;
@@ -331,6 +333,10 @@ impl WsServer {
             },
             Event::NewChat { chat } => {
                 let msg = MsgToCli::NewChat { chat };
+                self.send_msg(msg).await;
+            },
+            Event::TitleDelta { chat_id, title } => {
+                let msg = MsgToCli::TitleDelta { chat_id, title };
                 self.send_msg(msg).await;
             }
         }

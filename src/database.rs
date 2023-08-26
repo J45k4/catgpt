@@ -108,4 +108,18 @@ impl Database {
             }
         }
     }
+
+    pub async fn save_chat(&self, chat: Chat) {
+        log::debug!("save_chat");
+        let mut chats = self.chats.write().await;
+        let chat = chats.iter_mut().find(|c| c.id == chat.id);
+        match chat {
+            Some(chat) => {
+                *chat = chat.clone();
+            },
+            None => {
+                log::error!("chat {} not found", chat.id);
+            }
+        }
+    }
 }
