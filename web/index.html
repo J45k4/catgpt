@@ -7,60 +7,56 @@
         <link rel="stylesheet" href="/index.css" />
     </head>
     <body>
-        <div class="mainContent">
-            <div class="leftContent">
-                <div style="color: red;" id="connectionStatus">
-                    Not connected
-                </div>                
-                <div>
-                    <div>
-                        <h1>
-                            Previous chats
-                        </h1>
-                        <button id="newChatBtn">
-                            New chat
-                        </button>
-                        <div id="otherChats">
-        
-                        </div>
-                    </div>
-                    <h1>
-                        Settings
-                    </h1>
-                    <h2>Model</h2>
-                    <select id="modelSelect" sel>
-                        <option value="gpt4">GPT-4</option>
-                        <option value="gpt3.5">GPT-3.5</option>
-                        <option value="random">Random</option>
-                    </select>
-                    <h2>Personality</h2>
-                    <div style="margin-bottom: 10px;">
-                        <textarea id="instructionText"></textarea>
-                    </div>
-                    <button id="savePersonalityBtn">Save</button>
-                    <button id="newPersonalityBtn">New</button>
-                    <button id="deletePersonalityBtn">Del</button>
-                    <h3>
-                        Saved Personalities
-                    </h3>
-                    <div id="personalitiesContainer">
-                    </div>
-                    <h1>
-                        Current chat
-                    </h1>
-                    <div id="messagesBox">
-                        No messages yet
-                    </div>
-                    <div class="sendMsgContainer">
-                        <div class="msgInputContainer">
-                            <input type="text" id="newMessageInput" />
-                        </div>
-                        <div class="msgBtnContainer">
-                            <button id="sendButton">
-                                Send
-                            </button>
-                        </div>
-                    </div>
+        <div style="color: red;" id="connectionStatus">
+            Not connected
+        </div>                
+        <div>
+            <div>
+                <h1>
+                    Previous chats
+                </h1>
+                <button id="newChatBtn">
+                    New chat
+                </button>
+                <div id="otherChats">
+
+                </div>
+            </div>
+            <h1>
+                Settings
+            </h1>
+            <h2>Model</h2>
+            <select id="modelSelect" sel>
+                <option value="gpt4">GPT-4</option>
+                <option value="gpt3.5">GPT-3.5</option>
+                <option value="random">Random</option>
+            </select>
+            <h2>Personality</h2>
+            <div style="margin-bottom: 10px;">
+                <textarea id="instructionText"></textarea>
+            </div>
+            <button id="savePersonalityBtn">Save</button>
+            <button id="newPersonalityBtn">New</button>
+            <button id="deletePersonalityBtn">Del</button>
+            <h3>
+                Saved Personalities
+            </h3>
+            <div id="personalitiesContainer">
+            </div>
+            <h1>
+                Current chat
+            </h1>
+            <div id="messagesBox">
+                No messages yet
+            </div>
+            <div class="sendMsgContainer">
+                <div class="msgInputContainer">
+                    <input type="text" id="newMessageInput" />
+                </div>
+                <div class="msgBtnContainer">
+                    <button id="sendButton">
+                        Send
+                    </button>
                 </div>
             </div>
         </div>
