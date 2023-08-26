@@ -12,10 +12,10 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    company: String,
-    exp: usize,
-    user: String
+    pub sub: String,
+    pub company: String,
+    pub exp: usize,
+    pub user: String
 }
 
 pub async fn encode_hs512_token(key: &[u8], username: &str) -> anyhow::Result<String> {

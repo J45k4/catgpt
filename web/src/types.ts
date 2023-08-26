@@ -25,7 +25,7 @@ export type ChatMsg = {
 export type Chat = {
     type: "Chat"
     id: string
-    title: String
+    title?: String
     messages: ChatMsg[]
 }
 
@@ -81,6 +81,14 @@ export type MsgDeleted = {
     msgId: string
 }
 
+export type ChatMetas = {
+    type: "ChatMetas"
+    metas: {
+        id: string
+        title: string
+    }[]
+}
+
 export type Authenticated = {
     type: "Authenticated"
     token: string
@@ -90,10 +98,17 @@ export type AuthTokenInvalid = {
     type: "AuthTokenInvalid"
 }
 
+export type TitleDelta = {
+    type: "TitleDelta"
+    chatId: string
+    delta: string
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats | 
     ChatIds | 
     Chat | 
+    ChatMetas |
     Personalities | 
     NewPersonality |
     PersonalityDeleted |
@@ -102,7 +117,8 @@ export type MsgFromSrv = MsgDelta |
     NewChat |
     MsgDeleted |
     Authenticated |
-    AuthTokenInvalid 
+    AuthTokenInvalid |
+    TitleDelta
 
 export type SendMsg = {
     type: "SendMsg"

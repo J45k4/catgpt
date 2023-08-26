@@ -34,6 +34,7 @@ pub struct WsServer {
     ws: WebSocketStream<hyper::upgrade::Upgraded>,
     ctx: Context,
     authenicated: bool,
+    user: Option<String>,
     config: Config
 }
 
@@ -45,6 +46,7 @@ impl WsServer {
             ws,
             ctx,
             authenicated: false,
+            user: None,
             config
         }
     }
@@ -88,8 +90,9 @@ impl WsServer {
                                         self.send_msg(msg).await;
                                     },
                                     JwtDecodeResult::GeneralError(err) => bail!(err),
-                                    JwtDecodeResult::Claims(_) => {
-                                        log::info!("auth success");
+                                    JwtDecodeResult::Claims(c) => {
+                                        log::info!("auth success {:?}", c);
+                                        self.user = Some(c.user);
                                         let msg = MsgToCli::Authenticated { token: token.clone() };
                                         self.authenicated = true;
                                         self.send_msg(msg).await;
@@ -168,7 +171,8 @@ impl WsServer {
 
                         let new_chat = Chat {
                             id: id.clone(),
-                            messages: vec![]
+                            messages: vec![],
+                            ..Default::default()
                         };
                         self.ctx.db.add_chat(new_chat.clone()).await;
                         self.send_msg(MsgToCli::ChatCreated { chat: new_chat.clone() }).await;
@@ -177,12 +181,17 @@ impl WsServer {
                     }
                 };
 
+                let user_name = match &self.user {
+                    Some(user) => user.clone(),
+                    None => "User".to_string()
+                };
+
                 let chatmsg = ChatMsg {
                     id: Uuid::new_v4().to_string(),
                     chat_id: chat_id.clone(),
                     message: msg.txt,
                     bot: false,
-                    user: "User".to_string(),
+                    user: user_name,
                     datetime: Utc::now()
                 };
 
@@ -207,14 +216,9 @@ impl WsServer {
                     _ => {}
                 };
             }
-            MsgToSrv::GetChats(args) => {
-                log::debug!("{:?}", args);
-
-                let chat_ids = self.ctx.db.get_chat_ids().await;
-                let msg = ChatIds {
-                    ids: chat_ids
-                };
-                let msg = MsgToCli::ChatIds(msg);
+            MsgToSrv::GetChats { } => {
+                let metas = self.ctx.db.get_chat_metas().await;
+                let msg = MsgToCli::ChatMetas { metas };
                 self.send_msg(msg).await;
             }
             MsgToSrv::CreateChat(args) => {
@@ -223,6 +227,7 @@ impl WsServer {
                 let chat = Chat {
                     id: args.chat_id.clone(),
                     messages: vec![],
+                    ..Default::default()
                 };
 
                 self.ctx.db.add_chat(chat.clone()).await;
@@ -331,6 +336,10 @@ impl WsServer {
             },
             Event::NewChat { chat } => {
                 let msg = MsgToCli::NewChat { chat };
+                self.send_msg(msg).await;
+            },
+            Event::TitleDelta { chat_id, delta: title } => {
+                let msg = MsgToCli::TitleDelta { chat_id, delta: title };
                 self.send_msg(msg).await;
             }
         }

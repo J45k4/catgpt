@@ -3,6 +3,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 
+use serde_json::Value;
 use tokio::sync::broadcast;
 use crate::database::Database;
 use crate::openai::Openai;
@@ -41,11 +42,35 @@ pub struct CreateChat {
     pub chat_id: String,
 }
 
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatMsg {
+    pub id: String,
+    pub chat_id: String,
+    pub message: String,
+    pub user: String,
+    pub datetime: DateTime<Utc>,
+    pub bot: bool
+}
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Chat {
+    pub id: String,
+    pub title: Option<String>,
+    pub messages: Vec<ChatMsg>
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ChatMeta {
+    pub id: String,
+    pub title: Option<String>,
+}
+
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToSrv {
     SendMsg(SendMsg),
-    GetChats(GetChats),
+    GetChats { },
     CreateChat(CreateChat),
     #[serde(rename_all = "camelCase")]
     GetChat {
@@ -104,7 +129,9 @@ pub struct NewPersonality {
 #[serde(tag = "type")]
 pub enum MsgToCli {
     MsgDelta(MsgDelta),
-    ChatIds(ChatIds),
+    ChatMetas {
+        metas: Vec<ChatMeta>
+    },
     Chat(Chat),
     Personalities(Personalities),
     NewPersonality(NewPersonality),
@@ -129,12 +156,21 @@ pub enum MsgToCli {
         token: String
     },
     AuthError,
-    AuthTokenInvalid
+    AuthTokenInvalid,
+    #[serde(rename_all = "camelCase")]
+    TitleDelta {
+        chat_id: String,
+        delta: String
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum Event {
     MsgDelta(MsgDelta),
+    TitleDelta {
+        chat_id: String,
+        delta: String
+    },
     NewMsg {
         msg: ChatMsg
     },
@@ -143,7 +179,7 @@ pub enum Event {
     },
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum OpenaiChatRole {
     #[serde(rename="system")]
     System,
@@ -161,14 +197,14 @@ impl Default for OpenaiChatRole {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct OpenaiChatFunc {
     pub name: String,
     pub description: String,
-    pub parameters: String 
+    pub parameters: Value 
 }
 
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize, Clone)]
 pub struct OpenaiChatMessage {
     pub role: OpenaiChatRole,
     pub content: String,
@@ -190,11 +226,11 @@ impl Default for CallFunction {
     }
 }
 
-#[derive(Default, serde::Serialize, serde::Deserialize)]
+#[derive(Default, serde::Serialize, serde::Deserialize, Clone)]
 pub struct OpenaiChatReq {
     pub model: String,
     pub messages: Vec<OpenaiChatMessage>,
-    // pub functions: Option<Vec<OpenaiChatFunc>>,
+    // pub functions: Vec<OpenaiChatFunc>,
     // pub function_call: Option<CallFunction>,
     // pub temperature: Option<u32>,
     // pub top_k: Option<u32>,
@@ -212,7 +248,7 @@ pub struct Delta {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OpenaiStreamChoice {
-    // pub finish_reason: Option<String>,
+    pub finish_reason: Option<String>,
     pub index: u32,
     pub delta: Delta
 }
@@ -221,27 +257,6 @@ pub struct OpenaiStreamChoice {
 pub struct OpenaiStreamResMsg {
     pub choices: Vec<OpenaiStreamChoice>
 }
-
-#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ChatMsg {
-    pub id: String,
-    pub chat_id: String,
-    pub message: String,
-    pub user: String,
-    pub datetime: DateTime<Utc>,
-    pub bot: bool
-}
-
-#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Chat {
-    pub id: String,
-    pub messages: Vec<ChatMsg>
-}
-
-// pub struct Conversations {
-//     conversations: Vec<Conversation>
-// }
 
 pub struct Context {
     pub db: Database,

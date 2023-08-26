@@ -21,6 +21,7 @@ const getQueryParam = (param: string) => {
 class OtherChats {
     private root: HTMLDivElement
     private activateChatId: string
+    private hasTitle: Map<string, boolean>
     private onChatClicked: (chatId: string) => void
     
     constructor(args: {
@@ -29,9 +30,10 @@ class OtherChats {
     }) {
         this.root = args.root
         this.onChatClicked = args.onChatClicked
+        this.hasTitle = new Map()
     }
 
-    public addPlaceholder(chatId: string) {
+    public addPlaceholder(chatId: string, title?: string) {
         console.log("addPlaceholder")
 
         let id = "chat_" + chatId
@@ -41,19 +43,35 @@ class OtherChats {
             return
         }
 
+        if (title) {
+            this.hasTitle.set(chatId, true)
+        }
+
         const div = document.createElement("div")
         div.id = id
-        div.innerHTML = chatId
+        div.innerHTML = title ?? chatId
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
         div.style.cursor = "pointer"
         div.style.color = "blue"
+        div.style.whiteSpace = "wrap"
 
         div.onclick = () => {
             this.onChatClicked(chatId)
         }
 
         this.root.appendChild(div)
+    }
+
+    public addTitleDelta(chatId: string, delta: string) {
+        const div = document.getElementById("chat_" + chatId)
+
+        if (!this.hasTitle.has(chatId)) {
+            this.hasTitle.set(chatId, true)
+            div.innerHTML = ""
+        }
+
+        div.innerHTML += delta
     }
 
     public setActive(chatId: string) {
@@ -292,13 +310,6 @@ enum Model {
 }
 
 window.onload = () => {
-    const currentToken = localStorage.getItem("token")
-
-    if (!currentToken) {
-        window.location.href = "/login"
-        return
-    }
-
     let currentChatId = null
     let currentPersonalityId = null
     let clientMsgId = 1
@@ -373,7 +384,7 @@ window.onload = () => {
 
         ws.send({
             type: "Authenticate",
-            token: localStorage.getItem("token")
+            token: localStorage.getItem("token") ?? ""
         })
     }
 
@@ -475,105 +486,19 @@ window.onload = () => {
 
             messages.del_msg(msg.msgId)
         }
+
+        if (msg.type === "ChatMetas") {
+            console.log("chatMetas", msg)
+            for (const meta of msg.metas) {
+                otherChats.addPlaceholder(meta.id, meta.title)
+            }
+        }
+
+        if (msg.type === "TitleDelta") {
+            console.log("titleDelta", msg)
+            otherChats.addTitleDelta(msg.chatId, msg.delta)
+        }
     }
-
-    // let ws = createWs({
-    //     onOpen: () => {
-    //         connectionStatus.innerHTML = "Connected"
-    //         connectionStatus.style.color = "green"
-
-    //         ws.sendMsg({
-    //             type: "GetChats"
-    //         })
-
-    //         ws.sendMsg({
-    //             type: "GetPersonalities"
-    //         })
-    //     },
-    //     onClose: () => {
-    //         connectionStatus.innerHTML = "Not connected"
-    //         connectionStatus.style.color = "red"
-    //     },
-    //     onMsg: msg => {
-    //         if (msg.type === "MsgDelta") {
-    //             if (msg.chatId !== currentChatId) {
-    //                 console.debug("msgDelta for another chat")
-    //                 return
-    //             }
-
-    //             console.debug("msgDelta", msg)
-
-    //             messages.add_delta(msg)
-    //         }
-
-    //         if (msg.type === "ChatIds") {
-    //             for (const chatId of msg.ids) {
-    //                 otherChats.addPlaceholder(chatId)
-    //             }
-
-    //             const chatId = getQueryParam("chatId")
-
-    //             if (chatId) {
-    //                 currentChatId = chatId
-    //                 ws.sendMsg({
-    //                     type: "GetChat",
-    //                     chatId
-    //                 })
-    //             }
-    //         }
-
-    //         if (msg.type === "Chat") {
-    //             console.log("chat", msg)
-    //             otherChats.addPlaceholder(msg.id)
-    //             messages.setChat(msg)
-    //             currentChatId = msg.id
-    //             otherChats.setActive(msg.id)
-    //             updateQueryParam("chatId", msg.id)
-    //         }
-
-    //         if (msg.type === "Personalities") {
-    //             personalitiesContainer.setPersonalities(msg.personalities)
-    //         }
-
-    //         if (msg.type === "NewPersonality") {
-    //             personalitiesContainer.addPersonality(msg.personality)
-    //         }
-
-    //         if (msg.type === "PersonalityDeleted") {
-    //             personalitiesContainer.deletePersonality(msg.id)
-    //         }
-
-    //         if (msg.type === "NewMsg") {
-    //             console.log("newMsg", msg)
-    //             if (msg.msg.chatId !== currentChatId) {
-    //                 console.debug(`newMsg for another chat ${msg.msg.chatId} !== ${currentChatId}`)
-    //                 return
-    //             }
-
-    //             messages.addMessage(msg.msg)
-    //         }
-
-    //         if (msg.type === "ChatCreated") {
-    //             console.log("chatCreated", msg)
-    //             currentChatId = msg.chat.id
-    //             updateQueryParam("chatId", currentChatId)
-    //         }
-
-    //         if (msg.type === "NewChat") {
-    //             otherChats.addPlaceholder(msg.chat.id)
-    //         }
-
-    //         if (msg.type === "MsgDeleted") {
-    //             console.log("msgDeleted", msg)
-    //             if (msg.chatId !== currentChatId) {
-    //                 console.debug("msgDeleted for another chat")
-    //                 return
-    //             }
-
-    //             messages.del_msg(msg.msgId)
-    //         }
-    //     }
-    // })
 
     const body = document.querySelector("body")
 

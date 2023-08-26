@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::types::Chat;
+use crate::types::ChatMeta;
 use crate::types::ChatMsg;
 use crate::types::Personality;
 
@@ -107,5 +108,28 @@ impl Database {
                 log::error!("chat {} not found", chat_id);
             }
         }
+    }
+
+    pub async fn save_chat(&self, chat: Chat) {
+        log::debug!("save_chat");
+        let mut chats = self.chats.write().await;
+        let existing_chat = chats.iter_mut().find(|c| c.id == chat.id);
+        match existing_chat {
+            Some(existing_chat) => {
+                *existing_chat = chat;
+            },
+            None => {
+                chats.push(chat);
+            }
+        }
+    }
+
+    pub async fn get_chat_metas(&self) -> Vec<ChatMeta> {
+        log::debug!("get_chat_metas");
+        let chats = self.chats.read().await;
+        chats.iter().map(|c| ChatMeta { 
+            id: c.id.clone(), 
+            title: c.title.clone(),
+        }).collect()
     }
 }
