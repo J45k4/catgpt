@@ -1,5 +1,5 @@
 import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
-import { ws } from "./ws"
+import { createConn, ws } from "./ws"
 
 const updateQueryParam = (param: string, value: string) => {
     const url = new URL(window.location.href)
@@ -509,6 +509,8 @@ window.onload = () => {
             otherChats.addTitleDelta(msg.chatId, msg.delta)
         }
     }
+
+    createConn()
 
     const body = document.querySelector("body")
 

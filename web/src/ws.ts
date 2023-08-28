@@ -6,7 +6,7 @@ let on_open: () => void = () => {}
 let on_close: () => void = () => {}
 let on_msg: (msg: MsgFromSrv) => void = () => {}
 
-const createConn = () => {
+export const createConn = () => {
     const protocol = window.location.protocol === "https:" ? "wss" : "ws"
     const host = window.location.host
     const url = `${protocol}://${host}/ws`
@@ -32,8 +32,6 @@ const createConn = () => {
         on_msg(msg)
     }
 }
-
-createConn()
 
 export const ws = {
     send: (msg: MsgToSrv) => {
