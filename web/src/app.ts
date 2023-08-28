@@ -310,7 +310,7 @@ enum Model {
 }
 
 window.onload = () => {
-    let currentChatId = null
+    let currentChatId = getQueryParam("chatId") || null
     let currentPersonalityId = null
     let clientMsgId = 1
 
@@ -402,6 +402,13 @@ window.onload = () => {
             ws.send({
                 type: "GetPersonalities"
             })
+
+            if (currentChatId) {
+                ws.send({
+                    type: "GetChat",
+                    chatId: currentChatId
+                })
+            }
         }
 
         if (msg.type === "AuthTokenInvalid") {
@@ -439,10 +446,13 @@ window.onload = () => {
         if (msg.type === "Chat") {
             console.log("chat", msg)
             otherChats.addPlaceholder(msg.id)
+
+            if (msg.id !== currentChatId) {
+                console.debug(`chat for another chat ${msg.id} !== ${currentChatId}`)
+                return
+            }
+
             messages.setChat(msg)
-            currentChatId = msg.id
-            otherChats.setActive(msg.id)
-            updateQueryParam("chatId", msg.id)
         }
 
         if (msg.type === "Personalities") {
