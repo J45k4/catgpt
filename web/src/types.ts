@@ -45,8 +45,8 @@ export type Personality = {
     txt: string
 }
 
-export type NewPersonality = {
-    type: "NewPersonality"
+export type PersonalitySaved = {
+    type: "PersonalitySaved"
     personality: Personality
 }
 
@@ -104,7 +104,7 @@ export type MsgFromSrv = MsgDelta |
     Chat | 
     ChatMetas |
     Personalities | 
-    NewPersonality |
+    PersonalitySaved |
     PersonalityDeleted |
     NewMsg |
     ChatCreated |

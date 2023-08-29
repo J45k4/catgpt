@@ -24,7 +24,6 @@ use crate::types::MODEL_GPT_4;
 use crate::types::MODEL_RANDOM;
 use crate::types::MsgToCli;
 use crate::types::MsgToSrv;
-use crate::types::NewPersonality;
 use crate::types::Personalities;
 use crate::types::Personality;
 
@@ -239,11 +238,14 @@ impl WsServer {
 
                 let chat = self.ctx.db.get_chat(&chat_id).await;
 
-                if let Some(chat) = chat {
-                    let msg = MsgToCli::Chat(chat.clone());
-                    let msg = to_string(&msg).unwrap();
-                    let msg = Message::text(msg);
-                    self.ws.send(msg).await.unwrap();
+                match chat {
+                    Some(chat) => {
+                        let msg = MsgToCli::Chat(chat.clone());
+                        self.send_msg(msg).await;
+                    },
+                    None => {
+                        log::error!("chat {} not found", chat_id);
+                    }
                 }
             },
             MsgToSrv::SavePersonality { id, txt } => {
@@ -283,9 +285,9 @@ impl WsServer {
 
                 self.ctx.db.save_changes().await;
 
-                let msg = MsgToCli::NewPersonality(NewPersonality {
-                    personality
-                });
+                let msg = MsgToCli::PersonalitySaved {
+                    personality: personality.clone()
+                };
                 self.send_msg(msg).await;
             },
             MsgToSrv::GetPersonalities => {
@@ -301,6 +303,7 @@ impl WsServer {
             MsgToSrv::DelPersonality { id } => {
                 log::debug!("del personality {}", id);
                 self.ctx.db.del_personality(&id).await;
+                self.ctx.db.save_changes().await;
                 self.send_msg(MsgToCli::PersonalityDeleted { id }).await;
             },
             MsgToSrv::DelMsg { chat_id, msg_id } => {
@@ -313,7 +316,9 @@ impl WsServer {
                         self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
                         self.ctx.db.save_changes().await;
                     },
-                    None => {}
+                    None => {
+                        log::error!("chat {} not found", chat_id);
+                    }
                 }
             },
             MsgToSrv::Authenticate { token } => {

@@ -93,11 +93,6 @@ pub struct Personalities {
     pub personalities: Vec<Personality>
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct NewPersonality {
-    pub personality: Personality
-}
-
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum MsgToSrv {
@@ -141,7 +136,9 @@ pub enum MsgToCli {
     },
     Chat(Chat),
     Personalities(Personalities),
-    NewPersonality(NewPersonality),
+    PersonalitySaved {
+        personality: Personality
+    },
     PersonalityDeleted {
         id: String
     },

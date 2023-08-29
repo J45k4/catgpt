@@ -345,7 +345,7 @@ enum Model {
 
 window.onload = () => {
     let currentChatId = getQueryParam("chatId") || null
-    let currentPersonalityId = null
+    let currentPersonalityId = getQueryParam("personalityId") || null
     let clientMsgId = 1
 
     const connectionStatus = document.getElementById("connectionStatus")
@@ -409,6 +409,7 @@ window.onload = () => {
             console.log("personality clicked", personality)
             personalityTxt.value = personality.txt
             currentPersonalityId = personality.id
+            updateQueryParam("personalityId", currentPersonalityId)
         }
     })
 
@@ -475,10 +476,20 @@ window.onload = () => {
 
         if (msg.type === "Personalities") {
             personalitiesContainer.setPersonalities(msg.personalities)
+
+            if (currentPersonalityId) {
+                const personality = msg.personalities.find(p => p.id === currentPersonalityId)
+                if (personality) {
+                    personalityTxt.value = personality.txt
+                }
+            }
         }
 
-        if (msg.type === "NewPersonality") {
+        if (msg.type === "PersonalitySaved") {
             personalitiesContainer.addPersonality(msg.personality)
+            personalityTxt.value = msg.personality.txt
+            currentPersonalityId = msg.personality.id
+            updateQueryParam("personalityId", currentPersonalityId)
         }
 
         if (msg.type === "PersonalityDeleted") {
@@ -599,6 +610,13 @@ window.onload = () => {
             id: currentPersonalityId
         })
         personalityTxt.value = ""
+    }
+
+    const unselectPersonalityBtn = document.getElementById("unselectPersonalityBtn") as HTMLButtonElement
+    unselectPersonalityBtn.onclick = () => {
+        currentPersonalityId = null
+        personalityTxt.value = ""
+        clearQueryParam("personalityId")
     }
 
     // window.onresize = () => {
