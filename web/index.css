@@ -127,3 +127,44 @@ body {
     margin-top: 20px;
     margin-bottom: 20px;
 }
+
+.msg_header {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 2em;
+}
+
+.msg_info_div {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+@media (max-width: 600px) {
+    .msg_info_div {
+        flex-direction: column;
+    }
+}
+
+.msgHeaderItem {
+    margin-right: 10px;
+    font-size: 12px;
+}
+
+/* @media (max-width: 400px) {
+    .msgHeaderItem {
+        margin-right: 0px;
+        margin-bottom: 5px;
+    }
+} */
+
+.msg_stats {
+    display: flex;
+    flex-direction: row;
+}
+
+@media (max-width: 400px) {
+    .msg_stats {
+        flex-wrap: wrap;
+    }
+}

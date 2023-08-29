@@ -198,46 +198,45 @@ class ChatMessages {
         div.style.backgroundColor = msg.bot ? "#e6e6e6" : "white"
     
         const headerDiv = document.createElement("div")
-        headerDiv.style.display = "flex"
-        headerDiv.style.flexDirection = "row"
-    
-        const userDiv = document.createElement("div")
-        userDiv.innerHTML = msg.user
-        userDiv.style.fontWeight = "bold"
-        userDiv.style.fontSize = "20px"
-        userDiv.style.fontWeight = "2px"
-        userDiv.style.flexGrow = "1"
-        headerDiv.appendChild(userDiv)
+        headerDiv.className = "msg_header"
 
-        const utility_div = document.createElement("div")
-        utility_div.style.display = "flex"
-        utility_div.style.flexDirection = "row"
-        headerDiv.appendChild(utility_div)
+        const msg_info_div = document.createElement("div")
+        msg_info_div.className = "msg_info_div"
+        headerDiv.appendChild(msg_info_div)
+    
+        const user_name_div = document.createElement("div")
+        user_name_div.innerHTML = msg.user
+        user_name_div.style.fontWeight = "bold"
+        user_name_div.style.fontSize = "20px"
+        user_name_div.style.fontWeight = "2px"
+        user_name_div.style.flexGrow = "1"
+        msg_info_div.appendChild(user_name_div)
+
+        const msg_stats_div = document.createElement("div")
+        msg_stats_div.className = "msg_stats"
+        msg_info_div.appendChild(msg_stats_div)
 
         const dateDiv = document.createElement("div")
         dateDiv.innerHTML = new Date(msg.datetime).toLocaleString()
-        dateDiv.style.fontSize = "12px"
-        dateDiv.style.marginRight = "20px"
-        utility_div.appendChild(dateDiv)
+        dateDiv.className = "msgHeaderItem"
+        msg_stats_div.appendChild(dateDiv)
 
         const wordCount = document.createElement("div")
         wordCount.innerHTML = "words: " + msg.message.split(" ").length.toString()
-        wordCount.style.fontSize = "12px"
-        wordCount.style.marginRight = "5px"
-        utility_div.appendChild(wordCount)
+        wordCount.className = "msgHeaderItem"
+        msg_stats_div.appendChild(wordCount)
 
         const charCount = document.createElement("div")
         charCount.innerHTML = "chars: " + msg.message.length.toString()
-        charCount.style.fontSize = "12px"
-        charCount.style.marginRight = "5px"
-        utility_div.appendChild(charCount)
+        charCount.className = "msgHeaderItem"
+        msg_stats_div.appendChild(charCount)
 
         const deleteBtn = document.createElement("button")
         deleteBtn.innerHTML = "Delete"
         deleteBtn.onclick = () => {
             this.onDeleteMessage(msg.id)
         }
-        utility_div.appendChild(deleteBtn)
+        headerDiv.appendChild(deleteBtn)
 
         // headerDiv.innerHTML = msg.user
         // headerDiv.style.fontSize = "20px"
