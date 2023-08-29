@@ -588,14 +588,14 @@ window.onload = () => {
         const msg = newMessageInput.value
         console.log("send message ", msg)
 
-        messages.addMessage({
-            id: String(clientMsgId++),
-            chatId: currentChatId,
-            user: "User",
-            bot: false,
-            message: msg,
-            datetime: new Date().toISOString()
-        })
+        // messages.addMessage({
+        //     id: String(clientMsgId++),
+        //     chatId: currentChatId,
+        //     user: "User",
+        //     bot: false,
+        //     message: msg,
+        //     datetime: new Date().toISOString()
+        // })
 
         console.log("instructions", personalityTxt.value)
 
@@ -612,11 +612,17 @@ window.onload = () => {
 
 
     sendButton.onclick = () => sendMessageAction()
-
     
     newMessageInput.onkeydown = e => {
         if (e.key === "Enter") {
             sendMessageAction()
+        }
+    }
+    newMessageInput.onchange = e => {
+        if (e.target.value === "") {
+            sendButton.innerHTML = "Generate"
+        } else {
+            sendButton.innerHTML = "Send"
         }
     }
 

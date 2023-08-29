@@ -186,17 +186,22 @@ impl WsServer {
 
                 let chat_id = chat.id.clone();
 
-                let chatmsg = ChatMsg {
-                    id: Uuid::new_v4().to_string(),
-                    chat_id: chat_id.clone(),
-                    message: msg.txt,
-                    bot: false,
-                    user: user_name.clone(),
-                    user_id: user_name,
-                    datetime: Utc::now()
-                };
+                if !msg.txt.is_empty() {
+                    let chatmsg = ChatMsg {
+                        id: Uuid::new_v4().to_string(),
+                        chat_id: chat_id.clone(),
+                        message: msg.txt,
+                        bot: false,
+                        user: user_name.clone(),
+                        user_id: user_name,
+                        datetime: Utc::now()
+                    };
+    
+                    chat.messages.push(chatmsg.clone());
 
-                chat.messages.push(chatmsg.clone());
+                    let msg = MsgToCli::NewMsg { msg: chatmsg.clone() };
+                    self.send_msg(msg).await;
+                }
 
                 self.ctx.db.save_chat(chat).await;
                 self.ctx.db.save_changes().await;
