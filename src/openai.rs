@@ -224,7 +224,7 @@ impl Openai {
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
                 else { OpenaiChatRole::User };
         
-                if word_count + len > 3000 {
+                if word_count + len > 5000 {
                     break;
                 }
         
