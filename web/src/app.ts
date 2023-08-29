@@ -214,8 +214,14 @@ class ChatMessages {
         utility_div.style.flexDirection = "row"
         headerDiv.appendChild(utility_div)
 
+        const wordCount = document.createElement("div")
+        wordCount.innerHTML = "words: " + msg.message.split(" ").length.toString()
+        wordCount.style.fontSize = "12px"
+        wordCount.style.marginRight = "5px"
+        utility_div.appendChild(wordCount)
+
         const charCount = document.createElement("div")
-        charCount.innerHTML = msg.message.length.toString()
+        charCount.innerHTML = "chars: " + msg.message.length.toString()
         charCount.style.fontSize = "12px"
         charCount.style.marginRight = "5px"
         utility_div.appendChild(charCount)
