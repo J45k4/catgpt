@@ -209,15 +209,23 @@ class ChatMessages {
         userDiv.style.flexGrow = "1"
         headerDiv.appendChild(userDiv)
 
-        const btnDiv = document.createElement("div")
-        headerDiv.appendChild(btnDiv)
+        const utility_div = document.createElement("div")
+        utility_div.style.display = "flex"
+        utility_div.style.flexDirection = "row"
+        headerDiv.appendChild(utility_div)
+
+        const charCount = document.createElement("div")
+        charCount.innerHTML = msg.message.length.toString()
+        charCount.style.fontSize = "12px"
+        charCount.style.marginRight = "5px"
+        utility_div.appendChild(charCount)
 
         const deleteBtn = document.createElement("button")
         deleteBtn.innerHTML = "Delete"
         deleteBtn.onclick = () => {
             this.onDeleteMessage(msg.id)
         }
-        btnDiv.appendChild(deleteBtn)
+        utility_div.appendChild(deleteBtn)
 
         // headerDiv.innerHTML = msg.user
         // headerDiv.style.fontSize = "20px"
