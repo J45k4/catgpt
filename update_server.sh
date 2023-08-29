@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Update the repository and get the latest commit hash
-git pull origin master
+git pull
 latest_commit=$(git log --no-walk -n 1 --pretty=format:"%H")
 
 # Set the VERSION environment variable
