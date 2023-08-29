@@ -204,7 +204,7 @@ class ChatMessages {
         headerDiv.className = "msg_header"
 
         const msg_info_div = document.createElement("div")
-        msg_info_div.className = "msg_info_div"
+        msg_info_div.className = "msg_info"
         headerDiv.appendChild(msg_info_div)
     
         const user_name_div = document.createElement("div")
@@ -213,6 +213,7 @@ class ChatMessages {
         user_name_div.style.fontSize = "20px"
         user_name_div.style.fontWeight = "2px"
         user_name_div.style.flexGrow = "1"
+        user_name_div.style.whiteSpace = "nowrap"
         msg_info_div.appendChild(user_name_div)
 
         const msg_stats_div = document.createElement("div")
@@ -234,12 +235,24 @@ class ChatMessages {
         charCount.className = "msgHeaderItem"
         msg_stats_div.appendChild(charCount)
 
+        const btn_div = document.createElement("div")
+        btn_div.style.display = "flex"
+        btn_div.style.flexDirection = "column"
+        headerDiv.appendChild(btn_div)
+
         const deleteBtn = document.createElement("button")
         deleteBtn.innerHTML = "Delete"
         deleteBtn.onclick = () => {
             this.onDeleteMessage(msg.id)
         }
-        headerDiv.appendChild(deleteBtn)
+        btn_div.appendChild(deleteBtn)
+
+        const copy_btn = document.createElement("button")
+        copy_btn.innerHTML = "Copy"
+        copy_btn.onclick = () => {
+            navigator.clipboard.writeText(msg.message)
+        }
+        btn_div.appendChild(copy_btn)
 
         // headerDiv.innerHTML = msg.user
         // headerDiv.style.fontSize = "20px"

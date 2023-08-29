@@ -134,14 +134,14 @@ body {
     margin-bottom: 2em;
 }
 
-.msg_info_div {
+.msg_info {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
 }
 
 @media (max-width: 600px) {
-    .msg_info_div {
+    .msg_info {
         flex-direction: column;
     }
 }
