@@ -12,7 +12,6 @@ use tokio::sync::RwLock;
 
 use crate::types::Chat;
 use crate::types::ChatMeta;
-use crate::types::ChatMsg;
 use crate::types::Personality;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]

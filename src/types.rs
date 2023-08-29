@@ -169,12 +169,12 @@ pub enum MsgToCli {
         chat_id: String,
         delta: String
     },
-    StartedGenerating {
-        chat_id: String,
-    },
-    StopedGenerating {
-        chat_id: String
-    },
+    // StartedGenerating {
+    //     chat_id: String,
+    // },
+    // StopedGenerating {
+    //     chat_id: String
+    // },
 }
 
 #[derive(Debug, Clone)]
