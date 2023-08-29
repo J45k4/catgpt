@@ -297,7 +297,7 @@ impl Openai {
             openai_chat_req.messages.push(
                 OpenaiChatMessage { 
                     role: OpenaiChatRole::User, 
-                    content: "summarise this conversation with very short sentence.".into()
+                    content: "summarise this conversation with very short sentence. Be very brief it is important!!".into()
                 }
             );
 
