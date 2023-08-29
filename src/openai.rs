@@ -293,41 +293,37 @@ impl Openai {
 
         chat.messages.push(new_msg.clone());
 
-        if let Some(mut chat) = self.db.get_chat(&req.chat_id).await {
-            if chat.title.is_none() {
-                openai_chat_req.messages.push(
-                    OpenaiChatMessage { 
-                        role: OpenaiChatRole::Assistant, 
-                        content: "summarise this conversation with very short sentence.".into()
-                    }
-                );
-
-                let mut new_title = String::new();
-
-                let mut stream = self.stream_openai_chat(openai_chat_req.clone()).await;
-                while let Some(r) = stream.next().await {
-                    log::debug!("{:?}", r);
-        
-                    let first_choise = &r.choices[0];
-            
-                    if let Some(d) = &first_choise.delta.content {
-                        new_title += d;
-
-                        let event = Event::TitleDelta { 
-                            chat_id: req.chat_id.clone(), 
-                            delta: d.to_string()
-                        };
-            
-                        self.ch.send(event).unwrap();
-                    }
+        if chat.title.is_none() {
+            openai_chat_req.messages.push(
+                OpenaiChatMessage { 
+                    role: OpenaiChatRole::Assistant, 
+                    content: "summarise this conversation with very short sentence.".into()
                 }
+            );
 
-                log::info!("new chat title: {}", new_title);
+            let mut new_title = String::new();
 
-                chat.title = Some(new_title);
+            let mut stream = self.stream_openai_chat(openai_chat_req.clone()).await;
+            while let Some(r) = stream.next().await {
+                log::debug!("{:?}", r);
+    
+                let first_choise = &r.choices[0];
+        
+                if let Some(d) = &first_choise.delta.content {
+                    new_title += d;
 
-                
+                    let event = Event::TitleDelta { 
+                        chat_id: req.chat_id.clone(), 
+                        delta: d.to_string()
+                    };
+        
+                    self.ch.send(event).unwrap();
+                }
             }
+
+            log::info!("new chat title: {}", new_title);
+
+            chat.title = Some(new_title);    
         }
 
         self.db.save_chat(chat).await;
