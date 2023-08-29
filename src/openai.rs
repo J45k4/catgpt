@@ -224,16 +224,7 @@ impl Openai {
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
                 else { OpenaiChatRole::User };
         
-                if word_count + len > 2000 {
-                    let diff = word_count + len - 2000;
-        
-                    openai_chat_req.messages.push(
-                        OpenaiChatMessage {
-                            role,
-                            content: msg.message[diff..].to_string()
-                        }
-                    );
-        
+                if word_count + len > 3000 {
                     break;
                 }
         
