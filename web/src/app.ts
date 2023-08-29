@@ -214,6 +214,12 @@ class ChatMessages {
         utility_div.style.flexDirection = "row"
         headerDiv.appendChild(utility_div)
 
+        const dateDiv = document.createElement("div")
+        dateDiv.innerHTML = new Date(msg.datetime).toLocaleString()
+        dateDiv.style.fontSize = "12px"
+        dateDiv.style.marginRight = "20px"
+        utility_div.appendChild(dateDiv)
+
         const wordCount = document.createElement("div")
         wordCount.innerHTML = "words: " + msg.message.split(" ").length.toString()
         wordCount.style.fontSize = "12px"
