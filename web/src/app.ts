@@ -353,6 +353,8 @@ window.onload = () => {
     let currentPersonalityId = getQueryParam("personalityId") || null
     let clientMsgId = 1
 
+    let current_version = null
+
     const connectionStatus = document.getElementById("connectionStatus")
     const personalityTxt = document.getElementById("instructionText") as HTMLTextAreaElement
 
@@ -462,6 +464,12 @@ window.onload = () => {
                     type: "GetChat",
                     chatId: currentChatId
                 })
+            }
+
+            if (current_version != null && current_version !== msg.version) {
+                window.location.reload()
+            } else {
+                current_version = msg.version
             }
         }
 

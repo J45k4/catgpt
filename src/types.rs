@@ -162,7 +162,8 @@ pub enum MsgToCli {
         msg_id: String
     },
     Authenticated {
-        token: String
+        token: String,
+        version: String
     },
     AuthError,
     AuthTokenInvalid,

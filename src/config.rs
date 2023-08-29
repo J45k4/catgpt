@@ -81,3 +81,14 @@ impl Config {
         }
     }
 }
+
+pub fn get_version() -> &'static str {
+    match option_env!("VERSION") {
+        Some(ver) => {
+            ver
+        },
+        None => {
+            "CUTE_PUPPY"
+        }
+    }
+}

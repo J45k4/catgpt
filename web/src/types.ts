@@ -93,6 +93,7 @@ export type ChatMetas = {
 export type Authenticated = {
     type: "Authenticated"
     token: string
+    version: string
 }
 
 export type AuthTokenInvalid = {

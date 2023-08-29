@@ -24,6 +24,7 @@ use types::OpenaiChatReq;
 use crate::args::ConfigCommands;
 use crate::args::ConfigKeys;
 use crate::config::Config;
+use crate::config::get_version;
 use crate::database::Database;
 
 use crate::openai::OpenaiBuilder;
@@ -137,6 +138,8 @@ async fn main() -> anyhow::Result<()> {
     env_logger::Builder::new()
         .filter_level(log::LevelFilter::Debug)
         .init();
+
+    log::info!("version {}", get_version());
 
     let args = Args::parse();
 

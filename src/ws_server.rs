@@ -13,6 +13,7 @@ use crate::auth::decode_hs512_token;
 use crate::auth::encode_hs512_token;
 use crate::config::Config;
 use crate::config::JWTKeyType;
+use crate::config::get_version;
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
 use crate::types::Chat;
@@ -91,7 +92,10 @@ impl WsServer {
                                     JwtDecodeResult::Claims(c) => {
                                         log::info!("auth success {:?}", c);
                                         self.user = Some(c.user);
-                                        let msg = MsgToCli::Authenticated { token: token.clone() };
+                                        let msg = MsgToCli::Authenticated { 
+                                            token: token.clone(),
+                                            version: get_version().to_string()
+                                        };
                                         self.authenicated = true;
                                         self.send_msg(msg).await;
                                     },
@@ -135,7 +139,10 @@ impl WsServer {
                                 };
 
                                 let token = encode_hs512_token(key.as_bytes(), &user.username).await?;
-                                let msg = MsgToCli::Authenticated { token: token.clone() };
+                                let msg = MsgToCli::Authenticated { 
+                                    token: token.clone(),
+                                    version: get_version().to_string()
+                                };
                                 self.authenicated = true;
                                 self.send_msg(msg).await;
                             },
@@ -323,7 +330,10 @@ impl WsServer {
             },
             MsgToSrv::Authenticate { token } => {
                 log::debug!("authenticate {}", token);
-                let msg = MsgToCli::Authenticated { token };
+                let msg = MsgToCli::Authenticated { 
+                    token,
+                    version: get_version().to_string()
+                };
                 self.send_msg(msg).await;
             },
             MsgToSrv::GenTitle { chat_id } => {

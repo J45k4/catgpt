@@ -54,7 +54,6 @@ async fn load_data(p: PathBuf, inner: Arc<RwLock<Inner>>) {
     while let Some(path) = paths.next_entry().await.unwrap() {
         let path = path.path();
         log::info!("Loading {:?}", path);
-        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
 
         let mut file = File::open(path).await.unwrap();
         let mut content = String::new();
