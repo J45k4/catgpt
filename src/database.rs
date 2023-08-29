@@ -32,6 +32,7 @@ struct Inner {
     chats: HashMap<String, Chat>,
     personalities: HashMap<String, Personality>,
     new_chat_ids: HashSet<String>,
+    changed_personality_ids: HashSet<String>,
 }
 
 pub struct Database {
@@ -106,7 +107,9 @@ impl Database {
     pub async fn save_personality(&self, personality: Personality) {
         log::debug!("save_instruction");
         let mut inner = self.inner.write().await;
-        inner.personalities.insert(personality.id.clone(), personality);
+        let id = personality.id.clone();
+        inner.personalities.insert(id.clone(), personality);
+        inner.changed_personality_ids.insert(id.clone());
     }
 
     pub async fn get_personality(&self, id: &str) -> Option<Personality> {
@@ -148,18 +151,82 @@ impl Database {
     }
 
     pub async fn save_changes(&self) {
+        log::info!("saving changes to disk");
         let inner = self.inner.read().await;
 
-        for (_, chat) in &inner.chats {
+        for chat_id in &inner.new_chat_ids {
+            let chat = match inner.chats.get(chat_id) {
+                Some(chat) => chat,
+                None => {
+                    log::error!("Failed to get chat: {:?}", chat_id);
+                    continue;
+                },
+            };
+            let file_name = format!("{}.json", chat_id);
+            let path = inner.path.join(file_name);
+            let mut file = match File::create(path).await {
+                Ok(file) => file,
+                Err(err) => {
+                    log::error!("Failed to create file: {:?}", err);
+                    continue;
+                }
+            };
             let doc = FileDocument {
                 version: 1,
-                content: FileContent::Chat(chat.clone()),
+                content: FileContent::Chat(chat.clone())
             };
-
-            let path = inner.path.join(&chat.id);
-            let mut file = File::create(path).await.unwrap();
-            let json = serde_json::to_string(&doc).unwrap();
-            file.write_all(json.as_bytes()).await.unwrap();
+            let content = match serde_json::to_string(&doc) {
+                Ok(content) => content,
+                Err(err) => {
+                    log::error!("Failed to serialize chat: {:?}", err);
+                    continue;
+                }
+            };
+            match file.write_all(content.as_bytes()).await {
+                Ok(_) => {},
+                Err(err) => {
+                    log::error!("Failed to write chat: {:?}", err);
+                    continue;
+                }
+            };
         }
+
+        for personality_id in &inner.changed_personality_ids {
+            let personality = match inner.personalities.get(personality_id) {
+                Some(personality) => personality,
+                None => {
+                    log::error!("Failed to get personality: {:?}", personality_id);
+                    continue;
+                },
+            };
+            let file_name = format!("{}.json", personality_id);
+            let path = inner.path.join(file_name);
+            let mut file = match File::create(path).await {
+                Ok(file) => file,
+                Err(err) => {
+                    log::error!("Failed to create file: {:?}", err);
+                    continue;
+                }
+            };
+            let doc = FileDocument {
+                version: 1,
+                content: FileContent::Personality(personality.clone())
+            };
+            let content = match serde_json::to_string(&doc) {
+                Ok(content) => content,
+                Err(err) => {
+                    log::error!("Failed to serialize personality: {:?}", err);
+                    continue;
+                }
+            };
+            match file.write_all(content.as_bytes()).await {
+                Ok(_) => {},
+                Err(err) => {
+                    log::error!("Failed to write personality: {:?}", err);
+                    continue;
+                }
+            };
+        }
+        
     }
 }

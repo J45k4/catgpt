@@ -296,7 +296,7 @@ impl Openai {
         if chat.title.is_none() {
             openai_chat_req.messages.push(
                 OpenaiChatMessage { 
-                    role: OpenaiChatRole::Assistant, 
+                    role: OpenaiChatRole::User, 
                     content: "summarise this conversation with very short sentence.".into()
                 }
             );

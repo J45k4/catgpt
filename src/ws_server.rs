@@ -281,6 +281,8 @@ impl WsServer {
                     }
                 };
 
+                self.ctx.db.save_changes().await;
+
                 let msg = MsgToCli::NewPersonality(NewPersonality {
                     personality
                 });
