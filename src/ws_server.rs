@@ -156,28 +156,21 @@ impl WsServer {
             MsgToSrv::SendMsg(msg) => {
                 log::debug!("{:?}", msg);
 
-                let chat_id = match msg.chat_id {
-                    Some(chat_id) => self.ctx.db.get_chat(&chat_id).await.map(|c| c.id),
+                let chat = match msg.chat_id {
+                    Some(chat_id) => {
+                        self.ctx.db.get_chat(&chat_id).await
+                    }
                     None => None
                 };
 
-                let chat_id = match chat_id {
-                    Some(chat_id) => chat_id,
+                let mut chat = match chat {
+                    Some(chat) => chat,
                     None => {
-                        let id = Uuid::new_v4().to_string();
-
-                        log::info!("chat_id not found, create new chat {}", id);
-
-                        let new_chat = Chat {
-                            id: id.clone(),
-                            messages: vec![],
-                            ..Default::default()
-                        };
-                        self.ctx.db.add_chat(new_chat.clone()).await;
+                        let new_chat = Chat::new();
                         self.send_msg(MsgToCli::ChatCreated { chat: new_chat.clone() }).await;
-                        self.ctx.ch.send(Event::NewChat { chat: new_chat }).unwrap();
-                        id
-                    }
+                        self.ctx.ch.send(Event::NewChat { chat: new_chat.clone() }).unwrap();
+                        new_chat
+                    },
                 };
 
                 let user_name = match &self.user {
@@ -185,16 +178,22 @@ impl WsServer {
                     None => "User".to_string()
                 };
 
+                let chat_id = chat.id.clone();
+
                 let chatmsg = ChatMsg {
                     id: Uuid::new_v4().to_string(),
                     chat_id: chat_id.clone(),
                     message: msg.txt,
                     bot: false,
-                    user: user_name,
+                    user: user_name.clone(),
+                    user_id: user_name,
                     datetime: Utc::now()
                 };
 
-                self.ctx.db.save_msg(chatmsg.clone()).await;
+                chat.messages.push(chatmsg.clone());
+
+                self.ctx.db.save_chat(chat).await;
+                self.ctx.db.save_changes().await;
 
                 match msg.model.as_str() {
                     MODEL_RANDOM => {
@@ -229,7 +228,9 @@ impl WsServer {
                     ..Default::default()
                 };
 
-                self.ctx.db.add_chat(chat.clone()).await;
+                self.ctx.db.save_chat(chat.clone()).await;
+
+
 
                 self.send_msg(MsgToCli::ChatCreated { chat }).await;
             }
@@ -302,8 +303,16 @@ impl WsServer {
             },
             MsgToSrv::DelMsg { chat_id, msg_id } => {
                 log::debug!("del msg {} from chat {}", msg_id, chat_id);
-                self.ctx.db.del_msg(&chat_id, &msg_id).await;
-                self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
+
+                match self.ctx.db.get_chat(&chat_id).await {
+                    Some(mut chat) => {
+                        chat.messages.retain(|m| m.id != msg_id);
+                        self.ctx.db.save_chat(chat).await;
+                        self.send_msg(MsgToCli::MsgDeleted { chat_id, msg_id }).await;
+                        self.ctx.db.save_changes().await;
+                    },
+                    None => {}
+                }
             },
             MsgToSrv::Authenticate { token } => {
                 log::debug!("authenticate {}", token);

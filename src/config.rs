@@ -24,7 +24,8 @@ pub struct Config {
     pub login_required: Option<bool>,
     pub users: Option<Vec<User>>,
     pub jwt_key_type: Option<JWTKeyType>,
-    pub jwt_hs512_key: Option<String>
+    pub jwt_hs512_key: Option<String>,
+    db_path: Option<String>,
 }
 
 impl Config {
@@ -51,6 +52,20 @@ impl Config {
         let config_path = aki_dir.join("config.toml");
 
         self.save(config_path);
+    }
+
+    pub fn db_path(&self) -> String {
+        if let Some(db_path) = &self.db_path {
+            return db_path.to_string();
+        }
+
+        let db_path = home_dir().unwrap().join(".aki").join("db");
+
+        if !db_path.exists() {
+            std::fs::create_dir_all(&db_path).unwrap();
+        }
+
+        db_path.to_str().unwrap().to_string()
     }
 
     pub fn provide() -> Config {

@@ -24,6 +24,8 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
     let vocabulary = include_str!("../vocabulary.txt");
     let words = vocabulary.lines().collect::<Vec<_>>();
 
+    let mut chat = ctx.db.get_chat(&chat_id).await.unwrap();
+
     let number_of_words = 50;
 
     let msg_id = Uuid::new_v4().to_string();
@@ -34,7 +36,8 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         datetime: Utc::now(),
         message: "".to_string(),
         bot: true,
-        user: "Random".to_string()
+        user: "random".to_string(),
+        user_id: "random".to_string()
     };
     
     ctx.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
@@ -62,5 +65,7 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         sleep(Duration::from_millis(20)).await;
     }
 
-    ctx.db.save_msg(new_msg).await;
+    chat.messages.push(new_msg.clone());
+    ctx.db.save_chat(chat).await;
+    ctx.db.save_changes().await;
 }

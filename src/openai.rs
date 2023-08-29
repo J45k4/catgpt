@@ -214,10 +214,10 @@ impl Openai {
         };
     
         let mut word_count = 0;
+
+        let mut chat = self.db.get_chat(&req.chat_id).await.unwrap();
     
         let req = {
-            let chat = self.db.get_chat(&req.chat_id).await.unwrap();
-    
             for msg in chat.messages.iter().rev() {
                 let len = msg.message.len();
     
@@ -262,7 +262,8 @@ impl Openai {
             datetime: Utc::now(),
             message: "".to_string(),
             bot: true,
-            user: model.to_string()
+            user: model.to_string(),
+            user_id: model.to_string()
         };
         
         self.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
@@ -290,7 +291,7 @@ impl Openai {
             }
         }
 
-        self.db.save_msg(new_msg).await;
+        chat.messages.push(new_msg.clone());
 
         if let Some(mut chat) = self.db.get_chat(&req.chat_id).await {
             if chat.title.is_none() {
@@ -325,9 +326,11 @@ impl Openai {
 
                 chat.title = Some(new_title);
 
-                self.db.save_chat(chat).await;
+                
             }
         }
 
+        self.db.save_chat(chat).await;
+        self.db.save_changes().await;
     }
 }

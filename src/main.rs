@@ -145,7 +145,7 @@ async fn main() -> anyhow::Result<()> {
     let client = Client::new();
 
     let (ch, _) = broadcast::channel::<Event>(100);
-    let db = Database::new();
+    let db = Database::new(config.db_path());
 
     let openai = OpenaiBuilder {
         ch: ch.clone(),

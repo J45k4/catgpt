@@ -5,6 +5,7 @@ use chrono::Utc;
 
 use serde_json::Value;
 use tokio::sync::broadcast;
+use uuid::Uuid;
 use crate::database::Database;
 use crate::openai::Openai;
 
@@ -49,6 +50,7 @@ pub struct ChatMsg {
     pub chat_id: String,
     pub message: String,
     pub user: String,
+    pub user_id: String,
     pub datetime: DateTime<Utc>,
     pub bot: bool
 }
@@ -60,10 +62,40 @@ pub struct Chat {
     pub messages: Vec<ChatMsg>
 }
 
+impl Chat {
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChatMeta {
     pub id: String,
     pub title: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct ChatIds {
+    pub ids: Vec<String>
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct Personality {
+    pub id: String,
+    pub txt: String
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Personalities {
+    pub personalities: Vec<Personality>
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct NewPersonality {
+    pub personality: Personality
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -96,34 +128,9 @@ pub enum MsgToSrv {
     },
     Authenticate {
         token: String
-    }
+    },
+    StopGenration
 }
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct ChatIds {
-    pub ids: Vec<String>
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct Personality {
-    pub id: String,
-    pub txt: String
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Personalities {
-    pub personalities: Vec<Personality>
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct NewPersonality {
-    pub personality: Personality
-}
-
-// #[derive(Debug, serde::Serialize, serde::Deserialize)]
-// pub struct PersonalityDeleted {
-//     pub id: String
-// }
 
 #[derive(serde::Serialize, Debug)]
 #[serde(tag = "type")]
@@ -161,7 +168,13 @@ pub enum MsgToCli {
     TitleDelta {
         chat_id: String,
         delta: String
-    }
+    },
+    StartedGenerating {
+        chat_id: String,
+    },
+    StopedGenerating {
+        chat_id: String
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -270,18 +283,6 @@ impl Clone for Context {
             openai: self.openai.clone(),
             db: self.db.clone(),
             ch: self.ch.clone(),
-        }
-    }
-}
-
-impl Context {
-    pub fn new(openai: Openai) -> Self {
-        let (ch, _) = broadcast::channel::<Event>(100);
-
-        Self { 
-            openai,
-            ch,
-            db: Database::new()
         }
     }
 }
