@@ -76,6 +76,12 @@ export type MsgDeleted = {
     msgId: string
 }
 
+export type ChatMeta = {
+    type: "ChatMeta"
+    id: string
+    title: string
+}
+
 export type ChatMetas = {
     type: "ChatMetas"
     metas: {
@@ -103,6 +109,7 @@ export type MsgFromSrv = MsgDelta |
     Chats |
     Chat | 
     ChatMetas |
+    ChatMeta |
     Personalities | 
     PersonalitySaved |
     PersonalityDeleted |
@@ -173,6 +180,11 @@ export type Authenticate = {
     token: string
 }
 
+export type GenTitle = {
+    type: "GenTitle"
+    chatId: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -183,4 +195,5 @@ export type MsgToSrv = SendMsg |
     DelPersonality |
     DelMsg |
     Login |
-    Authenticate
+    Authenticate |
+    GenTitle

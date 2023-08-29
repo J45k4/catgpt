@@ -326,6 +326,13 @@ impl WsServer {
                 let msg = MsgToCli::Authenticated { token };
                 self.send_msg(msg).await;
             },
+            MsgToSrv::GenTitle { chat_id } => {
+                log::debug!("regenerate title {}", chat_id);
+                let openai = self.ctx.openai.clone();
+                tokio::spawn(async move {
+                    openai.gen_title(chat_id).await;
+                });
+            },
             _ => {}
         }
 
@@ -355,6 +362,10 @@ impl WsServer {
             },
             Event::TitleDelta { chat_id, delta: title } => {
                 let msg = MsgToCli::TitleDelta { chat_id, delta: title };
+                self.send_msg(msg).await;
+            },
+            Event::ChatMeta(meta) => {
+                let msg = MsgToCli::ChatMeta(meta);
                 self.send_msg(msg).await;
             }
         }

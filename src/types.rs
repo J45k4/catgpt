@@ -124,6 +124,10 @@ pub enum MsgToSrv {
     Authenticate {
         token: String
     },
+    #[serde(rename_all = "camelCase")]
+    GenTitle {
+        chat_id: String
+    },
     StopGenration
 }
 
@@ -134,6 +138,7 @@ pub enum MsgToCli {
     ChatMetas {
         metas: Vec<ChatMeta>
     },
+    ChatMeta(ChatMeta),
     Chat(Chat),
     Personalities(Personalities),
     PersonalitySaved {
@@ -187,6 +192,7 @@ pub enum Event {
     NewChat {
         chat: Chat
     },
+    ChatMeta(ChatMeta),
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]

@@ -75,6 +75,11 @@ class OtherChats {
         div.innerHTML += delta
     }
 
+    public set_title(chatId: string, title: string) {
+        const div = document.getElementById("chat_" + chatId)
+        div.innerHTML = title   
+    }
+
     public setActive(chatId: string) {
         console.log("set active chat", chatId)
 
@@ -365,11 +370,25 @@ window.onload = () => {
     modelSelect.value = model || Model.gpt3_5
     currentModel = model as Model || Model.gpt3_5
 
+    const gen_title_btn = document.getElementById("gen_title_btn")
+    gen_title_btn.onclick = () => {
+        ws.send({
+            type: "GenTitle",
+            chatId: currentChatId
+        })
+    }
+
+    if (!currentChatId) {
+        gen_title_btn.hidden = true
+    }
+
     const otherChats = new OtherChats({
         root: document.getElementById("otherChats") as HTMLDivElement,
         onChatClicked: chatId => {
             currentChatId = chatId
             console.log("currentChatId", currentChatId)
+
+            gen_title_btn.hidden = false
 
             ws.send({
                 type: "GetChat",
@@ -535,6 +554,10 @@ window.onload = () => {
             if (currentChatId) {
                 otherChats.setActive(currentChatId)
             }
+        }
+
+        if (msg.type === "ChatMeta") {
+            otherChats.set_title(msg.id, msg.title)
         }
 
         if (msg.type === "TitleDelta") {

@@ -11,6 +11,7 @@ use tokio::sync::mpsc;
 use crate::database::Database;
 use crate::sse::SSEvent;
 use crate::sse::parse_events;
+use crate::types::ChatMeta;
 use crate::types::ChatMsg;
 
 use crate::types::Event;
@@ -326,6 +327,98 @@ impl Openai {
             chat.title = Some(new_title);    
         }
 
+        self.db.save_chat(chat).await;
+        self.db.save_changes().await;
+    }
+
+    pub async fn gen_title(&self, chat_id: String) {
+        log::info!("gen new title for chat {}", chat_id);
+
+        let mut chat = match self.db.get_chat(&chat_id).await {
+            Some(chat) => chat,
+            None => {
+                log::error!("chat not found");
+                return
+            }
+        };
+
+        let mut openai_chat_req = OpenaiChatReq { 
+            model: "gpt-3.5-turbo".to_string(), 
+            messages: vec![], 
+            stream: true,
+            // functions: vec![
+            //     set_title_func
+            // ],
+            // functions: Some(
+            //     vec![
+            //         set_title_func
+            //     ]
+            // )
+            ..Default::default()
+        };
+
+        let mut word_count = 0;
+
+        for msg in chat.messages.iter().rev() {
+            let words = msg.message.split_whitespace().collect::<Vec<_>>();
+            let count = words.len();
+
+            let role = if msg.bot { OpenaiChatRole::Assistant } 
+            else { OpenaiChatRole::User };
+    
+            if word_count + count > 1000 {
+                break;
+            }
+    
+            openai_chat_req.messages.push(
+                OpenaiChatMessage { 
+                    role, 
+                    content: msg.message.to_string() 
+                }
+            );
+            
+            word_count += msg.message.len();
+        }
+
+        openai_chat_req.messages.reverse();
+
+        openai_chat_req.messages.push(
+            OpenaiChatMessage { 
+                role: OpenaiChatRole::User, 
+                content: "summarise this conversation with very short sentence. Be very brief it is important!!".into()
+            }
+        );
+
+        let mut new_title = String::new();
+
+        let mut stream = self.stream_openai_chat(openai_chat_req.clone()).await;
+
+        self.ch.send(Event::ChatMeta(
+            ChatMeta {
+                id: chat_id.clone(),
+                title: None
+            }
+        )).unwrap_or_default();
+
+        while let Some(r) = stream.next().await {
+            log::debug!("{:?}", r);
+
+            let first_choise = &r.choices[0];
+    
+            if let Some(d) = &first_choise.delta.content {
+                new_title += d;
+
+                let event = Event::TitleDelta { 
+                    chat_id: chat_id.clone(), 
+                    delta: d.to_string()
+                };
+    
+                self.ch.send(event).unwrap();
+            }
+        }
+
+        log::info!("new chat title: {}", new_title);
+        chat.title = Some(new_title);
         self.db.save_chat(chat).await;
         self.db.save_changes().await;
     }
