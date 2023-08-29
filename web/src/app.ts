@@ -52,6 +52,7 @@ class OtherChats {
         div.innerHTML = title ?? chatId
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
+        div.style.padding = "5px"
         div.style.cursor = "pointer"
         div.style.color = "blue"
         div.style.whiteSpace = "wrap"
@@ -75,6 +76,8 @@ class OtherChats {
     }
 
     public setActive(chatId: string) {
+        console.log("set active chat", chatId)
+
         if (this.activateChatId) {
             this.removeActive()
         }
@@ -446,22 +449,6 @@ window.onload = () => {
             messages.add_delta(msg)
         }
 
-        if (msg.type === "ChatIds") {
-            for (const chatId of msg.ids) {
-                otherChats.addPlaceholder(chatId)
-            }
-
-            const chatId = getQueryParam("chatId")
-
-            if (chatId) {
-                currentChatId = chatId
-                ws.send({
-                    type: "GetChat",
-                    chatId
-                })
-            }
-        }
-
         if (msg.type === "Chat") {
             console.log("chat", msg)
             otherChats.addPlaceholder(msg.id)
@@ -520,6 +507,10 @@ window.onload = () => {
             console.log("chatMetas", msg)
             for (const meta of msg.metas) {
                 otherChats.addPlaceholder(meta.id, meta.title)
+            }
+
+            if (currentChatId) {
+                otherChats.setActive(currentChatId)
             }
         }
 

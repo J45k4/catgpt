@@ -34,11 +34,6 @@ export type Chats = {
     chats: Chat[]
 }
 
-export type ChatIds = {
-    type: "ChatIds"
-    ids: string[]
-}
-
 export type Personalities = {
     type: "Personalities"
     personalities: Personality[]
@@ -105,8 +100,7 @@ export type TitleDelta = {
 }
 
 export type MsgFromSrv = MsgDelta | 
-    Chats | 
-    ChatIds | 
+    Chats |
     Chat | 
     ChatMetas |
     Personalities | 
