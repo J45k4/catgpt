@@ -613,16 +613,40 @@ window.onload = () => {
 
     sendButton.onclick = () => sendMessageAction()
     
+    let msg_input_heigth = 30;
+    newMessageInput.style.height = msg_input_heigth + "px"
+    newMessageInput.style.fontSize = "20px"
+    newMessageInput.style.width = "100%"
+    newMessageInput.style.resize = "none"
     newMessageInput.onkeydown = e => {
+        console.log("newMessageInput.onchange", e.key)
         if (e.key === "Enter") {
-            sendMessageAction()
+            if (e.shiftKey) {
+                e.preventDefault()
+                newMessageInput.value += "\n"
+            } else {
+                e.preventDefault()
+                sendMessageAction()
+            }
         }
-    }
-    newMessageInput.onchange = e => {
-        if (e.target.value === "") {
+        const val = newMessageInput.value
+
+        let line_count = 0
+        for (const char of val) {
+            if (char === "\n") {
+                line_count += 1
+            }
+        }
+        console.log("line_count", line_count)
+
+        let height = 30 + line_count * 25
+        console.log("new height", height)
+        newMessageInput.style.height = height + "px"
+
+        if (val === "") {
             sendButton.innerHTML = "Generate"
         } else {
-            sendButton.innerHTML = "Send"
+            sendButton.innerHTML = "Send" 
         }
     }
 
