@@ -236,8 +236,7 @@ class ChatMessages {
         msg_stats_div.appendChild(charCount)
 
         const btn_div = document.createElement("div")
-        btn_div.style.display = "flex"
-        btn_div.style.flexDirection = "column"
+        btn_div.className = "msg_header_btn_container"
         headerDiv.appendChild(btn_div)
 
         const deleteBtn = document.createElement("button")
