@@ -17,6 +17,8 @@ body {
 
 #otherChats {
     /* white-space: nowrap; */
+    max-height: 500px;
+    overflow: auto;
 }
 
 #newChatBtn {
