@@ -396,7 +396,8 @@ impl Openai {
         self.ch.send(Event::ChatMeta(
             ChatMeta {
                 id: chat_id.clone(),
-                title: None
+                title: None,
+                last_msg_datetime: None
             }
         )).unwrap_or_default();
 

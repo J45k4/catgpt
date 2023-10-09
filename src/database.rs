@@ -147,6 +147,7 @@ impl Database {
             ChatMeta {
                 id: chat.id.clone(),
                 title: chat.title.clone(),
+                last_msg_datetime: chat.messages.last().map(|msg| msg.datetime.clone())
             }
         }).collect()
     }

@@ -1,5 +1,3 @@
-
-
 use chrono::DateTime;
 use chrono::Utc;
 
@@ -72,8 +70,10 @@ impl Chat {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ChatMeta {
     pub id: String,
+    pub last_msg_datetime: Option<DateTime<Utc>>,
     pub title: Option<String>,
 }
 

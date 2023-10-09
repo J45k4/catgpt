@@ -1,4 +1,4 @@
-import { Chat, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
+import { Chat, ChatMeta, ChatMsg, MsgDelta, MsgFromSrv, MsgToSrv, Personality } from "./types"
 import { createConn, ws } from "./ws"
 
 const updateQueryParam = (param: string, value: string) => {
@@ -18,6 +18,12 @@ const getQueryParam = (param: string) => {
     return url.searchParams.get(param)
 }
 
+type GroupedChats = {
+    today: ChatMeta[],
+    yesterday: ChatMeta[],
+    older: { [date: string]: ChatMeta[] }
+};
+
 class OtherChats {
     private root: HTMLDivElement
     private activateChatId: string
@@ -33,23 +39,73 @@ class OtherChats {
         this.hasTitle = new Map()
     }
 
-    public addPlaceholder(chatId: string, title?: string) {
-        console.log("addPlaceholder")
+    public setChatMetas(metas: ChatMeta[]) {
+        const groupedChats = this.sortAndGroupChats(metas);
+        console.log("groupedChats", groupedChats)
+        this.buildUI(groupedChats);
+    }
 
-        let id = "chat_" + chatId
+    private buildUI(groupedChats: GroupedChats) {
+        this.root.innerHTML = '';
+        if (groupedChats.today.length > 0) {
+            this.addGroupToUI('Today', groupedChats.today);
+        }
+
+        if (groupedChats.yesterday.length > 0) {
+            this.addGroupToUI('Yesterday', groupedChats.yesterday);
+        }
+
+        Object.keys(groupedChats.older).sort().forEach(date => {
+            this.addGroupToUI(date, groupedChats.older[date]);
+        });
+    }
+
+    public addChat(args: {
+        chatId: string
+        title?: string
+    }) {
+        const existing = document.getElementById("chat_" + args.chatId)
+        if (existing) {
+            return
+        }
+
+        const div = this.createChatMetaDiv({
+            id: args.chatId,
+            title: args.title
+        })
+        this.root.prepend(div)
+    }
+
+    private addGroupToUI(title: string, metas: ChatMeta[]) {
+        const groupDiv = document.createElement('div');
+        groupDiv.id = "group_" + title
+        groupDiv.innerHTML = `<strong>${title}</strong>`;
+        this.root.appendChild(groupDiv);
+
+        metas.forEach(meta => {
+            const div = this.createChatMetaDiv(meta)
+            groupDiv.appendChild(div)
+        });
+    }
+
+    private createChatMetaDiv(meta: {
+        id: string
+        title?: string
+    }) {
+        let id = "chat_" + meta.id
 
         if (document.getElementById(id)) {
             console.log("already exists")
             return
         }
 
-        if (title) {
-            this.hasTitle.set(chatId, true)
+        if (meta.title) {
+            this.hasTitle.set(meta.id, true)
         }
 
         const div = document.createElement("div")
         div.id = id
-        div.innerHTML = title ?? chatId
+        div.innerHTML = meta.title ?? meta.id
         div.style.marginTop = "10px"
         div.style.marginBottom = "10px"
         div.style.padding = "5px"
@@ -58,10 +114,41 @@ class OtherChats {
         div.style.whiteSpace = "wrap"
 
         div.onclick = () => {
-            this.onChatClicked(chatId)
+            this.onChatClicked(meta.id)
         }
 
-        this.root.appendChild(div)
+        return div
+    }
+
+    private sortAndGroupChats(metas: ChatMeta[]): GroupedChats {
+        const grouped: GroupedChats = {
+            today: [],
+            yesterday: [],
+            older: {}
+        };
+    
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+    
+        // Sort metas by lastMsgDatetime descending (newest first)
+        metas.sort((a, b) => new Date(b.lastMsgDatetime).getTime() - new Date(a.lastMsgDatetime).getTime());
+    
+        metas.forEach(meta => {
+            const lastMsgDate = new Date(meta.lastMsgDatetime).toDateString();
+    
+            if (lastMsgDate === today) {
+                grouped.today.push(meta);
+            } else if (lastMsgDate === yesterday) {
+                grouped.yesterday.push(meta);
+            } else {
+                if (!grouped.older[lastMsgDate]) {
+                    grouped.older[lastMsgDate] = [];
+                }
+                grouped.older[lastMsgDate].push(meta);
+            }
+        });
+    
+        return grouped;
     }
 
     public addTitleDelta(chatId: string, delta: string) {
@@ -491,7 +578,9 @@ window.onload = () => {
 
         if (msg.type === "Chat") {
             console.log("chat", msg)
-            otherChats.addPlaceholder(msg.id)
+            otherChats.addChat({
+                chatId: msg.id
+            })
 
             if (msg.id !== currentChatId) {
                 console.debug(`chat for another chat ${msg.id} !== ${currentChatId}`)
@@ -540,7 +629,9 @@ window.onload = () => {
         }
 
         if (msg.type === "NewChat") {
-            otherChats.addPlaceholder(msg.chat.id)
+            otherChats.addChat({
+                chatId: msg.chat.id,
+            })
         }
 
         if (msg.type === "MsgDeleted") {
@@ -554,10 +645,7 @@ window.onload = () => {
         }
 
         if (msg.type === "ChatMetas") {
-            console.log("chatMetas", msg)
-            for (const meta of msg.metas) {
-                otherChats.addPlaceholder(meta.id, meta.title)
-            }
+            otherChats.setChatMetas(msg.metas)
 
             if (currentChatId) {
                 otherChats.setActive(currentChatId)
@@ -619,7 +707,6 @@ window.onload = () => {
     newMessageInput.style.width = "100%"
     newMessageInput.style.resize = "none"
     newMessageInput.onkeydown = e => {
-        console.log("newMessageInput.onchange", e.key)
         if (e.key === "Enter") {
             if (e.shiftKey) {
                 e.preventDefault()
@@ -637,10 +724,8 @@ window.onload = () => {
                 line_count += 1
             }
         }
-        console.log("line_count", line_count)
 
         let height = 30 + line_count * 25
-        console.log("new height", height)
         newMessageInput.style.height = height + "px"
 
         if (val === "") {

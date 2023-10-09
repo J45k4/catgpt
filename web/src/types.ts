@@ -80,14 +80,12 @@ export type ChatMeta = {
     type: "ChatMeta"
     id: string
     title: string
+    lastMsgDatetime: string
 }
 
 export type ChatMetas = {
     type: "ChatMetas"
-    metas: {
-        id: string
-        title: string
-    }[]
+    metas: ChatMeta[]
 }
 
 export type Authenticated = {
