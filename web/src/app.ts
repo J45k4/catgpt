@@ -55,7 +55,7 @@ class OtherChats {
             this.addGroupToUI('Yesterday', groupedChats.yesterday);
         }
 
-        Object.keys(groupedChats.older).sort().forEach(date => {
+        Object.keys(groupedChats.older).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).forEach(date => {
             this.addGroupToUI(date, groupedChats.older[date]);
         });
     }
