@@ -1,6 +1,8 @@
-import { ws } from "./ws";
+import { createConn, ws } from "./ws";
 
 window.onload = () => {
+    createConn();
+    
     const username = document.getElementById("username") as HTMLInputElement;
     const password = document.getElementById("password") as HTMLInputElement;
     const loginButton = document.getElementById("login_button") as HTMLButtonElement;
