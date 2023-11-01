@@ -158,6 +158,8 @@ impl WsServer {
                         self.send_msg(msg).await;
                     }
                 }
+
+                return Ok(())
             }
         }
     
