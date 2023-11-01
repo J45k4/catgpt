@@ -224,6 +224,8 @@ async fn main() -> anyhow::Result<()> {
             config.save_default();
         },
         Commands::Server => {
+            GPT2Tokenizer::prepare_vocab().await?;
+
             let make_scv = make_service_fn(move |_| {
                 let ctx = ctx.clone();
                 async move {

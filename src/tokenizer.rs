@@ -15,14 +15,14 @@ impl GPT2Tokenizer {
         let workdir = "workdir";
         let vocab_path = format!("{}/vocab.json", workdir);
         
-        // Create workdir if it doesn't exist
         if fs::metadata(workdir).await.is_err() {
+            log::info!("Creating workdir");
             fs::create_dir(workdir).await?;
         }
 
-        // Check if vocab.json exists in workdir, if not download
         if fs::metadata(&vocab_path).await.is_err() {
             let vocab_url = "https://huggingface.co/gpt2/raw/main/vocab.json";
+            log::info!("Downloading vocab.json from {}", vocab_url);
             let response = reqwest::get(vocab_url).await?.bytes().await?;
             fs::write(&vocab_path, response).await?;
         }
@@ -31,6 +31,7 @@ impl GPT2Tokenizer {
 
         if fs::metadata(&merges_path).await.is_err() {
             let merges_url = "https://huggingface.co/gpt2/raw/main/merges.txt";
+            log::info!("Downloading merges.txt from {}", merges_url);
             let response = reqwest::get(merges_url).await?.bytes().await?;
             fs::write(&merges_path, response).await?;
         }
