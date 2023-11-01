@@ -196,6 +196,15 @@ impl Openai {
     
         let mut total_token_count = 0;
 
+        if let Some(instructions) = &req.ins {
+            let token_count = tokenizer.count_tokens(&instructions).unwrap();
+            if token_count > 3500 {
+                log::error!("instructions too long");
+            } else {
+                total_token_count += token_count;
+            }
+        }
+
         let mut chat = self.db.get_chat(&req.chat_id).await.unwrap();
     
         let req = {
@@ -232,9 +241,10 @@ impl Openai {
         }
 
         openai_chat_req.messages.reverse();
+
+        log::info!("total_token_count: {}", total_token_count);
     
         let msg_id = uuid::Uuid::new_v4().to_string();
-    
         let mut stream = self.stream_openai_chat(openai_chat_req.clone()).await;
 
         let mut new_msg = ChatMsg {
