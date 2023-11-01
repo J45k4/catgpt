@@ -16,6 +16,7 @@ use crate::config::JWTKeyType;
 use crate::config::get_version;
 use crate::openai::CreateOpenaiReq;
 use crate::random::create_random_resp;
+use crate::tokenizer::GPT2Tokenizer;
 use crate::types::Chat;
 use crate::types::Context;
 use crate::types::ChatMsg;
@@ -34,11 +35,12 @@ pub struct WsServer {
     ctx: Context,
     authenicated: bool,
     user: Option<String>,
-    config: Config
+    config: Config,
+    tokenizer: GPT2Tokenizer
 }
 
 impl WsServer {
-    pub fn new(ws: WebSocketStream<hyper::upgrade::Upgraded>, ctx: Context) -> WsServer {
+    pub async fn new(ws: WebSocketStream<hyper::upgrade::Upgraded>, ctx: Context) -> WsServer {
         let config = Config::provide();
 
         WsServer { 
@@ -46,7 +48,8 @@ impl WsServer {
             ctx,
             authenicated: false,
             user: None,
-            config
+            config,
+            tokenizer: GPT2Tokenizer::new().await.unwrap()
         }
     }
 
@@ -187,10 +190,13 @@ impl WsServer {
                 let chat_id = chat.id.clone();
 
                 if !msg.txt.is_empty() {
+                    let token_count = self.tokenizer.count_tokens(&msg.txt).unwrap_or(0);
+
                     let chatmsg = ChatMsg {
                         id: Uuid::new_v4().to_string(),
                         chat_id: chat_id.clone(),
                         message: msg.txt,
+                        token_count: token_count,
                         bot: false,
                         user: user_name.clone(),
                         user_id: user_name,

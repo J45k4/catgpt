@@ -17,6 +17,7 @@ export type ChatMsg = {
     id: string,
     chatId: string
     message: string,
+    tokenCount: number,
     user: string,
     datetime: string,
     bot: boolean

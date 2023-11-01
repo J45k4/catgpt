@@ -47,6 +47,8 @@ pub struct ChatMsg {
     pub id: String,
     pub chat_id: String,
     pub message: String,
+    #[serde(default)]
+    pub token_count: usize,
     pub user: String,
     pub user_id: String,
     pub datetime: DateTime<Utc>,

@@ -10,6 +10,7 @@ use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
+use crate::tokenizer::GPT2Tokenizer;
 use crate::types::Chat;
 use crate::types::ChatMeta;
 use crate::types::Personality;
@@ -50,6 +51,7 @@ impl Clone for Database {
 
 async fn load_data(p: PathBuf, inner: Arc<RwLock<Inner>>) {
     let mut paths = tokio::fs::read_dir(p).await.unwrap();
+    let tokenizer = GPT2Tokenizer::new().await.unwrap();
 
     while let Some(path) = paths.next_entry().await.unwrap() {
         let path = path.path();
@@ -61,9 +63,21 @@ async fn load_data(p: PathBuf, inner: Arc<RwLock<Inner>>) {
 
         let doc: FileDocument = serde_json::from_str(&content).unwrap();
 
+        let mut changed = false;
+
         match doc.content {
-            FileContent::Chat(chat) => {
+            FileContent::Chat(mut chat) => {
                 log::info!("Loaded chat {:?}", chat.id);
+                
+                for message in &mut chat.messages {
+                    if message.message.len() > 0 && message.token_count == 0 {
+                        let token_count = tokenizer.count_tokens(&message.message).unwrap_or(0);
+                        log::info!("setting token_count to {} for message {:?}", token_count, message.id);
+                        message.token_count = token_count;
+                        changed = true;
+                    }
+                }
+
                 let mut inner = inner.write().await;
                 inner.chats.insert(chat.id.clone(), chat);
             },

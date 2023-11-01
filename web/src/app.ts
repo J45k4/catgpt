@@ -327,6 +327,11 @@ class ChatMessages {
         charCount.className = "msgHeaderItem"
         msg_stats_div.appendChild(charCount)
 
+        const tokenCount = document.createElement("div")
+        tokenCount.innerHTML = "tokens: " + msg.tokenCount.toString()
+        tokenCount.className = "msgHeaderItem"
+        msg_stats_div.appendChild(tokenCount)
+
         const btn_div = document.createElement("div")
         btn_div.className = "msg_header_btn_container"
         headerDiv.appendChild(btn_div)

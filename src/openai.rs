@@ -252,6 +252,7 @@ impl Openai {
             chat_id: req.chat_id.clone(),
             datetime: Utc::now(),
             message: "".to_string(),
+            token_count: 0,
             bot: true,
             user: model.to_string(),
             user_id: model.to_string()
@@ -293,6 +294,8 @@ impl Openai {
         if log_deltas.len() > 0 {
             log::info!("{}", log_deltas.join(""));
         }
+
+        new_msg.token_count = tokenizer.count_tokens(&new_msg.message).unwrap();
 
         chat.messages.push(new_msg.clone());
 

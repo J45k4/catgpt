@@ -94,7 +94,7 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
                 tokio::spawn(async move {
                     let ws = ws.await.unwrap();
-                    WsServer::new(ws, ctx.clone()).serve().await;
+                    WsServer::new(ws, ctx.clone()).await.serve().await;
                 });
             }
             _ => {

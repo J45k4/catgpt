@@ -34,6 +34,7 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         id: msg_id.clone(),
         chat_id: chat_id.clone(),
         datetime: Utc::now(),
+        token_count: number_of_words,
         message: "".to_string(),
         bot: true,
         user: "random".to_string(),
