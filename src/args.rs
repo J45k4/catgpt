@@ -7,7 +7,7 @@ use clap::ValueEnum;
 pub struct Args {
     #[clap(subcommand)]
     pub command: Commands,
-    #[clap(short, long, default_value = "0")]
+    #[clap(short, long, default_value = "1")]
     pub log: usize
 }
 
@@ -21,6 +21,9 @@ pub enum Commands {
     AddUser {
         username: String,
         password: String
+    },
+    CountTokens {
+        input: String
     },
     Transcribe {
         #[clap(long)]

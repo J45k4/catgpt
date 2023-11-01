@@ -11,6 +11,7 @@ use tokio::sync::mpsc;
 use crate::database::Database;
 use crate::sse::SSEvent;
 use crate::sse::parse_events;
+use crate::tokenizer::GPT2Tokenizer;
 use crate::types::ChatMeta;
 use crate::types::ChatMsg;
 
@@ -42,8 +43,6 @@ impl OpenaiChatStreamRes {
 
     }
 }
-
-
 
 pub struct CreateOpenaiReq {
     pub model: String,
@@ -105,7 +104,7 @@ impl Openai {
     
         let body_str = to_string(&req).unwrap();
     
-        log::debug!("body_str: {}", body_str);
+        log::info!("OpenAI request: {}", body_str);
     
         let (tx, rx) = mpsc::channel(30);
         
@@ -186,46 +185,27 @@ impl Openai {
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
         let model = parse_model(&req.model);
 
-        // let set_title_func = OpenaiChatFunc {
-        //     name: "set_title".to_string(),
-        //     description: "This function does nothing".to_string(),
-        //     parameters: json!({
-        //         "type": "object",
-        //         "properties": {
-        //             "title": {
-        //                 "type": "string"
-        //             }
-        //         }
-        //     })
-        // };
+        let tokenizer = GPT2Tokenizer::new().await.unwrap();
     
         let mut openai_chat_req = OpenaiChatReq { 
             model: model.to_string(), 
             messages: vec![], 
             stream: true,
-            // functions: vec![
-            //     set_title_func
-            // ],
-            // functions: Some(
-            //     vec![
-            //         set_title_func
-            //     ]
-            // )
             ..Default::default()
         };
     
-        let mut word_count = 0;
+        let mut total_token_count = 0;
 
         let mut chat = self.db.get_chat(&req.chat_id).await.unwrap();
     
         let req = {
             for msg in chat.messages.iter().rev() {
-                let len = msg.message.len();
+                let token_count = tokenizer.count_tokens(&msg.message).unwrap();
     
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
                 else { OpenaiChatRole::User };
         
-                if word_count + len > 5000 {
+                if total_token_count + token_count > 3500 {
                     break;
                 }
         
@@ -236,7 +216,7 @@ impl Openai {
                     }
                 );
                 
-                word_count += msg.message.len();
+                total_token_count += msg.message.len();
             }
     
             req
@@ -268,6 +248,7 @@ impl Openai {
         };
         
         self.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
+        let mut log_deltas = Vec::new();
 
         while let Some(r) = stream.next().await {
             log::debug!("{:?}", r);
@@ -279,6 +260,13 @@ impl Openai {
             }
     
             if let Some(d) = &first_choise.delta.content {
+                log_deltas.push(d.to_string());
+
+                if log_deltas.len() > 10 {
+                    log::info!("{}", log_deltas.join(""));
+                    log_deltas.clear();
+                }
+
                 new_msg.message.push_str(d);
                 let event = Event::MsgDelta(
                     MsgDelta {
@@ -346,14 +334,6 @@ impl Openai {
             model: "gpt-3.5-turbo".to_string(), 
             messages: vec![], 
             stream: true,
-            // functions: vec![
-            //     set_title_func
-            // ],
-            // functions: Some(
-            //     vec![
-            //         set_title_func
-            //     ]
-            // )
             ..Default::default()
         };
 

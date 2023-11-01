@@ -28,6 +28,7 @@ use crate::config::get_version;
 use crate::database::Database;
 
 use crate::openai::OpenaiBuilder;
+use crate::tokenizer::GPT2Tokenizer;
 use crate::types::Event;
 use crate::types::User;
 use crate::ws_server::WsServer;
@@ -41,6 +42,7 @@ mod random;
 mod openai;
 mod config;
 mod database;
+mod tokenizer;
 #[cfg(feature = "whisper")]
 mod wisper;
 mod auth;
@@ -135,13 +137,23 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::Builder::new()
-        .filter_level(log::LevelFilter::Debug)
-        .init();
+
 
     log::info!("version {}", get_version());
 
     let args = Args::parse();
+    
+    if args.log > 0 {
+        let level = match args.log {
+            1 => log::LevelFilter::Info,
+            2 => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Trace
+        };
+
+        env_logger::Builder::new()
+            .filter_level(level)
+            .init();
+    }
 
     let mut config = Config::provide();
     
@@ -288,6 +300,16 @@ async fn main() -> anyhow::Result<()> {
                     }
                 },
             }
+        },
+        Commands::CountTokens { input } => {
+            let input = match Path::new(&input).exists() {
+                true => tokio::fs::read_to_string(input).await?,
+                false => input
+            };
+
+            let tokenizer = GPT2Tokenizer::new().await?;
+            let count = tokenizer.count_tokens(&input)?;
+            println!("token count: {}", count);
         },
         #[cfg(feature = "whisper")]
         Commands::Transcribe { model, input, output } => {
