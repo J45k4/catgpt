@@ -280,6 +280,10 @@ impl Openai {
             }
         }
 
+        if log_deltas.len() > 0 {
+            log::info!("{}", log_deltas.join(""));
+        }
+
         chat.messages.push(new_msg.clone());
 
         if chat.title.is_none() {
