@@ -20,9 +20,15 @@ export const ws = {
 }
 
 export const createConn = () => {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws"
-    // const host = window.location.host
-    const url = `${protocol}://localhost:5566/ws`
+    let url
+    if (import.meta.env.DEV) {
+        url = `ws://localhost:5566/ws`
+        ws_socket = new WebSocket(url)
+    } else {
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+        const host = window.location.host
+        url = `${protocol}://${host}/ws`
+    }
     console.log("ws url", url)
     ws_socket = new WebSocket(url)
 
