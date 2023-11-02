@@ -77,10 +77,10 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
     let path = req.uri().path();
 
     let static_path = "./web/dist";
-    log::info!("static_path: {:?}", static_path);
+    log::debug!("static_path: {:?}", static_path);
     let file_path = format!("{}{}", static_path, path);
     let file_path = Path::new(&file_path);
-    log::info!("file_path: {:?}", file_path);
+    log::debug!("file_path: {:?}", file_path);
     if file_path.exists() && file_path.is_file() {
         let content = tokio::fs::read(&file_path).await?;
         let mime_type = mime_guess::from_path(&file_path).first_or_octet_stream();
