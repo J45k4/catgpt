@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react"
 import { state } from "./state"
 import { events } from "./events"
 import { ws } from "./ws"
-import { clearQueryParam, formatDateTime } from "./utility"
+import {formatDateTime } from "./utility"
 import { useImmer } from "use-immer"
 import { Row } from "./layout"
+import { BiCopy } from "react-icons/bi"
 
 const ModelSelect = (props: {
     model: string
@@ -81,6 +82,16 @@ export const CurrentChat = () => {
                     })
                 
                 }
+
+                if (event.type === "ChatCreated") {
+                    setChat(event.chat)
+                }
+
+                if (event.type === "selectedChatChanged") {
+                    if (!event.chatId) {
+                        setChat(null)
+                    }
+                }
             }
         })
 
@@ -98,14 +109,6 @@ export const CurrentChat = () => {
                 <div>
                     <ModelSelect model={model} onChange={setModel} />
                 </div>
-                <div>
-                    <button onClick={() => {
-                        setChat(null)
-                        clearQueryParam("chatId")
-                    }}>
-                        New Chat
-                    </button>
-                </div>
             </div>
             <div>
                 {chat?.messages.map((message, index) => {
@@ -119,15 +122,21 @@ export const CurrentChat = () => {
                             backgroundColor: index % 2 === 0 ? "#f6f6f6" : "white",
                         }}
                             key={message.id}>
-                            <div style={{ marginRight: "15px", whiteSpace: "nowrap", display: "flex" }}>
+                            <div style={{ marginRight: "15px", whiteSpace: "nowrap", display: "flex", flexWrap: "wrap" }}>
                                 <div style={{ flexGrow: 1, fontSize: "25px" }}>
                                     {message.user}
                                 </div>
                                 <div>
-                                    <Row>
+                                    <Row style={{ flexWrap: "wrap" }}>
                                         {formatDateTime(message.datetime)}
                                         Token Count:
                                         {message.tokenCount}
+                                        <BiCopy 
+                                            style={{ fontSize: "25px", cursor: "pointer" }}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(message.message)
+                                            }}
+                                        />
                                     </Row>    
                                 </div>
                             </div>

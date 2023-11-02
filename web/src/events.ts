@@ -9,7 +9,12 @@ export type Disconnected = {
     type: "disconnected"
 }
 
-export type Event = Connected | Disconnected | MsgFromSrv
+export type SelectedChatChanged = {
+    type: "selectedChatChanged"
+    chatId: string | null
+}
+
+export type Event = Connected | Disconnected | MsgFromSrv | SelectedChatChanged
 
 export const events = new Subject<Event>();
 

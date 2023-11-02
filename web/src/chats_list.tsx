@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { state } from "./state"
 import { events } from "./events"
 import { ChatMeta } from "./types"
 import "./chat_list.css"
-import { updateQueryParam } from "./utility"
-import { ws } from "./ws"
 import { useImmer } from "use-immer"
+import { useSelectedChatId } from "./hooks"
+import { Row } from "./layout"
+import { ws } from "./ws"
 
 export const ChatsList = () => {
     const [chatMetas, setChatMetas] = useImmer(state.chatMetas)
+    const [selectedChatId, setSelectedChatId] = useSelectedChatId()
 
     useEffect(() => {
         const sub = events.subscribe({
@@ -100,25 +102,39 @@ export const ChatsList = () => {
     }, [chatMetas])
 
     return (
-        <div style={{ maxWidth: "800px", maxHeight: "500px", overflow: "auto" }} className="segment">
-            {groups.map(group => (
-                <div key={group.date}>
-                    <h3>{group.date}</h3>
-                    {group.chats.map(chat => (
-                        <div key={chat.id} style={{ cursor: "pointer" }} className="chatListItem"
-                            onClick={() => {
-                                updateQueryParam("chatId", chat.id)
-                                state.selectedChatId = chat.id
-                                ws.send({
-                                    type: "GetChat",
-                                    chatId: chat.id,
-                                })
-                            }}>
-                            {chat.title ? chat.title : chat.id}
-                        </div>
-                    ))}
-                </div>
-            ))}
+        <div style={{ maxWidth: "800px"}} className="segment">
+            <Row>
+                {selectedChatId && 
+                <button onClick={() => {
+                    ws.send({
+                        type: "GenTitle",
+                        chatId: selectedChatId
+                    })
+                }}>
+                    Regenerate Title
+                </button>}
+                {selectedChatId &&
+                <button onClick={() => {
+                    setSelectedChatId(null)
+                }}>
+                    New Chat
+                </button>}
+            </Row>
+            <div style={{ overflow: "auto", maxHeight: "500px" }}>
+                {groups.map(group => (
+                    <div key={group.date}>
+                        <h3>{group.date}</h3>
+                        {group.chats.map(chat => (
+                            <div key={chat.id} style={{ cursor: "pointer", border: selectedChatId === chat.id ? "solid 1px black" : undefined  }} className="chatListItem"
+                                onClick={() => {
+                                    setSelectedChatId(chat.id)
+                                }}>
+                                {chat.title ? chat.title : chat.id}
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>  
         </div>
     )
 }
