@@ -13,6 +13,7 @@ use hyper::Body;
 use hyper::Request;
 use hyper::Response;
 use hyper::Server;
+use hyper::StatusCode;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
 use reqwest::Client;
@@ -47,38 +48,6 @@ mod tokenizer;
 mod wisper;
 mod auth;
 
-macro_rules! serve_static_file {
-    ($path:expr) => {{
-        let body = match std::option_env!("STATIC_ASSETS") {
-            Some(_) => {
-                log::debug!("Using included asset");
-                Body::from(include_str!($path))
-            },
-            None => {
-                log::debug!("Using file asset");
-                let path = Path::new("./src").join($path);
-                Body::from(tokio::fs::read_to_string(path).await?)
-            }
-        };
-
-        if $path.ends_with(".js") {
-            Response::builder()
-                .header("Content-Type", "application/javascript")
-                .body(body)?
-        } else if $path.ends_with(".css") {
-            Response::builder()
-                .header("Content-Type", "text/css")
-                .body(body)?
-        } else if $path.ends_with(".html") {
-            Response::builder()
-                .header("Content-Type", "text/html")
-                .body(body)?
-        } else {
-            Response::new(body)
-        }
-    }};
-}
-
 pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Response<Body>, anyhow::Error> {
     log::info!("{} {}", req.method(), req.uri());
     log::debug!("agent: {:?}", req.headers().get("user-agent"));
@@ -107,30 +76,34 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
 
     let path = req.uri().path();
 
-    match path.trim() {
-        "/login" => {
-            Ok(serve_static_file!("../web/login.html"))
-        },
-        "/app.js" => {
-            log::debug!("using app.js");
+    let static_path = "./web/dist";
+    log::info!("static_path: {:?}", static_path);
+    let file_path = format!("{}{}", static_path, path);
+    let file_path = Path::new(&file_path);
+    log::info!("file_path: {:?}", file_path);
+    if file_path.exists() && file_path.is_file() {
+        let content = tokio::fs::read(&file_path).await?;
+        let mime_type = mime_guess::from_path(&file_path).first_or_octet_stream();
+    
+        let res = Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", mime_type.as_ref())
+            .body(Body::from(content))
+            .unwrap();
+        return Ok(res);
+    }
 
-            Ok(serve_static_file!("../web/dist/app.js"))
-        },
-        "/ws" => {
-            log::debug!("using ws");
-            Ok(serve_static_file!("../web/dist/ws.js"))
-        },
-        "/index.css" => {
-            log::debug!("using index.css");
-            Ok(serve_static_file!("../web/index.css"))
-        },
-        "/login_page.js" => {
-            log::debug!("using login_page.js");
-            Ok(serve_static_file!("../web/dist/login_page.js"))
-        },
+    match path.trim() {
         _ => {
             log::debug!("using index.html");
-            Ok(serve_static_file!("../web/index.html"))
+            let index_path = format!("{}/index.html", static_path);
+            let content = tokio::fs::read(&index_path).await?;
+            let res = Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "text/html")
+                .body(Body::from(content))
+                .unwrap();
+            Ok(res)
         }
     }
 }

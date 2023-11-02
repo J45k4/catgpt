@@ -1,5 +1,5 @@
 [package]
-name = "aki"
+name = "catgpt"
 version = "0.1.0"
 edition = "2021"
 
@@ -25,6 +25,7 @@ jsonwebtoken = "8.3.0"
 hound = "3"
 dirs = "5.0.1"
 tokenizers = "0.14"
+mime_guess = "2"
 
 [dependencies.whisper-rs]
 version = "0.8.0"

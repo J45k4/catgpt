@@ -1,0 +1,10 @@
+
+.chatListItem {
+    border: solid 1px #e6e6e6;
+    margin-bottom: 5px;
+    padding: 2px;
+}
+
+.chatListItem:hover {
+    background-color: #aeaeae;
+}

@@ -26,7 +26,7 @@ export type ChatMsg = {
 export type Chat = {
     type: "Chat"
     id: string
-    title?: String
+    title?: string
     messages: ChatMsg[]
 }
 
@@ -80,7 +80,7 @@ export type MsgDeleted = {
 export type ChatMeta = {
     type: "ChatMeta"
     id: string
-    title: string
+    title?: string
     lastMsgDatetime: string
 }
 
@@ -123,7 +123,7 @@ export type MsgFromSrv = MsgDelta |
 
 export type SendMsg = {
     type: "SendMsg"
-    chatId: string
+    chatId?: string
     // msgCliId: string
     txt: string
     model: string

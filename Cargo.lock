@@ -27,32 +27,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aki"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "dirs",
- "env_logger",
- "futures-util",
- "hound",
- "hyper",
- "hyper-tungstenite",
- "jsonwebtoken",
- "log",
- "rand",
- "reqwest",
- "serde",
- "serde_json",
- "tokenizers",
- "tokio",
- "toml",
- "uuid",
- "whisper-rs",
-]
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -214,6 +188,33 @@ name = "bytes"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89b2fd2a0dcf38d7971e2194b6b6eebab45ae01067456a7fd93d5547a61b70be"
+
+[[package]]
+name = "catgpt"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "dirs",
+ "env_logger",
+ "futures-util",
+ "hound",
+ "hyper",
+ "hyper-tungstenite",
+ "jsonwebtoken",
+ "log",
+ "mime_guess",
+ "rand",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokenizers",
+ "tokio",
+ "toml",
+ "uuid",
+ "whisper-rs",
+]
 
 [[package]]
 name = "cc"
@@ -1060,6 +1061,16 @@ name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "mime_guess"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4192263c238a5f0d0c6bfd21f336a313a4ce1c450542449ca191bb657b4642ef"
+dependencies = [
+ "mime",
+ "unicase",
+]
 
 [[package]]
 name = "minimal-lexical"
@@ -2076,6 +2087,15 @@ name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
+
+[[package]]
+name = "unicase"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7d2d4dafb69621809a81864c9c1b864479e1235c0dd4e199924b9742439ed89"
+dependencies = [
+ "version_check",
+]
 
 [[package]]
 name = "unicode-bidi"
