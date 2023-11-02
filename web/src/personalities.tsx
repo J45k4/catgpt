@@ -14,10 +14,7 @@ export const Personalities = () => {
                     Saved personalities
                 </div>
                 <div>
-                    asd
-                    asdf
-                    asdf
-                    asdf
+                    TODO
                 </div>
             </div>
         </div>
