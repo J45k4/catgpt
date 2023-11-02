@@ -162,7 +162,7 @@ impl Openai {
             None => bail!("apikey not set")
         };
 
-        let model = parse_model(&model);
+        let mut model = parse_model(&model);
 
         let req = OpenaiChatReq { 
             model: model.to_string(), 
@@ -183,7 +183,8 @@ impl Openai {
     }
 
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
-        let model = parse_model(&req.model);
+        let mut model = parse_model(&req.model);
+        let mut token_limit = 3500;
 
         let tokenizer = GPT2Tokenizer::new().await.unwrap();
     
@@ -198,7 +199,7 @@ impl Openai {
 
         if let Some(instructions) = &req.ins {
             let token_count = tokenizer.count_tokens(&instructions).unwrap();
-            if token_count > 3500 {
+            if token_count > token_limit {
                 log::error!("instructions too long");
             } else {
                 total_token_count += token_count;
@@ -213,8 +214,13 @@ impl Openai {
     
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
                 else { OpenaiChatRole::User };
+
+                if token_count > 3500 {
+                    model = "gpt-3.5-turbo-16k".to_string();
+                    token_limit = 15_000;
+                }
         
-                if total_token_count + token_count > 3500 {
+                if total_token_count + token_count > token_limit {
                     break;
                 }
         
