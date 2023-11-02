@@ -30,6 +30,16 @@ export const ChatsList = () => {
                     })
                 }
 
+                if (e.type === "ChatMeta") {
+                    setChatMetas(draft => {
+                        const chatMeta = draft.find(c => c.id === e.id)
+
+                        if (chatMeta) {
+                            chatMeta.title = e.title
+                        }
+                    })
+                }
+
                 if (e.type === "TitleDelta") {
                     setChatMetas(draft => {
                         const chatMeta = draft.find(c => c.id === e.chatId)
