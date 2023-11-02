@@ -9,12 +9,9 @@ export VERSION=$latest_commit
 
 # Navigate to the 'web' directory and perform npm tasks
 cd web
-npm install
-npm run build
+bun install
+bun run build
 cd ..
 
-# Kill the 'aki' process if it's running
-pkill aki
-
-# Run the server script
+pkill catgpt
 ./run_server.sh

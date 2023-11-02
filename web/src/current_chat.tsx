@@ -6,6 +6,7 @@ import {formatDateTime } from "./utility"
 import { useImmer } from "use-immer"
 import { Row } from "./layout"
 import { BiCopy } from "react-icons/bi"
+import { CodeBlock } from "react-code-blocks"
 
 const ModelSelect = (props: {
     model: string
@@ -175,9 +176,84 @@ const ChatMessage = (props: {
         }
     }, [setText, props.msgId])
 
+    const rows = []
+
+    let backbuffer = ""
+    let language = ""
+    let parsingCodeBlock = false
+    let parsingLanguage = false
+    let blockCount = 1
+    for (const char of text) {
+        backbuffer += char
+
+        if (parsingCodeBlock) {
+            if (backbuffer.endsWith("```")) {
+                const code = backbuffer.slice(0, backbuffer.length - 3)
+
+                rows.push(
+                    <div style={{ marginBottom: "15px" }}>
+                        <div style={{ display: "flex" }}>
+                            <div style={{ flexGrow: 1 }}>
+                                {language}
+                            </div>
+                            <div>
+                                <BiCopy style={{ margin: "5px", fontSize: "20px", cursor: "pointer" }}
+                                    onClick={() => navigator.clipboard.writeText(code)} />
+                            </div>
+                        </div>
+                        
+                        <CodeBlock key={blockCount++} text={code}
+                            language={language} 
+                            
+                            />
+                    </div>   
+                )
+                backbuffer = ""
+            }
+            continue
+        }
+
+        if (parsingLanguage) {
+            if (backbuffer.endsWith("\n")) {
+                language = backbuffer.slice(0, backbuffer.length - 1)
+                parsingLanguage = false
+                parsingCodeBlock = true
+                backbuffer = ""
+                console.log("language", language)
+            }
+
+            continue
+        }
+
+        if (backbuffer.endsWith("```")) {
+            parsingLanguage = true
+            backbuffer = ""
+            continue
+        }
+
+        if (char === "\n") {
+            rows.push(
+                <div key={blockCount++} style={{ whiteSpace: "pre-wrap" }}>
+                    {backbuffer}
+                </div>
+            )
+
+            backbuffer = ""
+            continue
+        }
+    }
+
+    if (backbuffer !== "") {
+        rows.push(
+            <div key={blockCount++} style={{ whiteSpace: "pre-wrap" }}>
+                {backbuffer}
+            </div>
+        )
+    }
+
     return (
         <div>
-            {text}
+            {rows}
         </div>
     )
 }

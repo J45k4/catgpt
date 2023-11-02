@@ -6,11 +6,13 @@ type State = {
     chatMetas: ChatMeta[]
     selectedChatId: string | null
     currentChat: Chat | null
+    version?: string
 }
 
 export const state: State = {
     authenticated: false,
     chatMetas: [],
     selectedChatId: getQueryParam("chatId"),
-    currentChat: null
+    currentChat: null,
+    version: undefined
 }

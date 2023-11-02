@@ -71,6 +71,12 @@ export const createConn = () => {
                     chatId: state.selectedChatId
                 })
             }
+
+            if (state.version != null && state.version !== msg.version) {
+                window.location.reload()
+            } else {
+                state.version = msg.version
+            }
         }
 
         if (msg.type === "ChatMetas") {
