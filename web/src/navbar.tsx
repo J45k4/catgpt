@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { events } from "./events"
 import { ws } from "./ws"
 import { state } from "./state"
+import { Row } from "./layout"
 
 export const Navbar = () => {
     const [connected, setConnected] = useState(ws.connected)
@@ -31,7 +32,7 @@ export const Navbar = () => {
     console.log("authenticated", authenticated)
 
     return (
-        <div style={{ display: "flex", flexWrap: "wrap" }}>
+        <Row>
             <div style={{ color: "green", marginRight: "15px" }}>
                 <div style={{ color: connected ? "green" : "red" }}>
                     {connected && "Connected"}
@@ -42,9 +43,9 @@ export const Navbar = () => {
                     {!authenticated && "Not Authenticated"}
                 </div>
             </div>
-            <div style={{ marginRight: "15px" }}>
+            {/* <div style={{ marginRight: "15px" }}>
                 <input type="text" placeholder="Search" />
-            </div>
+            </div> */}
             <div>
                 <button onClick={() => {
                     ws.disconnect()
@@ -52,6 +53,6 @@ export const Navbar = () => {
                     Reconnect
                 </button>
             </div>
-        </div>
+        </Row>
     )
 }
