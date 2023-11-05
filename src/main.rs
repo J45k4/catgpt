@@ -16,6 +16,8 @@ use hyper::Server;
 use hyper::StatusCode;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
+use hyper_staticfile::ResolveResult;
+use hyper_staticfile::Static;
 use reqwest::Client;
 use tokio::sync::broadcast;
 use types::Context;
@@ -77,20 +79,16 @@ pub async fn handle_request(mut req: Request<Body>, ctx: Context) -> Result<Resp
     let path = req.uri().path();
 
     let static_path = "./web/dist";
-    log::debug!("static_path: {:?}", static_path);
-    let file_path = format!("{}{}", static_path, path);
-    let file_path = Path::new(&file_path);
-    log::debug!("file_path: {:?}", file_path);
-    if file_path.exists() && file_path.is_file() {
-        let content = tokio::fs::read(&file_path).await?;
-        let mime_type = mime_guess::from_path(&file_path).first_or_octet_stream();
-    
-        let res = Response::builder()
-            .status(StatusCode::OK)
-            .header("Content-Type", mime_type.as_ref())
-            .body(Body::from(content))
+    let result = hyper_staticfile::resolve(&static_path, &req)
+        .await
+        .unwrap();
+
+    if let ResolveResult::Found(_, _, _) = result {
+        let response = hyper_staticfile::ResponseBuilder::new()
+            .request(&req)
+            .build(result)
             .unwrap();
-        return Ok(res);
+        return Ok(response)
     }
 
     match path.trim() {
