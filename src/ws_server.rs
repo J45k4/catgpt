@@ -209,8 +209,7 @@ impl WsServer {
     
                     chat.messages.push(chatmsg.clone());
 
-                    let msg = MsgToCli::NewMsg { msg: chatmsg.clone() };
-                    self.send_msg(msg).await;
+                    self.ctx.ch.send(Event::NewMsg { msg: chatmsg.clone() }).unwrap();
                 }
 
                 self.ctx.db.save_chat(chat).await;
