@@ -394,8 +394,8 @@ impl WsServer {
                 let msg = MsgToCli::ChatMeta(meta);
                 self.send_msg(msg).await;
             }
-            Event::GenerationDone { chat_id, msg_id, msg } => {
-                self.send_msg(MsgToCli::GenerationDone { chat_id, msg_id, msg }).await;
+            Event::GenerationDone { chat_id, msg_id, msg, token_count } => {
+                self.send_msg(MsgToCli::GenerationDone { chat_id, msg_id, msg, token_count }).await;
             }
         }
     }

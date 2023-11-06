@@ -93,6 +93,19 @@ export const CurrentChat = () => {
                         setChat(null)
                     }
                 }
+
+                if (event.type === "GenerationDone") {
+                    setChat(draft => {
+                        if (draft) {
+                            for (const msg of draft.messages) {
+                                if (msg.id === event.msgId) {
+                                    msg.tokenCount = event.tokenCount
+                                }
+                            }
+                        }
+                    })
+                
+                }
             }
         })
 

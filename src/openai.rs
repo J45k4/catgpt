@@ -314,7 +314,8 @@ impl Openai {
         self.ch.send(Event::GenerationDone { 
             chat_id: req.chat_id.clone(),
             msg_id: msg_id.clone(),
-            msg: new_msg.message.clone()
+            msg: new_msg.message.clone(),
+            token_count: new_msg.token_count
         }).unwrap();
 
         if chat.title.is_none() {

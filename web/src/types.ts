@@ -110,6 +110,7 @@ export type GenerationDone = {
     chatId: string
     msgId: string
     msg: string
+    tokenCount: number
 }
 
 export type MsgFromSrv = MsgDelta | 
@@ -193,6 +194,10 @@ export type GenTitle = {
     chatId: string
 }
 
+export type GetProjects = {
+    type: "GetProjects"
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -204,4 +209,5 @@ export type MsgToSrv = SendMsg |
     DelMsg |
     Login |
     Authenticate |
-    GenTitle
+    GenTitle |
+    GetProjects

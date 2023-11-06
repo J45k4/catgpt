@@ -182,7 +182,8 @@ pub enum MsgToCli {
     GenerationDone {
         chat_id: String,
         msg_id: String,
-        msg: String
+        msg: String,
+        token_count: usize
     }
     // StartedGenerating {
     //     chat_id: String,
@@ -209,7 +210,8 @@ pub enum Event {
     GenerationDone {
         chat_id: String,
         msg_id: String,
-        msg: String
+        msg: String,
+        token_count: usize
     }
 }
 
