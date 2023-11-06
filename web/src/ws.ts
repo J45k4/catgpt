@@ -61,7 +61,6 @@ export const createConn = () => {
     ws_socket.onmessage = data => {
         const msg = JSON.parse(data.data) as MsgFromSrv
         events.next(msg)
-        console.log("onmessage", msg)
 
         if (msg.type === "Authenticated") {
             localStorage.setItem("token", msg.token)
