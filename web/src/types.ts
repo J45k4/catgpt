@@ -105,6 +105,13 @@ export type TitleDelta = {
     delta: string
 }
 
+export type GenerationDone = {
+    type: "GenerationDone"
+    chatId: string
+    msgId: string
+    msg: string
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats |
     Chat | 
@@ -119,7 +126,8 @@ export type MsgFromSrv = MsgDelta |
     MsgDeleted |
     Authenticated |
     AuthTokenInvalid |
-    TitleDelta
+    TitleDelta |
+    GenerationDone
 
 export type SendMsg = {
     type: "SendMsg"

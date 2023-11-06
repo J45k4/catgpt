@@ -310,8 +310,12 @@ impl Openai {
         }
 
         new_msg.token_count = tokenizer.count_tokens(&new_msg.message).unwrap();
-
         chat.messages.push(new_msg.clone());
+        self.ch.send(Event::GenerationDone { 
+            chat_id: req.chat_id.clone(),
+            msg_id: msg_id.clone(),
+            msg: new_msg.message.clone()
+        }).unwrap();
 
         if chat.title.is_none() {
             self.gen_title_for_chat(&mut chat).await;

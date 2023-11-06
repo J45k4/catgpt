@@ -6,6 +6,7 @@ use hyper_tungstenite::WebSocketStream;
 use hyper_tungstenite::tungstenite::Message;
 use serde_json::from_str;
 use serde_json::to_string;
+use tokio::fs::read_dir;
 use uuid::Uuid;
 
 use crate::auth::JwtDecodeResult;
@@ -61,6 +62,7 @@ impl WsServer {
                 bail!("parse err");
             },
         };
+        log::info!("msg: {:?}", msg);
         if let Some(true) = self.config.login_required {
             if !self.authenicated {
                 match &msg {
@@ -356,7 +358,9 @@ impl WsServer {
                     openai.gen_title(chat_id).await;
                 });
             },
-            _ => {}
+            _ => {
+                log::error!("unknown msg: {:?}", msg);
+            }
         }
 
         Ok(())
@@ -390,6 +394,9 @@ impl WsServer {
             Event::ChatMeta(meta) => {
                 let msg = MsgToCli::ChatMeta(meta);
                 self.send_msg(msg).await;
+            }
+            Event::GenerationDone { chat_id, msg_id, msg } => {
+                self.send_msg(MsgToCli::GenerationDone { chat_id, msg_id, msg }).await;
             }
         }
     }

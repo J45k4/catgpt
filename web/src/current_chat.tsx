@@ -168,6 +168,12 @@ const ChatMessage = (props: {
                         setText(draft => draft + event.delta)
                     }
                 }
+
+                if (event.type === "GenerationDone") {
+                    if (event.msgId === props.msgId) {
+                        setText(event.msg)
+                    }
+                }
             }
         })
 

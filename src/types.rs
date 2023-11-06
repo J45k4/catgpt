@@ -130,7 +130,8 @@ pub enum MsgToSrv {
     GenTitle {
         chat_id: String
     },
-    StopGenration
+    StopGenration,
+    GetProjects
 }
 
 #[derive(serde::Serialize, Debug)]
@@ -174,6 +175,15 @@ pub enum MsgToCli {
         chat_id: String,
         delta: String
     },
+    Projects {
+        projects: Vec<String>
+    },
+    #[serde(rename_all = "camelCase")]
+    GenerationDone {
+        chat_id: String,
+        msg_id: String,
+        msg: String
+    }
     // StartedGenerating {
     //     chat_id: String,
     // },
@@ -196,6 +206,11 @@ pub enum Event {
         chat: Chat
     },
     ChatMeta(ChatMeta),
+    GenerationDone {
+        chat_id: String,
+        msg_id: String,
+        msg: String
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
