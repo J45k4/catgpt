@@ -12,6 +12,7 @@ use crate::database::Database;
 use crate::sse::SSEvent;
 use crate::sse::parse_events;
 use crate::tokenizer::GPT2Tokenizer;
+use crate::types::Chat;
 use crate::types::ChatMeta;
 use crate::types::ChatMsg;
 
@@ -272,7 +273,7 @@ impl Openai {
 
             let first_choise = &r.choices[0];
 
-            if let Some(finish_reason) = &first_choise.finish_reason {
+            if let Some(finish_reason) = &first_choise.finish_reason { 
                 log::info!("finish_reason: {}", finish_reason);
             }
     
@@ -306,53 +307,14 @@ impl Openai {
         chat.messages.push(new_msg.clone());
 
         if chat.title.is_none() {
-            openai_chat_req.messages.push(
-                OpenaiChatMessage { 
-                    role: OpenaiChatRole::User, 
-                    content: "summarise this conversation with very short sentence. Be very brief it is important!!".into()
-                }
-            );
-
-            let mut new_title = String::new();
-
-            let mut stream = self.stream_openai_chat(openai_chat_req.clone()).await;
-            while let Some(r) = stream.next().await {
-                log::debug!("{:?}", r);
-    
-                let first_choise = &r.choices[0];
-        
-                if let Some(d) = &first_choise.delta.content {
-                    new_title += d;
-
-                    let event = Event::TitleDelta { 
-                        chat_id: req.chat_id.clone(), 
-                        delta: d.to_string()
-                    };
-        
-                    self.ch.send(event).unwrap();
-                }
-            }
-
-            log::info!("new chat title: {}", new_title);
-
-            chat.title = Some(new_title);    
+            self.gen_title_for_chat(&mut chat).await;
         }
 
         self.db.save_chat(chat).await;
         self.db.save_changes().await;
     }
 
-    pub async fn gen_title(&self, chat_id: String) {
-        log::info!("gen new title for chat {}", chat_id);
-
-        let mut chat = match self.db.get_chat(&chat_id).await {
-            Some(chat) => chat,
-            None => {
-                log::error!("chat not found");
-                return
-            }
-        };
-
+    async fn gen_title_for_chat(&self, chat: &mut Chat) {
         let mut openai_chat_req = OpenaiChatReq { 
             model: "gpt-3.5-turbo".to_string(), 
             messages: vec![], 
@@ -398,7 +360,7 @@ impl Openai {
 
         self.ch.send(Event::ChatMeta(
             ChatMeta {
-                id: chat_id.clone(),
+                id: chat.id.clone(),
                 title: None,
                 last_msg_datetime: None
             }
@@ -413,7 +375,7 @@ impl Openai {
                 new_title += d;
 
                 let event = Event::TitleDelta { 
-                    chat_id: chat_id.clone(), 
+                    chat_id: chat.id.clone(), 
                     delta: d.to_string()
                 };
     
@@ -423,6 +385,20 @@ impl Openai {
 
         log::info!("new chat title: {}", new_title);
         chat.title = Some(new_title);
+    }
+
+    pub async fn gen_title(&self, chat_id: String) {
+        log::info!("gen new title for chat {}", chat_id);
+
+        let mut chat = match self.db.get_chat(&chat_id).await {
+            Some(chat) => chat,
+            None => {
+                log::error!("chat not found");
+                return
+            }
+        };
+
+        self.gen_title_for_chat(&mut chat).await;     
         self.db.save_chat(chat).await;
         self.db.save_changes().await;
     }
