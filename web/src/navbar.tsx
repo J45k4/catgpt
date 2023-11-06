@@ -32,7 +32,7 @@ export const Navbar = () => {
     console.log("authenticated", authenticated)
 
     return (
-        <Row>
+        <Row style={{ marginBottom: "15px" }}>
             <div style={{ color: "green", marginRight: "15px" }}>
                 <div style={{ color: connected ? "green" : "red" }}>
                     {connected && "Connected"}
