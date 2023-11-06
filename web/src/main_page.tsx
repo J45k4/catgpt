@@ -7,7 +7,6 @@ export const MainPage = () => {
         <div>
             <div style={{ display: "flex", flexWrap: "wrap" }}>
                 <ChatsList />
-                <Personalities />
             </div>
             
             <CurrentChat />
