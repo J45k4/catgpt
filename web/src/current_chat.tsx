@@ -103,13 +103,13 @@ export const CurrentChat = () => {
 
     return (
         <div className="segment">
-            <div style={{ display: "flex" }}>
-                <div style={{ marginRight: "15px", fontSize: "20px" }}>
+            <div style={{ display: "flex", marginBottom: "10px"}}>
+                <div style={{ marginRight: "15px", fontSize: "25px" }}>
                     Current Chat
                 </div>
-                <div>
+                {/* <div>
                     <ModelSelect model={model} onChange={setModel} />
-                </div>
+                </div> */}
             </div>
             <div>
                 {chat?.messages.map((message, index) => {
