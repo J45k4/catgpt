@@ -77,7 +77,7 @@ export const CurrentChat = () => {
 
                 if (event.type === "NewMsg") {
                     setChat(draft => {
-                        if (draft) {
+                        if (draft && draft.id === event.msg.chatId) {
                             draft.messages.push(event.msg)
                         }
                     })
