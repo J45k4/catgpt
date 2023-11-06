@@ -310,6 +310,7 @@ impl Openai {
         }
 
         new_msg.token_count = tokenizer.count_tokens(&new_msg.message).unwrap();
+        log::info!("output token count: {}", new_msg.token_count);
         chat.messages.push(new_msg.clone());
         self.ch.send(Event::GenerationDone { 
             chat_id: req.chat_id.clone(),
