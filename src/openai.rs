@@ -1,5 +1,6 @@
 use std::vec;
 use anyhow::bail;
+use chrono::Duration;
 use chrono::Utc;
 use futures_util::StreamExt;
 use reqwest::Client;
@@ -208,6 +209,7 @@ impl Openai {
         }
 
         let mut chat = self.db.get_chat(&req.chat_id).await.unwrap();
+        let cutofftime = Utc::now() - Duration::minutes(10);
     
         let req = {
             for msg in chat.messages.iter().rev() {
@@ -224,6 +226,13 @@ impl Openai {
                 if total_token_count + token_count > token_limit {
                     break;
                 }
+
+                if openai_chat_req.messages.len() > 1 {
+                    if msg.datetime < cutofftime {
+                        log::info!("skipping old message {:?}", msg);
+                        break;
+                    }
+                }
         
                 openai_chat_req.messages.push(
                     OpenaiChatMessage { 
@@ -238,14 +247,12 @@ impl Openai {
             req
         };
 
-        if let Some(instructions) = &req.ins {
-            openai_chat_req.messages.push(
-                OpenaiChatMessage { 
-                    role: OpenaiChatRole::System, 
-                    content: instructions.to_string()
-                }
-            );
-        }
+        openai_chat_req.messages.push(
+            OpenaiChatMessage { 
+                role: OpenaiChatRole::System, 
+                content: "Your name is CatGPT and you are helpfull cute personal assistant made by Cow.".to_string()
+            }
+        );
 
         openai_chat_req.messages.reverse();
 
@@ -261,7 +268,7 @@ impl Openai {
             message: "".to_string(),
             token_count: 0,
             bot: true,
-            user: model.to_string(),
+            user: "CatGPT".to_string(),
             user_id: model.to_string()
         };
         
