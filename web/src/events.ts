@@ -17,9 +17,3 @@ export type SelectedChatChanged = {
 export type Event = Connected | Disconnected | MsgFromSrv | SelectedChatChanged
 
 export const events = new Subject<Event>();
-
-events.subscribe({
-    next: (event) => {
-        console.log("event", event)
-    }
-})
