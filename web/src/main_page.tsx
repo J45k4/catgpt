@@ -1,6 +1,5 @@
 import { ChatsList } from "./chats_list"
 import { CurrentChat } from "./current_chat"
-import { Personalities } from "./personalities"
 
 export const MainPage = () => {
     return (

@@ -8,18 +8,18 @@ import { Row } from "./layout"
 import { BiCopy } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
 
-const ModelSelect = (props: {
-    model: string
-    onChange: (model: string) => void
-}) => {
-    return (
-        <select style={{ fontSize: "20px" }} value={props.model} onChange={e => props.onChange(e.target.value)}>
-            <option value="gpt3.5">Gpt3</option>
-            <option value="gpt4">Gpt4</option>
-            <option value="random">Random</option>
-        </select>
-    )
-}
+// const ModelSelect = (props: {
+//     model: string
+//     onChange: (model: string) => void
+// }) => {
+//     return (
+//         <select style={{ fontSize: "20px" }} value={props.model} onChange={e => props.onChange(e.target.value)}>
+//             <option value="gpt3.5">Gpt3</option>
+//             <option value="gpt4">Gpt4</option>
+//             <option value="random">Random</option>
+//         </select>
+//     )
+// }
 
 const SendMessageBox = (props: {
     chatId?: string
@@ -66,7 +66,7 @@ const SendMessageBox = (props: {
 
 export const CurrentChat = () => {
     const [chat, setChat] = useImmer(state.currentChat)
-    const [model, setModel] = useState("gpt3.5")
+    const [model,] = useState("gpt3.5")
 
     useEffect(() => {
         const sub = events.subscribe({
