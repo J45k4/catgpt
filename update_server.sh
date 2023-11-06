@@ -12,6 +12,7 @@ cd web
 bun install
 bun run build
 cd ..
+cargo build --release
 
 pkill catgpt
 ./run_server.sh
