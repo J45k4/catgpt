@@ -373,6 +373,11 @@ impl WsServer {
     }
 
     async fn handle_event(&mut self, event: Event) {
+        if !self.authenicated {
+            log::info!("unauthenticated user cannot receive events {:?}", event);
+            return;
+        }
+
         match event {
             Event::MsgDelta(delta) => {
                 let msg = MsgToCli::MsgDelta(delta);
