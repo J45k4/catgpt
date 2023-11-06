@@ -250,7 +250,7 @@ impl Openai {
         openai_chat_req.messages.push(
             OpenaiChatMessage { 
                 role: OpenaiChatRole::System, 
-                content: "Your name is CatGPT and you are helpfull cute personal assistant made by Cow.".to_string()
+                content: "Your name is catty and you are helpfull cute personal assistant made by Cow.".to_string()
             }
         );
 
@@ -268,7 +268,7 @@ impl Openai {
             message: "".to_string(),
             token_count: 0,
             bot: true,
-            user: "CatGPT".to_string(),
+            user: "Catty".to_string(),
             user_id: model.to_string()
         };
         
