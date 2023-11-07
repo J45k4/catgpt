@@ -32,27 +32,35 @@ export const Navbar = () => {
     console.log("authenticated", authenticated)
 
     return (
-        <Row style={{ marginBottom: "15px" }}>
-            <div style={{ color: "green", marginRight: "15px" }}>
-                <div style={{ color: connected ? "green" : "red" }}>
-                    {connected && "Connected"}
-                    {!connected && "Disconnected"}
+        <div style={{ display: "flex" }}>
+            <Row style={{ marginBottom: "15px", flexGrow: 1 }}>
+                <div style={{ color: "green", marginRight: "15px" }}>
+                    <div style={{ color: connected ? "green" : "red" }}>
+                        {connected && "Connected"}
+                        {!connected && "Disconnected"}
+                    </div>
+                    <div style={{ color: authenticated ? "green" : "red" }}>
+                        {authenticated && "Authenticated"}
+                        {!authenticated && "Not Authenticated"}
+                    </div>
                 </div>
-                <div style={{ color: authenticated ? "green" : "red" }}>
-                    {authenticated && "Authenticated"}
-                    {!authenticated && "Not Authenticated"}
+                {/* <div style={{ marginRight: "15px" }}>
+                    <input type="text" placeholder="Search" />
+                </div> */}
+                <div>
+                    <button onClick={() => {
+                        ws.disconnect()
+                    }}>
+                        Reconnect
+                    </button>
                 </div>
-            </div>
-            {/* <div style={{ marginRight: "15px" }}>
-                <input type="text" placeholder="Search" />
-            </div> */}
-            <div>
-                <button onClick={() => {
-                    ws.disconnect()
-                }}>
-                    Reconnect
-                </button>
-            </div>
-        </Row>
+            </Row>
+            <button onClick={() => {
+                localStorage.removeItem("token")
+                window.location.reload()
+            }}>
+                Logout
+            </button>
+        </div>
     )
 }
