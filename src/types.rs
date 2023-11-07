@@ -51,6 +51,8 @@ pub struct ChatMsg {
     pub token_count: usize,
     pub user: String,
     pub user_id: String,
+    #[serde(default)]
+    pub model: String,
     pub datetime: DateTime<Utc>,
     pub bot: bool
 }

@@ -17,7 +17,6 @@ use hyper::StatusCode;
 use hyper::service::make_service_fn;
 use hyper::service::service_fn;
 use hyper_staticfile::ResolveResult;
-use hyper_staticfile::Static;
 use reqwest::Client;
 use tokio::sync::broadcast;
 use types::Context;
@@ -243,6 +242,9 @@ async fn main() -> anyhow::Result<()> {
                         ConfigKeys::HS512Key => {
                             config.jwt_hs512_key = Some(args.value);
                         }
+                        ConfigKeys::ProjectFolder => {
+                            config.project_folder = Some(args.value);
+                        }
                     }
 
                     config.save_default();
@@ -266,6 +268,13 @@ async fn main() -> anyhow::Result<()> {
                         ConfigKeys::HS512Key => {
                             if let Some(key) = &config.jwt_hs512_key {
                                 println!("{}", key);
+                            } else {
+                                println!("not set");
+                            }
+                        }
+                        ConfigKeys::ProjectFolder => {
+                            if let Some(folder) = &config.project_folder {
+                                println!("{}", folder);
                             } else {
                                 println!("not set");
                             }
