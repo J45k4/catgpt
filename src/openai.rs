@@ -234,7 +234,7 @@ impl Openai {
                     }
                 }
 
-                if openai_chat_req.messages.len() > 2 && total_token_count > 3500 {
+                if openai_chat_req.messages.len() > 2 && total_token_count > 1500 {
                     log::info!("skipping long message {:?}", msg);
                     break;
                 }
@@ -274,7 +274,8 @@ impl Openai {
             token_count: 0,
             bot: true,
             user: "Catty".to_string(),
-            user_id: model.to_string()
+            user_id: model.to_string(),
+            model: model.to_string()
         };
         
         self.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();
