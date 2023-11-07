@@ -185,8 +185,8 @@ impl Openai {
     }
 
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
-        let mut model = parse_model(&req.model);
-        let mut token_limit = 3500;
+        let model = "gpt-4-1106-preview".to_string();
+        let token_limit = 100_000;
 
         let tokenizer = GPT2Tokenizer::new().await.unwrap();
     
@@ -218,10 +218,10 @@ impl Openai {
                 let role = if msg.bot { OpenaiChatRole::Assistant } 
                 else { OpenaiChatRole::User };
 
-                if token_count > 3500 {
-                    model = "gpt-3.5-turbo-16k".to_string();
-                    token_limit = 15_000;
-                }
+                // if token_count > 3500 {
+                //     model = "gpt-3.5-turbo-16k".to_string();
+                //     token_limit = 15_000;
+                // }
         
                 if total_token_count + token_count > token_limit {
                     break;
