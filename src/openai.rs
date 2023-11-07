@@ -233,6 +233,11 @@ impl Openai {
                         break;
                     }
                 }
+
+                if openai_chat_req.messages.len() > 2 && total_token_count > 3500 {
+                    log::info!("skipping long message {:?}", msg);
+                    break;
+                }
         
                 openai_chat_req.messages.push(
                     OpenaiChatMessage { 
