@@ -19,7 +19,7 @@ export const Row = (props: {
     }
 
     return (
-        <div style={{ display: "flex" }}>
+        <div style={{ display: "flex", ...props.style }}>
             {props.children}
         </div>
     )

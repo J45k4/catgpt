@@ -6,6 +6,7 @@ import { Navbar } from "./navbar.tsx";
 import { MainPage } from "./main_page.tsx";
 import { createConn } from "./ws.ts";
 import { MainContainer } from "./main_container.tsx";
+import { ProjectsPage } from "./projects.tsx";
 
 createConn()
 
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
 			{
 				path: "/",
 				element: <MainPage />
+			},
+			{
+				path: "/projects",
+				element: <ProjectsPage />
 			}
 		]
 	}

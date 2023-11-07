@@ -54,7 +54,8 @@ pub enum ConfigCommands {
 pub enum ConfigKeys {
     OpenaiApikey,
     LoginRequired,
-    HS512Key
+    HS512Key,
+    ProjectFolder,
 }
 
 #[derive(Debug, Clone, Parser)]

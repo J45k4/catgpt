@@ -26,6 +26,7 @@ pub struct Config {
     pub jwt_key_type: Option<JWTKeyType>,
     pub jwt_hs512_key: Option<String>,
     db_path: Option<String>,
+    pub project_folder: Option<String>,
 }
 
 impl Config {
