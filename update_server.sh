@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Update the repository and get the latest commit hash
 git pull
@@ -13,6 +14,13 @@ bun install
 bun run build
 cd ..
 cargo build --release
+build_exit_code=$?
+
+# If the build failed, exit the script with an error code
+if [ $build_exit_code -ne 0 ]; then
+  echo "Cargo build failed with exit code $build_exit_code"
+  exit $build_exit_code
+fi
 
 pkill catgpt
 ./run_server.sh
