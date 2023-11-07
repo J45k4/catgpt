@@ -204,7 +204,8 @@ impl WsServer {
                         bot: false,
                         user: user_name.clone(),
                         user_id: user_name,
-                        datetime: Utc::now()
+                        datetime: Utc::now(),
+                        model: msg.model.clone(),
                     };
     
                     chat.messages.push(chatmsg.clone());

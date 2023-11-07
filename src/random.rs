@@ -38,7 +38,8 @@ pub async fn create_random_resp(ctx: Context, chat_id: String) {
         message: "".to_string(),
         bot: true,
         user: "random".to_string(),
-        user_id: "random".to_string()
+        user_id: "random".to_string(),
+        model: "random".to_string(),
     };
     
     ctx.ch.send(Event::NewMsg { msg: new_msg.clone() }).unwrap();

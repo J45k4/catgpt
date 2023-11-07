@@ -187,6 +187,7 @@ impl Openai {
     pub async fn create_openai_resp(&self, req: CreateOpenaiReq) {
         let model = "gpt-4-1106-preview".to_string();
         let token_limit = 100_000;
+        let history_limit = 1500;
 
         let tokenizer = GPT2Tokenizer::new().await.unwrap();
     
@@ -234,7 +235,7 @@ impl Openai {
                     }
                 }
 
-                if openai_chat_req.messages.len() > 2 && total_token_count > 1500 {
+                if openai_chat_req.messages.len() > 2 && total_token_count > history_limit {
                     log::info!("skipping long message {:?}", msg);
                     break;
                 }
