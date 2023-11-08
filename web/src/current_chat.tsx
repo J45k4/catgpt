@@ -44,13 +44,16 @@ const SendMessageBox = (props: {
         setMsg("")
     }, [msg, props.chatId, props.model])
 
+    const lineBreaks = msg.split("\n").length || 1
+
     return (
         <div style={{ display: "flex" }}>
-            <input style={{ flexGrow: 1, fontSize: "25px", width: "100%", marginRight: "10px" }}
+            <textarea style={{ flexGrow: 1, fontSize: "25px", width: "100%", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
                 value={msg}
+                rows={lineBreaks}
                 onChange={e => setMsg(e.target.value)}
                 onKeyDown={e => {
-                    if (e.key === "Enter") {
+                    if (!e.shiftKey && lineBreaks == 1 && e.key === "Enter") {
                         sendMsg()
                     }
                 }}
@@ -61,7 +64,7 @@ const SendMessageBox = (props: {
                 Send
             </button>
         </div>
-)
+    )
 }
 
 export const CurrentChat = () => {
@@ -238,7 +241,6 @@ const ChatMessage = (props: {
                 parsingLanguage = false
                 parsingCodeBlock = true
                 backbuffer = ""
-                console.log("language", language)
             }
 
             continue
