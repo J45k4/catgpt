@@ -6,6 +6,7 @@ pub enum SSEvent {
 }
 
 pub fn parse_events(str: &str) -> Vec<SSEvent>  {
+    log::info!("Parsing SSE events {}", str);
     let mut res = vec![];
 
     for row in str.split('\n').map(|p| p.trim()).filter(|p| !p.is_empty()) {
