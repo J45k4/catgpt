@@ -12,6 +12,14 @@ export VERSION=$latest_commit
 cd web
 bun install
 bun run build
+build_exit_code=$?
+
+# If the build failed, exit the script with an error code
+if [ $build_exit_code -ne 0 ]; then
+  echo "bun run build exited with $build_exit_code"
+  exit $build_exit_code
+fi
+
 cd ..
 cargo build --release
 build_exit_code=$?
