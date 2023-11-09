@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 
 use crate::database::Database;
 use crate::sse::SSEvent;
-use crate::sse::parse_events;
+use crate::sse::SSEventParser;
 use crate::tokenizer::GPT2Tokenizer;
 use crate::types::Chat;
 use crate::types::ChatMeta;
@@ -119,6 +119,8 @@ impl Openai {
         let mut body = response.bytes_stream();
     
         tokio::spawn(async move {
+            let mut parser = SSEventParser::new();
+
             while let Some(chunk) = body.next().await {
                 let chunk = match chunk {
                     Ok(r) => r,
@@ -130,8 +132,13 @@ impl Openai {
                 };
 
                 log::debug!("raw chunk: {}", chunk);
-    
-                let events = parse_events(&chunk);
+
+                parser.add_chunk(&chunk);
+                let events = parser.parse_events();
+
+                if events.len() == 0 {
+                    continue;
+                }
     
                 for event in events {
                     match event {
