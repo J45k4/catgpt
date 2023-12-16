@@ -363,7 +363,7 @@ impl Openai {
             }
     
             openai_chat_req.messages.push(
-                OpenaiChatMessage { 
+                OpenaiChatMessage {
                     role, 
                     content: msg.message.to_string() 
                 }

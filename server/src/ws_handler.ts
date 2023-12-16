@@ -5,7 +5,7 @@ export type Ws = {
     send: (msg: MsgFromSrv) => void
 }
 
-export class WsStore {
+export class WsBus {
     private websockets = new Map<number, Ws>()
 
     public addConnection(ws: Ws) {

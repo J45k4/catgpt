@@ -8,6 +8,7 @@
   "dependencies": {
     "@prisma/client": "5.7.0",
     "elysia": "latest",
+    "gpt-tokenizer": "^2.1.2",
     "openai": "^4.22.1"
   },
   "devDependencies": {

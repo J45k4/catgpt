@@ -2,25 +2,17 @@ import { Chat, PrismaClient } from "@prisma/client";
 import { Elysia, t } from "elysia";
 import { jwt } from '@elysiajs/jwt';
 import { MsgFromSrv } from "../../types"
-import { WsStore } from "./ws_handler";
+import { WsBus } from "./ws_handler";
 import { LLMClient } from "./llm_client";
+import { encode } from "gpt-tokenizer";
 
 const prisma = new PrismaClient();
 
-const wsHandler = new WsStore()
+const wsHandler = new WsBus()
 
 const llmClient = new LLMClient({
 	prisma,
-	onEvent: (event) => {
-		if (event.type === "Delta") {
-			wsHandler.sendMsg({
-				type: "MsgDelta",
-				chatId: event.chatId + "",
-				msgId: event.msgId + "",
-				delta: event.delta
-			})
-		}
-	}
+	wsbus: wsHandler
 })
 
 const adminUser = await prisma.user.upsert({
@@ -34,8 +26,6 @@ const adminUser = await prisma.user.upsert({
 		passwordHash: "1234"
 	}
 })
-
-console.log("adminUser", adminUser)
 
 const app = new Elysia()
 	.use(
@@ -69,6 +59,10 @@ const app = new Elysia()
 			t.Object({
 				type: t.Literal("GetChat"),
 				chatId: t.String()
+			}),
+			t.Object({
+				type: t.Literal("GenTitle"),
+				chatId: t.String()
 			})
 		]),
 
@@ -86,8 +80,6 @@ const app = new Elysia()
 			};
 
 			if (msg.type === "Login") {
-				console.log("Login")
-
 				const token = await ws.data.jwt.sign({
 					"userId": 1337
 				})
@@ -99,10 +91,7 @@ const app = new Elysia()
 			}
 
 			if (msg.type === "Authenticate") {
-				console.log("Authenticate");
-
 				const payload = await ws.data.jwt.verify(msg.token);
-				console.log("payload", payload);
 
 				if (payload === false) {
 					ws.send({
@@ -119,8 +108,6 @@ const app = new Elysia()
 			}
 
 			if (msg.type === "SendMsg") {
-				console.log("SendMsg");
-
 				let chat: Chat | null = null
 
 				if (msg.chatId) {
@@ -139,18 +126,52 @@ const app = new Elysia()
 				if (!chat) {
 					chat = await prisma.chat.create({
 						data: {
-							title: "New Chat"
+							title: ""
+						}
+					})
+
+					sendMsg({
+						type: "ChatCreated",
+						chat: {
+							id: chat!.id.toString(),
+							type: "Chat",
+							messages: []
+						}
+					})
+
+					wsHandler.sendMsg({
+						type: "NewChat",
+						chat: {
+							id: chat!.id.toString(),
+							type: "Chat",
+							messages: []
 						}
 					})
 				}
+
+				const tokens = encode(msg.txt)
 
 				const chatMsg = await prisma.chatMsg.create({
 					data: {
 						text: msg.txt,
 						timestamp: new Date(),
 						chatId: chat.id,
-						userId: adminUser.id
+						userId: adminUser.id,
+						tokenCount: tokens.length
 					},
+				})
+
+				sendMsg({
+					type: "NewMsg",
+					msg: {
+						id: chatMsg.id.toString(),
+						chatId: chat.id.toString(),
+						text: chatMsg.text,
+						tokenCount: chatMsg.tokenCount,
+						user: adminUser.username,
+						datetime: chatMsg.timestamp.toISOString(),
+						bot: false
+					}
 				})
 
 				const botMsg = await prisma.chatMsg.create({
@@ -162,6 +183,19 @@ const app = new Elysia()
 					},
 				})
 
+				sendMsg({
+					type: "NewMsg",
+					msg: {
+						id: botMsg.id.toString(),
+						chatId: chat.id.toString(),
+						text: botMsg.text,
+						tokenCount: botMsg.tokenCount,
+						user: "bot",
+						datetime: botMsg.timestamp.toISOString(),
+						bot: true
+					}
+				})
+
 				llmClient.streamRequest({
 					provider: "OpenAI",
 					chatId: chat.id,
@@ -171,52 +205,9 @@ const app = new Elysia()
 						text: msg.txt
 					}]
 				})
-
-				const updatedChat = await prisma.chat.findUnique({
-					where: {
-						id: chat.id
-					},
-					include: {
-						messages: {
-							take: 1,
-							orderBy: {
-								timestamp: "desc"
-							},
-							include: {
-								user: {
-									select: {
-										username: true,
-										isBot: true
-									}
-								}
-							}
-						}
-					}
-				})
-
-				console.log("updatedChat", updatedChat)
-
-				sendMsg({
-					type: "ChatCreated",
-					chat: {
-						id: updatedChat!.id.toString(),
-						type: "Chat",
-						messages: updatedChat!.messages.map(msg => ({
-							id: msg.id.toString(),
-							chatId: msg.chatId.toString(),
-							text: msg.text,
-							tokenCount: msg.tokenCount,
-							user: msg.user.username,
-							datetime: msg.timestamp.toISOString(),
-							bot: msg.user.isBot
-						}))
-					}
-				})
 			}
 
 			if (msg.type === "GetChats") {
-				console.log("GetChats");
-
 				const chats = await prisma.chat.findMany({
 					take: msg.limit,
 					skip: msg.offset,
@@ -275,6 +266,37 @@ const app = new Elysia()
 						datetime: msg.timestamp.toISOString(),
 						bot: msg.user.isBot
 					}))
+				})
+			}
+
+			if (msg.type === "GenTitle") {
+				const chat = await prisma.chat.findUnique({
+					where: {
+						id: parseInt(msg.chatId)	
+					},
+					include: {
+						messages: {
+							include: {
+								user: true
+							}
+						}
+					}
+				})
+
+				if (!chat) {
+					console.error("chat not found")
+					return;
+				}
+
+				wsHandler.sendMsg({
+					type: "ChatMeta",
+					id: chat.id.toString(),
+					title: "",
+					lastMsgDatetime: ""
+				})
+
+				void llmClient.genTitle({
+					chatId: chat.id,
 				})
 			}
 		},
