@@ -1,4 +1,4 @@
-import { Chat, ChatMeta } from "./types"
+import { Chat, ChatMeta } from "../../types"
 import { getQueryParam } from "./utility"
 
 type State = {

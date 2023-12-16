@@ -1,5 +1,5 @@
 import { Subject } from "rxjs";
-import { MsgFromSrv } from "./types";
+import { MsgFromSrv } from "../../types";
 
 export type Connected = {
     type: "connected"

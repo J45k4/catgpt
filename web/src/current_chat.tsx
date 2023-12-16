@@ -151,7 +151,7 @@ export const CurrentChat = () => {
                                         <BiCopy 
                                             style={{ fontSize: "25px", cursor: "pointer" }}
                                             onClick={() => {
-                                                navigator.clipboard.writeText(message.message)
+                                                navigator.clipboard.writeText(message.text)
                                             }}
                                         />
                                     </Row>    
@@ -159,7 +159,7 @@ export const CurrentChat = () => {
                             </div>
                             <ChatMessage
                                 msgId={message.id}
-                                text={message.message}
+                                text={message.text}
                                 />
                         </div>
                     )

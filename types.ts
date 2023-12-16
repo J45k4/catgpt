@@ -16,7 +16,7 @@ export type FinishWrite = {
 export type ChatMsg = {
     id: string,
     chatId: string
-    message: string,
+    text: string,
     tokenCount: number,
     user: string,
     datetime: string,
@@ -145,6 +145,8 @@ export type StopGen = {
 
 export type GetChats = {
     type: "GetChats"
+    offset?: number
+    limit?: number
 }
 
 export type CreateChat = {

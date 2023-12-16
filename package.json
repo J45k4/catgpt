@@ -1,0 +1,1 @@
+{ "dependencies": { "@elysiajs/jwt": "^0.7.1", "elysia": "^0.7.30" } }

@@ -6,3 +6,4 @@ workdir
 .DS_Store
 server.sh
 models
+node_modules

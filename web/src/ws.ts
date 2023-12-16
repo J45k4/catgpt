@@ -1,6 +1,6 @@
 import { events } from "./events";
 import { state } from "./state";
-import { MsgFromSrv, MsgToSrv } from "./types";
+import { MsgFromSrv, MsgToSrv } from "../../types";
 
 let ws_socket: WebSocket
 

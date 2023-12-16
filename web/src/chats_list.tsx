@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react"
 import { state } from "./state"
 import { events } from "./events"
-import { ChatMeta } from "./types"
+import { ChatMeta } from "../../types"
 import "./chat_list.css"
 import { useImmer } from "use-immer"
 import { useSelectedChatId } from "./hooks"

@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  username        String    @unique
+  passwordHash    String    @map("password_hash")
+  isBot           Boolean   @default(false) @map("is_bot")
+  botProvider     String?   @map("bot_provider")
+  botModel        String?   @map("bot_model")
+  botInstruction  String?   @map("bot_instruction")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  createdByUserId Int?      @map("created_by_user_id")
+  ChatMsg         ChatMsg[]
+  createdByUser   User?     @relation("createdByUser", fields: [createdByUserId], references: [id])
+  createdUsers    User[]    @relation("createdByUser")
+}
+
+model Chat {
+  id       Int       @id @default(autoincrement())
+  title    String
+  createdAt DateTime  @default(now()) @map("created_at")
+  messages ChatMsg[]
+
+  @@index([createdAt], name: "created_at")
+}
+
+model ChatMsg {
+  id         Int      @id @default(autoincrement())
+  text       String
+  tokenCount Int      @default(0) @map("token_count")
+  charCount  Int      @default(0) @map("char_count")
+  wordsCount Int      @default(0) @map("words_count")
+  cost       Int      @default(0)
+  userId     Int      @map("user_id")
+  chatId     Int      @map("chat_id")
+  user       User     @relation(fields: [userId], references: [id])
+  chat       Chat     @relation(fields: [chatId], references: [id])
+  timestamp  DateTime @default(now())
+
+  @@index([userId], name: "user_id")
+  @@index([chatId], name: "chat_id")
+  @@index([timestamp], name: "timestamp")
+  @@index([userId, timestamp], name: "user_id_timestamp")
+}
