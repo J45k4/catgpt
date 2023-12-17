@@ -3,6 +3,7 @@ import { events } from "./events"
 import { ws } from "./ws"
 import { state } from "./state"
 import { Row } from "./layout"
+import { Link } from "react-router-dom"
 
 export const Navbar = () => {
     const [connected, setConnected] = useState(ws.connected)
@@ -53,6 +54,13 @@ export const Navbar = () => {
                     }}>
                         Reconnect
                     </button>
+                </div>
+                <div>
+                    <Link to="/bots">
+                        <button>
+                            Bots
+                        </button>
+                    </Link>
                 </div>
             </Row>
             <button onClick={() => {

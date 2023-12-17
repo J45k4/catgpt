@@ -200,6 +200,15 @@ export type GetProjects = {
     type: "GetProjects"
 }
 
+export type GetBots = {
+    type: "GetBots"
+}
+
+export type GetBot = {
+    type: "GetBot"
+    id: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -212,4 +221,6 @@ export type MsgToSrv = SendMsg |
     Login |
     Authenticate |
     GenTitle |
-    GetProjects
+    GetProjects |
+    GetBots |
+    GetBot
