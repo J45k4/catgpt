@@ -224,3 +224,10 @@ export type MsgToSrv = SendMsg |
     GetProjects |
     GetBots |
     GetBot
+
+export const modelTypes = [
+    "gpt-3.5-turbo", 
+    "gpt-4-1106-preview", 
+    "gpt-4-vision-preview", 
+    "mistralai/Mistral-7B-Instruct-v0.1"
+]

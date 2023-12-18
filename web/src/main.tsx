@@ -7,7 +7,7 @@ import { MainPage } from "./main_page.tsx";
 import { createConn } from "./ws.ts";
 import { MainContainer } from "./main_container.tsx";
 import { ProjectsPage } from "./projects.tsx";
-import { BotsPage } from "./bots_page.tsx";
+import { BotsPage } from "./bot.tsx";
 
 createConn()
 
