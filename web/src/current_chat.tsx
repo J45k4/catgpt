@@ -44,6 +44,7 @@ const SendMessageBox = (props: {
                 onChange={e => setMsg(e.target.value)}
                 onKeyDown={e => {
                     if (!e.shiftKey && lineBreaks == 1 && e.key === "Enter") {
+                        e.preventDefault()
                         sendMsg()
                     }
                 }}
