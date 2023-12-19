@@ -53,6 +53,15 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
                 messages: []
             }
         })
+
+        ws.send({
+            type: "NewChat",
+            chat: {
+                id: chat.id.toString(),
+                type: "Chat",
+                messages: []
+            }
+        })
     }
 
     const chatMsgs = chat.messages
@@ -197,6 +206,8 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             role: "user" as const,
             content: "summarise this conversation with very short sentence. Be very brief it is important!!"
         })
+
+        messages.shift()
 
         const titleStream = await llmClient.streamRequest({
             model: "openai/gpt-3.5-turbo",
