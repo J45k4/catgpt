@@ -113,6 +113,22 @@ export type GenerationDone = {
     tokenCount: number
 }
 
+export type Bot = {
+    id: string
+    name: string
+    model: string
+    instructions?: string
+}
+
+export type Bots = {
+    type: "Bots"
+    bots: Bot[]
+}
+
+export type BotRes = {
+    type: "Bot"
+} & Bot
+
 export type MsgFromSrv = MsgDelta | 
     Chats |
     Chat | 
@@ -128,15 +144,15 @@ export type MsgFromSrv = MsgDelta |
     Authenticated |
     AuthTokenInvalid |
     TitleDelta |
-    GenerationDone
+    GenerationDone |
+    Bots |
+    BotRes
 
 export type SendMsg = {
     type: "SendMsg"
     chatId?: string
-    // msgCliId: string
     txt: string
-    model: string
-    instructions?: string
+    botId: string
 }
 
 export type StopGen = {
@@ -209,6 +225,18 @@ export type GetBot = {
     id: string
 }
 
+export type CreateBot = {
+    type: "CreateBot"
+    name: string
+    model: Model
+    instructions: string
+}
+
+export type DeleteBot = {
+    type: "DeleteBot"
+    id: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -223,11 +251,30 @@ export type MsgToSrv = SendMsg |
     GenTitle |
     GetProjects |
     GetBots |
-    GetBot
+    GetBot |
+    CreateBot |
+    DeleteBot
 
-export const modelTypes = [
-    "gpt-3.5-turbo", 
-    "gpt-4-1106-preview", 
-    "gpt-4-vision-preview", 
-    "mistralai/Mistral-7B-Instruct-v0.1"
+export type Model = typeof models[number]
+
+export const models = [
+    "openai/gpt-3.5-turbo", 
+    "openai/gpt-4-1106-preview", 
+    "openai/gpt-4-vision-preview", 
+    "anyscale/mistralai/Mistral-7B-Instruct-v0.1"
+] as const
+
+export type Provider = typeof providers[number]
+
+export const providers = [
+    "OpenAI" as const,
+    "Anyscale" as const
 ]
+
+export const inputTokenCost: Record<Model, number> = {
+    "openai/gpt-3.5-turbo": 0.0030
+}
+
+export const outputTokenCost: Record<Model, number> = {
+    "openai/gpt-3.5-turbo": 0.0060
+}

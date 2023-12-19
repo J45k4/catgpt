@@ -1,6 +1,7 @@
 import { events } from "./events";
 import { state } from "./state";
 import { MsgFromSrv, MsgToSrv } from "../../types";
+import { cache, notifyChanges } from "./cache";
 
 let ws_socket: WebSocket
 
@@ -70,6 +71,10 @@ export const createConn = () => {
                 type: "GetChats"
             })
 
+            ws.send({
+                type: "GetBots"
+            })
+
             if (state.selectedChatId) {
                 ws.send({
                     type: "GetChat",
@@ -90,6 +95,27 @@ export const createConn = () => {
 
         if (msg.type === "Chat") {
             state.currentChat = msg
+        }
+
+        if (msg.type === "Bots") {
+            cache.bots = msg.bots
+            cache.bots.sort((a, b) => a.id.localeCompare(b.id))
+            cache.selectedBotId = msg.bots[0]?.id ?? ""
+            notifyChanges()
+        }
+
+        if (msg.type === "Bot") {
+            const existingBot = cache.bots.find(b => b.id === msg.id)
+
+            if (existingBot) {
+                existingBot.name = msg.name
+                existingBot.model = msg.model
+                existingBot.instructions = msg.instructions
+            } else {
+                cache.bots.push(msg)
+            }
+
+            notifyChanges()
         }
     }
 }

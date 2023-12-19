@@ -1,7 +1,6 @@
 import { encode } from "gpt-tokenizer";
-import { akibot } from "./users";
-import { LLMMessageRole, LLmMessage, Model, Provider, State } from "./types";
-import { MsgToSrv } from "../../types";
+import { LLMMessageRole, LLmMessage, State } from "./types";
+import { Model, MsgFromSrv, MsgToSrv, SendMsg } from "../../types";
 import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_SECRET_KEY } from "./config";
@@ -9,10 +8,229 @@ import { llmClient } from "./llm_client";
 
 type Ws = {
     state: State
-    send: (msg: any) => void
+    send: (msg: MsgFromSrv) => void
 }
 
 const alg = "HS256"
+
+const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
+    if (!ws.state.user) {
+        console.error("user not authenticated")
+        return;
+    }
+
+    let chat = msg.chatId ?
+        await prisma.chat.findFirst({
+            where: {
+                id: parseInt(msg.chatId)
+            },
+            include: {
+                messages: {
+                    include: {
+                        user: true
+                    }
+                }
+            }
+        }) : undefined
+
+    if (!chat) {
+        chat = await prisma.chat.create({
+            data: {},
+            include: {
+                messages: {
+                    include: {
+                        user: true
+                    }
+                }
+            }
+        })
+
+        ws.send({
+            type: "ChatCreated",
+            chat: {
+                id: chat.id.toString(),
+                type: "Chat",
+                messages: []
+            }
+        })
+    }
+
+    const chatMsgs = chat.messages
+
+    const bot = await prisma.user.findFirst({
+        where: {
+            isBot: true,
+            id: parseInt(msg.botId)
+        }
+    })
+
+    if (!bot) {
+        console.error("bot not found")
+        return;
+    }
+
+    const tokens = encode(msg.txt)
+
+    const chatMsg = await prisma.chatMsg.create({
+        data: {
+            text: msg.txt,
+            timestamp: new Date(),
+            chatId: chat.id,
+            userId: ws.state.user.id,
+            tokenCount: tokens.length
+        },
+        include: {
+            user: true
+        }
+    })
+    chatMsgs.push(chatMsg)
+    chatMsgs.reverse()
+
+    ws.send({
+        type: "NewMsg",
+        msg: {
+            id: chatMsg.id.toString(),
+            chatId: chat.id.toString(),
+            text: chatMsg.text,
+            tokenCount: chatMsg.tokenCount,
+            user: ws.state.user.username,
+            datetime: chatMsg.timestamp.toISOString(),
+            bot: false
+        }
+    })
+
+    const botMsg = await prisma.chatMsg.create({
+        data: {
+            text: "",
+            timestamp: new Date(),
+            chatId: chat.id,
+            userId: bot.id
+        },
+    })
+
+    ws.send({
+        type: "NewMsg",
+        msg: {
+            id: botMsg.id.toString(),
+            chatId: chat.id.toString(),
+            text: botMsg.text,
+            tokenCount: botMsg.tokenCount,
+            user: bot.username,
+            datetime: botMsg.timestamp.toISOString(),
+            bot: true
+        }
+    })
+
+    const messages: LLmMessage[] = []
+    let totalTokenCount = 0
+
+    for (const msg of chatMsgs) {
+        const tokens = encode(msg.text)
+        const tokenCount = tokens.length
+
+        let role: LLMMessageRole = "user"
+
+        if (msg.user.isBot) {
+            role = "assistant"
+        }
+
+        if (totalTokenCount + tokenCount > 2_000) {
+            break
+        }
+
+        messages.push({
+            role,
+            content: msg.text
+        })
+
+        totalTokenCount += tokenCount
+    }
+
+    messages.push({
+        role: "system",
+        content: bot.botInstruction || ""
+    })
+    messages.reverse()
+
+    const stream = await llmClient.streamRequest({
+        model: bot.botModel as Model,
+        messages
+    })
+
+    let text = ""
+
+    for await (const event of stream) {
+        if (event.type === "done") {
+            console.log("done")
+
+            break;
+        }
+
+        if (event.type === "delta") {
+            text += event.delta
+
+            ws.send({
+                type: "MsgDelta",
+                chatId: chat.id.toString(),
+                msgId: botMsg.id.toString(),
+                delta: event.delta
+            })
+        }
+    }
+
+    const botMsgTokens = encode(text)
+
+    await prisma.chatMsg.update({
+        where: {
+            id: botMsg.id
+        },
+        data: {
+            text,
+            tokenCount: botMsgTokens.length,
+            charCount: text.length,
+            wordsCount: text.split(" ").length
+        }
+    })
+
+    if (!chat.title) {
+        messages.push({
+            role: "user" as const,
+            content: "summarise this conversation with very short sentence. Be very brief it is important!!"
+        })
+
+        const titleStream = await llmClient.streamRequest({
+            model: "openai/gpt-3.5-turbo",
+            messages
+        })
+
+        let title = ""
+
+        for await (const event of titleStream) {
+            if (event.type === "done") {
+                break;
+            }
+
+            if (event.type === "delta") {
+                title += event.delta
+
+                ws.send({
+                    type: "TitleDelta",
+                    chatId: chat.id.toString(),
+                    delta: event.delta
+                })
+            }
+        }
+
+        await prisma.chat.update({
+            where: {
+                id: chat.id
+            },
+            data: {
+                title
+            }
+        })
+    }
+}
 
 export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
     // console.log(`[${ws.data.store.connId}] message`, msg)
@@ -118,200 +336,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
     }
 
     if (msg.type === "SendMsg") {
-        let chat = msg.chatId ? 
-            await prisma.chat.findFirst({
-                where: {
-                    id: parseInt(msg.chatId)
-                },
-                include: {
-                    messages: {
-                        include: {
-                            user: true
-                        }
-                    }
-                }
-            }) : undefined
-
-        if (!chat) {
-            chat = await prisma.chat.create({
-                data: {},
-                include: {
-                    messages: {
-                        include: {
-                            user: true
-                        }
-                    }
-                }
-            })
-
-            ws.send({
-                type: "NewChat",
-                chat: {
-                    id: chat.id.toString(),
-                    type: "Chat",
-                    messages: []
-                }
-            })
-        }
-
-        const chatMsgs = chat.messages
-
-        const tokens = encode(msg.txt)
-
-        const chatMsg = await prisma.chatMsg.create({
-            data: {
-                text: msg.txt,
-                timestamp: new Date(),
-                chatId: chat.id,
-                userId: ws.state.user.id,
-                tokenCount: tokens.length
-            },
-            include: {
-                user: true
-            }
-        })
-        chatMsgs.push(chatMsg)
-
-        ws.send({
-            type: "NewMsg",
-            msg: {
-                id: chatMsg.id.toString(),
-                chatId: chat.id.toString(),
-                text: chatMsg.text,
-                tokenCount: chatMsg.tokenCount,
-                user: ws.state.user.username,
-                datetime: chatMsg.timestamp.toISOString(),
-                bot: false
-            }
-        })
-
-        const botMsg = await prisma.chatMsg.create({
-            data: {
-                text: "",
-                timestamp: new Date(),
-                chatId: chat.id,
-                userId: akibot.id
-            },
-        })
-
-        ws.send({
-            type: "NewMsg",
-            msg: {
-                id: botMsg.id.toString(),
-                chatId: chat.id.toString(),
-                text: botMsg.text,
-                tokenCount: botMsg.tokenCount,
-                user: akibot.username,
-                datetime: botMsg.timestamp.toISOString(),
-                bot: true
-            }
-        })
-
-        const messages: LLmMessage[] = []
-        let totalTokenCount = 0
-
-        for (const msg of chatMsgs) {
-            const tokens = encode(msg.text)
-            const tokenCount = tokens.length
-
-            let role: LLMMessageRole = "user"
-
-            if (msg.user.isBot) {
-                role = "assistant"
-            }
-
-            if (totalTokenCount + tokenCount > 2_000) {
-                break
-            }
-
-            messages.push({
-                role,
-                content: msg.text
-            })
-
-            totalTokenCount += tokenCount
-        }
-        
-        messages.reverse()
-
-        const stream = await llmClient.streamRequest({
-            provider: akibot.botProvider as Provider,
-            model: akibot.botModel as Model,
-            messages
-        })
-
-        let text = ""
-
-        for await (const event of stream) {
-            if (event.type === "done") {
-                console.log("done")
-
-                break;
-            }
-            
-            if (event.type === "delta") {
-                text += event.delta
-
-                ws.send({
-                    type: "MsgDelta",
-                    chatId: chat.id.toString(),
-                    msgId: botMsg.id.toString(),
-                    delta: event.delta
-                })
-            }
-        }
-
-        await prisma.chatMsg.update({
-            where: {
-                id: botMsg.id
-            },
-            data: {
-                text,
-                tokenCount: tokens.length,
-                charCount: text.length,
-                wordsCount: text.split(" ").length
-            }
-        })
-
-        if (!chat.title) {
-            messages.push({
-                role: "user" as const,
-                content: "summarise this conversation with very short sentence. Be very brief it is important!!"
-            })
-
-            const titleStream = await llmClient.streamRequest({
-                provider: "OpenAI",
-                model: "gpt-3.5-turbo",
-                messages
-            })
-
-            let title = ""
-
-            for await (const event of titleStream) {
-                if (event.type === "done") {
-                    break;
-                }
-                
-                if (event.type === "delta") {
-                    title += event.delta
-                    
-                    ws.send({
-                        type: "TitleDelta",
-                        chatId: chat.id.toString(),
-                        delta: event.delta
-                    })
-                }
-            }
-
-            await prisma.chat.update({
-                where: {
-                    id: chat.id
-                },
-                data: {
-                    title
-                }
-            })
-        }
+        await handleSendMsg(ws, msg)
     }
 
     if (msg.type === "GetChats") {
@@ -345,7 +370,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
     if (msg.type === "GetChat") {
         const chat = await prisma.chat.findUnique({
             where: {
-                id: parseInt(msg.chatId)	
+                id: parseInt(msg.chatId)
             },
             include: {
                 messages: {
@@ -379,7 +404,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
     if (msg.type === "GenTitle") {
         const chat = await prisma.chat.findUnique({
             where: {
-                id: parseInt(msg.chatId)	
+                id: parseInt(msg.chatId)
             },
             include: {
                 messages: {
@@ -435,8 +460,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
         })
 
         const stream = await llmClient.streamRequest({
-            provider: "OpenAI",
-            model: "gpt-3.5-turbo",
+            model: "openai/gpt-3.5-turbo",
             messages
         })
 
@@ -446,10 +470,10 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
             if (event.type === "done") {
                 break;
             }
-            
+
             if (event.type === "delta") {
                 title += event.delta
-                
+
                 ws.send({
                     type: "TitleDelta",
                     chatId: chat.id.toString(),
@@ -465,6 +489,44 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
             data: {
                 title
             }
+        })
+    }
+
+    if (msg.type === "GetBots") {
+        const bots = await prisma.user.findMany({
+            where: {
+                isBot: true
+            }
+        })
+
+        ws.send({
+            type: "Bots",
+            bots: bots.map(bot => ({
+                id: bot.id.toString(),
+                name: bot.username,
+                model: bot.botModel as string,
+                instructions: bot.botInstruction || undefined
+            }))
+        })
+    }
+
+    if (msg.type === "CreateBot") {
+        console.log("createBot", msg)
+
+        const bot = await prisma.user.create({
+            data: {
+                username: msg.name,
+                botInstruction: msg.instructions,
+                isBot: true,
+                botModel: msg.model
+            }
+        })
+
+        ws.send({
+            type: "Bot",
+            id: bot.id.toString(),
+            name: bot.username,
+            model: bot.botModel as string,
         })
     }
 }

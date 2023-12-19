@@ -56,6 +56,11 @@ export const Navbar = () => {
                     </button>
                 </div>
                 <div>
+                    <Link to="/">
+                        <button>
+                            Chats
+                        </button>
+                    </Link>
                     <Link to="/bots">
                         <button>
                             Bots

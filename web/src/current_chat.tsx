@@ -7,25 +7,15 @@ import { useImmer } from "use-immer"
 import { Row } from "./layout"
 import { BiCopy } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
-
-// const ModelSelect = (props: {
-//     model: string
-//     onChange: (model: string) => void
-// }) => {
-//     return (
-//         <select style={{ fontSize: "20px" }} value={props.model} onChange={e => props.onChange(e.target.value)}>
-//             <option value="gpt3.5">Gpt3</option>
-//             <option value="gpt4">Gpt4</option>
-//             <option value="random">Random</option>
-//         </select>
-//     )
-// }
+import { BotSelect } from "./bot"
+import { cache, notifyChanges, useCache } from "./cache"
 
 const SendMessageBox = (props: {
     chatId?: string
     model: string
 }) => {
     const [msg, setMsg] = useState("")
+    const botId = useCache(s => s.selectedBotId)
 
     const sendMsg = useCallback(() => {
         if (msg === "") {
@@ -36,13 +26,13 @@ const SendMessageBox = (props: {
 
         ws.send({
             type: "SendMsg",
-            model: props.model,
+            botId,
             chatId: props.chatId,
             txt: msg
         })
 
         setMsg("")
-    }, [msg, props.chatId, props.model])
+    }, [botId, msg, props.chatId])
 
     const lineBreaks = msg.split("\n").length || 1
 
@@ -63,6 +53,10 @@ const SendMessageBox = (props: {
             }}>
                 Send
             </button>
+            <BotSelect botId={botId} onSetBotId={(botId) => {
+                cache.selectedBotId = botId
+                notifyChanges()
+            }} />
         </div>
     )
 }

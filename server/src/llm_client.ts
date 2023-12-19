@@ -1,4 +1,5 @@
-import { LLmMessage, Model, Provider } from "./types";
+import { Model } from "../../types";
+import { LLmMessage } from "./types";
 import openai from "openai"
 
 const openAiClient = new openai.OpenAI({
@@ -33,15 +34,16 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
 
 export const llmClient = {
     streamRequest: async (args: {
-        provider: Provider
         model: Model
         messages: LLmMessage[]
     }): Promise<AsyncIterable<LLMStreamEvent>> => {
         console.log("streamRequest", args)
 
-        if (args.provider === "OpenAI") {
+        if (args.model.startsWith("openai/")) {
+            const model = args.model.replace("openai/", "")
+
             const stream = await openAiClient.chat.completions.create({
-                model: args.model,
+                model: model,
                 messages: args.messages,
                 stream: true,
             })
@@ -49,6 +51,6 @@ export const llmClient = {
             return wrapOpenAIStream(stream)
         }
 
-        throw new Error(`Unknown provider: ${args.provider}`)
+        throw new Error(`Unknown model: ${args.model}`)
     }
 }

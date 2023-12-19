@@ -15,9 +15,9 @@ export type LLmMessage = {
     content: string
 }
 
-export type Provider = "OpenAI" | "Anyscale"
-export type Model = "gpt-3.5-turbo" | "gpt-4-1106-preview" | "gpt-4-vision-preview"
-export const toModel = (m: Model) => m
+// export type Provider = "OpenAI" | "Anyscale"
+// export type Model = "gpt-3.5-turbo" | "gpt-4-1106-preview" | "gpt-4-vision-preview"
+// export const toModel = (m: Model) => m
 
 export const SendMsg = t.Object({
     type: t.Literal("SendMsg"),

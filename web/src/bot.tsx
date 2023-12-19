@@ -1,12 +1,38 @@
-import React, { Fragment, useEffect } from "react"
+import React, { Fragment, useState } from "react"
 import { ws } from "./ws"
 import { Modal } from "./modal"
-import { modelTypes } from "../../types"
+import { Model } from "../../types"
+import { useCache } from "./cache"
+import { ModelSelect } from "./model"
+
+export const BotSelect = (props: {
+    botId: string
+    onSetBotId: (botId: string) => void
+}) => {
+    const bots = useCache(s => s.bots)
+
+    return (
+        <select value={props.botId} onChange={e => props.onSetBotId(e.target.value)}>
+            <option disabled value="">Select a Bot</option>
+            {bots.map((bot) => {
+                return (
+                    <option key={bot.id} value={bot.id}>
+                        {bot.name}
+                    </option>
+                )
+            })}
+        </select>
+    )
+}
 
 const AddBotModal = (props: {
     show: boolean
     onClose?: () => void
 }) => {
+    const [name, setName] = useState("")
+    const [model, setModel] = useState<Model>("openai/gpt-3.5-turbo")
+    const [instructions, setInstructions] = useState("")
+
     return (
         <Modal show={props.show} title="Create Bot" onClose={props.onClose}
             footerContent={
@@ -14,7 +40,15 @@ const AddBotModal = (props: {
                     <button onClick={props.onClose}>
                         Cancel
                     </button>
-                    <button>
+                    <button onClick={() => {
+                        ws.send({
+                            type: "CreateBot",
+                            name,
+                            model: model as Model,
+                            instructions
+                        })
+                        props.onClose?.()
+                    }}>
                         Create Bot
                     </button>
                 </Fragment>   
@@ -27,7 +61,7 @@ const AddBotModal = (props: {
                             Name
                         </label>
                     </div>             
-                    <input />
+                    <input value={name} onChange={e => setName(e.target.value)} />
                 </div>
                 <div>
                     <div>
@@ -35,22 +69,14 @@ const AddBotModal = (props: {
                             Model Type
                         </label>
                     </div>  
-                    <select>
-                        {modelTypes.map((modelType) => {
-                            return (
-                                <option key={modelType}>
-                                    {modelType}
-                                </option>
-                            )
-                        })}
-                    </select>
+                    <ModelSelect model={model} onSetModel={setModel} />
                 </div>
                 <div>
                     <label>
                         Instructions
                     </label>
                     <div>
-                        <textarea />
+                        <textarea value={instructions} onChange={e => setInstructions(e.target.value)} />
                     </div>
                 </div>
             </form>
@@ -61,17 +87,30 @@ const AddBotModal = (props: {
 export const BotsPage = () => {
     const [showAddBotModal, setShowAddBotModal] = React.useState(false)
 
-    useEffect(() => {
-        ws.send({
-            type: "GetBots"
-        })
-    }, [])
+    const bots = useCache(s => s.bots)
+
+    console.log("bots222", bots)
 
     return (
         <div>
             <button onClick={() => setShowAddBotModal(true)}>
                 Add Bot
-            </button>
+            </button> 
+            {bots.map((bot) => {
+                return (
+                    <div key={bot.id} style={{ border: "1px solid black", margin: "10px" }}>
+                        <div>
+                            Name: {bot.name}
+                        </div>
+                        <div>
+                            Model: {bot.model}
+                        </div>
+                        <div>
+                            Instructions: {bot.instructions}
+                        </div>
+                    </div>
+                )
+            })}
 
             <AddBotModal show={showAddBotModal}
                 onClose={() => setShowAddBotModal(false)} />

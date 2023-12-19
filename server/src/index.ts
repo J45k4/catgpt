@@ -2,6 +2,9 @@ import { User } from "@prisma/client"
 import { MsgToSrv } from "../../types"
 import { handleWsMsg } from "./ws"
 import { State } from "./types"
+import { createUsers } from "./users"
+
+await createUsers()
 
 let socketId = 1
 
