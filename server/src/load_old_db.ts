@@ -4,9 +4,19 @@ import { join } from "path"
 
 let dbPath: string | undefined
 
+const userMap: any = {}
+
 for (let i = 0; i < process.argv.length; i++) {
     if (process.argv[i] === "--db") {
         dbPath = process.argv[i + 1]
+    }
+
+    if (process.argv[i] === "--usermap") {
+        const val = process.argv[i + 1]
+        let parts = val.split(":")
+        const src = parts[0]
+        const target = parseInt(parts[1])
+        userMap[src] = target
     }
 }
 
@@ -31,27 +41,36 @@ for (const fileName of fileNames) {
         const chat = content.Chat
         //console.log("chat", chat)
 
-        prisma.chat.create({
+        const dbChat = await prisma.chat.create({
             data: {
-                id: chat.id,
                 title: chat.title,
+                createdAt: new Date()
             }
         })
 
-        const messages = chat.messages
+        const messages = chat.messages as any[]
 
         console.log(`chat ${chat.id} has ${messages.length} messages`)
 
         for (const message of messages) {
-            const datetime = message.createdAt ? new Date(message.createdAt) : undefined
+            console.log("message", message)
+
+            const datetime = message.datetime ? new Date(message.datetime) : undefined
+            const userId = userMap[message.userId]
+            const text = message.message
+
+            console.log("datetime", datetime)
+            console.log("userId", userId)
+            console.log("text", text)
 
             await prisma.chatMsg.create({
                 data: {
-                    id: message.id,
-                    chatId: chat.id,
-                    text: message.text,
-                    createdAt: datetime,
-                    senderId: message.senderId,
+                    chatId: dbChat.id,
+                    text: text,
+                    timestamp: datetime,
+                    userId: userId,
+                    tokenCount: message.tokenCount,
+                    charCount: text.length
                 }
             })
         }
