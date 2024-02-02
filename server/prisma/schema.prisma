@@ -15,7 +15,6 @@ model User {
   username        String    @unique
   passwordHash    String?    @map("password_hash")
   isBot           Boolean   @default(false) @map("is_bot")
-  botProvider     String?   @map("bot_provider") @db.VarChar(50)
   botModel        String?   @map("bot_model") @db.VarChar(50)
   botInstruction  String?   @map("bot_instruction")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -42,7 +41,6 @@ model ChatMsg {
   text       String
   tokenCount Int      @default(0) @map("token_count")
   charCount  Int      @default(0) @map("char_count")
-  wordsCount Int      @default(0) @map("words_count")
   cost       Int      @default(0)
   userId     Int      @map("user_id")
   chatId     Int      @map("chat_id")
