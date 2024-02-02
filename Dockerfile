@@ -23,6 +23,8 @@ COPY . .
 WORKDIR /usr/src/app/server
 ENV NODE_ENV=production
 RUN bun run build
+RUN bunx prisma generate
+RUN bunx prisma migrate deploy
 
 # copy production dependencies and source code into final image
 FROM base AS release
