@@ -39,7 +39,6 @@ console.log(`Creating user ${username} with provider ${provider}`)
 await prisma.user.create({
     data: {
         username,
-        botProvider: provider,
         isBot: true,
         createdAt: new Date()
     }
