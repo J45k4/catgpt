@@ -13,3 +13,4 @@ RUN bun build ./src/index.ts --compile --outfile catgpt
 FROM base AS release
 WORKDIR /usr/bin/catgpt
 COPY --from=install /usr/src/catgpt/server/catgpt .
+CMD ["catgpt"]
