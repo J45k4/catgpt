@@ -10,7 +10,4 @@ ADD types.ts /usr/src/catgpt/types.ts
 COPY ./server ./
 RUN bunx prisma generate
 RUN bun build ./src/index.ts --compile --outfile catgpt
-FROM base AS release
-WORKDIR /usr/bin/catgpt
-COPY --from=install /usr/src/catgpt/server/catgpt .
-CMD ["catgpt"]
+CMD ["bun", "run", "./src/index.ts"]
