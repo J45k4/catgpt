@@ -44,7 +44,6 @@ export const createUsers = async () => {
 		create: {
 			username: "aki",
 			isBot: true,
-			botProvider: "OpenAI",
 			botModel: models[0],
 			botInstruction: akiInstructions
 		}
