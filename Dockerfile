@@ -1,38 +1,15 @@
 FROM oven/bun:1 as base
-WORKDIR /usr/src/app
-
-# install dependencies into temp directory
-# this will cache them and speed up future builds
+WORKDIR /usr/src/catgpt
 FROM base AS install
-RUN mkdir -p /temp/dev
-COPY ./server/package.json ./server/bun.lockb /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
-
-# install with --production (exclude devDependencies)
-RUN mkdir -p /temp/prod
-COPY package.json bun.lockb /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
-
-# copy node_modules from temp directory
-# then copy all (non-ignored) project files into the image
-FROM base AS prerelease
-COPY --from=install /temp/dev/node_modules node_modules
-COPY . .
-
-# [optional] tests & build
-WORKDIR /usr/src/app/server
-ENV NODE_ENV=production
-RUN bun run build
+RUN mkdir server
+ADD ./server/package.json ./server/package.json
+ADD ./server/bun.lockb ./server/bun.lockb
+WORKDIR /usr/src/catgpt/server
+RUN bun install --frozen-lockfile --production
+ADD types.ts /usr/src/catgpt/types.ts
+COPY ./server ./
 RUN bunx prisma generate
-RUN bunx prisma migrate deploy
-
-# copy production dependencies and source code into final image
+RUN bun build ./src/index.ts --compile --outfile catgpt
 FROM base AS release
-COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/app/server/dist/index.js .
-COPY --from=prerelease /usr/src/app/server/package.json .
-
-# run the app
-USER bun
-EXPOSE 3000/tcp
-ENTRYPOINT [ "bun", "run", "index.js" ]
+WORKDIR /usr/bin/catgpt
+COPY --from=install /usr/src/catgpt/server/catgpt .
