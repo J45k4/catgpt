@@ -272,9 +272,15 @@ export const providers = [
 ]
 
 export const inputTokenCost: Record<Model, number> = {
-    "openai/gpt-3.5-turbo": 0.0030
+    "openai/gpt-3.5-turbo": 0.0030,
+    "openai/gpt-4-1106-preview": 0.0000,
+    "openai/gpt-4-vision-preview": 0.0000,
+    "anyscale/mistralai/Mistral-7B-Instruct-v0.1": 0.0000
 }
 
 export const outputTokenCost: Record<Model, number> = {
-    "openai/gpt-3.5-turbo": 0.0060
+    "openai/gpt-3.5-turbo": 0.0060,
+    "openai/gpt-4-1106-preview": 0.0000,
+    "openai/gpt-4-vision-preview": 0.0000,
+    "anyscale/mistralai/Mistral-7B-Instruct-v0.1": 0.0000
 }

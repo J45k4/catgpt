@@ -10,7 +10,8 @@ interface ModalProps {
 
 export const Modal: React.FC<ModalProps> = (props) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const previousActiveElementRef = useRef<Element | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const previousActiveElementRef = useRef<any | null>(null);
 
     useEffect(() => {
         if (props.show) {

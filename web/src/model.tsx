@@ -1,4 +1,3 @@
-import React from "react"
 import { Model, models } from "../../types"
 
 export const ModelSelect = (props: {
