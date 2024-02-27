@@ -196,8 +196,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
         data: {
             text,
             tokenCount: botMsgTokens.length,
-            charCount: text.length,
-            wordsCount: text.split(" ").length
+            charCount: text.length
         }
     })
 
