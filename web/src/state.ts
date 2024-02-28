@@ -7,6 +7,7 @@ type State = {
     selectedChatId: string | null
     currentChat: Chat | null
     version?: string
+    errorMsg?: string
 }
 
 export const state: State = {
@@ -14,5 +15,6 @@ export const state: State = {
     chatMetas: [],
     selectedChatId: getQueryParam("chatId"),
     currentChat: null,
-    version: undefined
+    version: undefined,
+    errorMsg: undefined
 }

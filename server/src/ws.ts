@@ -161,44 +161,56 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     })
     messages.reverse()
 
-    const stream = await llmClient.streamRequest({
-        model: bot.botModel as Model,
-        messages
-    })
+    try {
+        const stream = await llmClient.streamRequest({
+            model: bot.botModel as Model,
+            messages
+        })
 
-    let text = ""
 
-    for await (const event of stream) {
-        if (event.type === "done") {
-            console.log("done")
+        let text = ""
 
-            break;
+        for await (const event of stream) {
+            if (event.type === "done") {
+                console.log("done")
+
+                break;
+            }
+
+            if (event.type === "delta") {
+                text += event.delta
+
+                ws.send({
+                    type: "MsgDelta",
+                    chatId: chat.id.toString(),
+                    msgId: botMsg.id.toString(),
+                    delta: event.delta
+                })
+            }
         }
 
-        if (event.type === "delta") {
-            text += event.delta
+        const botMsgTokens = encode(text)
 
-            ws.send({
-                type: "MsgDelta",
-                chatId: chat.id.toString(),
-                msgId: botMsg.id.toString(),
-                delta: event.delta
-            })
-        }
+        await prisma.chatMsg.update({
+            where: {
+                id: botMsg.id
+            },
+            data: {
+                text,
+                tokenCount: botMsgTokens.length,
+                charCount: text.length
+            }
+        })
+    } catch (err: any) {
+        console.error(err)
+
+        ws.send({
+            type: "MsgDelta",
+            chatId: chat.id.toString(),
+            msgId: botMsg.id.toString(),
+            delta: "Sorry, I am not available at the moment. Please try again later."
+        })
     }
-
-    const botMsgTokens = encode(text)
-
-    await prisma.chatMsg.update({
-        where: {
-            id: botMsg.id
-        },
-        data: {
-            text,
-            tokenCount: botMsgTokens.length,
-            charCount: text.length
-        }
-    })
 
     if (!chat.title) {
         messages.push({
@@ -247,7 +259,10 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
     if (msg.type === "Login") {
         const user = await prisma.user.findFirst({
             where: {
-                username: msg.username
+                username: msg.username,
+                passwordHash: {
+                    not: null
+                }
             }
         })
 

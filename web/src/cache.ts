@@ -3,6 +3,7 @@ import { Bot } from "../../types"
 
 export const cache = {
     selectedBotId: "",
+    generalErrorMsg: "",
     bots: [] as Bot[],
 }
 

@@ -61,6 +61,13 @@ export type NewMsg = {
     msg: ChatMsg
 }
 
+export type MsgError = {
+    type: "MsgError"
+    chatId: string
+    msgId: string
+    error: string
+}
+
 export type ChatCreated = {
     type: "ChatCreated"
     chat: Chat
@@ -129,6 +136,13 @@ export type BotRes = {
     type: "Bot"
 } & Bot
 
+export type ErrorRes = {
+    type: "error"
+    error: {
+        message: string
+    }
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats |
     Chat | 
@@ -146,7 +160,9 @@ export type MsgFromSrv = MsgDelta |
     TitleDelta |
     GenerationDone |
     Bots |
-    BotRes
+    BotRes |
+    ErrorRes |
+    MsgError
 
 export type SendMsg = {
     type: "SendMsg"

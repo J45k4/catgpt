@@ -37,13 +37,24 @@ Bun.serve<State>({
 		return new Response(indexFile)
 	},
 	websocket: {
-		message: (ws, msg: string) => {
+		message: async (ws, msg: string) => {
 			const jsonMsg = JSON.parse(msg) as MsgToSrv
 
-			handleWsMsg({
-				state: ws.data,
-				send: (msg) => ws.send(JSON.stringify(msg))
-			}, jsonMsg)
+			try {
+				await handleWsMsg({
+					state: ws.data,
+					send: (msg) => ws.send(JSON.stringify(msg))
+				}, jsonMsg)
+			} catch (err: any) {
+				console.error(err)
+
+				ws.send(JSON.stringify({
+					type: "error",
+					error: {
+						message: err.message
+					}
+				}))
+			}
 		}
 	}
 })
