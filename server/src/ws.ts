@@ -202,7 +202,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             }
         })
     } catch (err: any) {
-        console.error(err)
+        console.log(err)
 
         ws.send({
             type: "MsgDelta",
