@@ -54,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v2
       - name: Get short SHA
         id: slug
         run: echo "::set-output name=sha7::$(git rev-parse --short HEAD)"
