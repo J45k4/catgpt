@@ -78,6 +78,11 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
         return;
     }
 
+    if (!bot.botModel) {
+        console.error("bot.botModel is undefined")
+        return;
+    }
+
     const tokens = encode(msg.txt)
 
     const chatMsg = await prisma.chatMsg.create({
