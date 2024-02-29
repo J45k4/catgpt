@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react"
-import { Bot } from "../../types"
+import { Bot, ChatMsg } from "../../types"
+
+type Chat = {
+    id: string
+    title?: string
+}
 
 export const cache = {
     selectedBotId: "",
     generalErrorMsg: "",
+    chatMsgs: new Map<string, ChatMsg>(),
+    chats: new Map<string, Chat>(),
     bots: [] as Bot[],
 }
 

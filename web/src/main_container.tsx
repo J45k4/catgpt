@@ -24,7 +24,7 @@ export const MainContainer = (props: {
     }
 
     return (
-        <div style={{ margin: "15px" }}>
+        <div>
             {props.children}
         </div>
     )

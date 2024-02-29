@@ -35,8 +35,8 @@ export const Navbar = () => {
     console.log("authenticated", authenticated)
 
     return (
-        <div style={{ display: "flex" }}>
-            <Row style={{ marginBottom: "15px", flexGrow: 1 }}>
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+            <Row style={{ marginBottom: "15px", flexGrow: 1, flexWrap: "wrap" }}>
                 <div style={{ color: "green", marginRight: "15px" }}>
                     <div style={{ color: connected ? "green" : "red" }}>
                         {connected && "Connected"}
@@ -70,13 +70,14 @@ export const Navbar = () => {
                     </Link>
                     <label style={{ color: "red" }}>{generalErrorMsg}</label>
                 </div>
-            </Row>
-            <button onClick={() => {
+                <button onClick={() => {
                 localStorage.removeItem("token")
                 window.location.reload()
             }}>
                 Logout
             </button>
+            </Row>
+
         </div>
     )
 }

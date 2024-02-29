@@ -38,7 +38,7 @@ const SendMessageBox = (props: {
 
     return (
         <div style={{ display: "flex" }}>
-            <textarea style={{ flexGrow: 1, fontSize: "25px", width: "100%", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
+            <textarea style={{ flexGrow: 1, fontSize: "25px", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
                 value={msg}
                 rows={lineBreaks}
                 onChange={e => setMsg(e.target.value)}
@@ -159,13 +159,13 @@ export const CurrentChat = () => {
                         </div>
                     )
                 })}
+                <SendMessageBox model={model} chatId={chat?.id} />
             </div>
-            <SendMessageBox model={model} chatId={chat?.id} />
         </div>
     )
 }
 
-const ChatMessage = (props: {
+export const ChatMessage = (props: {
     msgId: string
     text: string
 }) => {

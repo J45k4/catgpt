@@ -111,7 +111,13 @@ export const createConn = () => {
         }
 
         if (msg.type === "ChatMetas") {
-            state.chatMetas = msg.metas
+            for (const meta of msg.metas) {
+                cache.chats.set(meta.id, {
+                    id: meta.id,
+                    title: meta.title,
+                })
+            }
+            notifyChanges()
         }
 
         if (msg.type === "Chat") {
