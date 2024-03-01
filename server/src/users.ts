@@ -5,10 +5,12 @@ export const systemUser = await prisma.user.upsert({
 	where: {
 		username: "System",
 	},
-	update: {},
+	update: {
+		isBot: false
+	},
 	create: {
 		username: "System",
-		isBot: true,
+		isBot: false,
 	}
 })
 
