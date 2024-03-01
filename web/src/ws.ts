@@ -1,4 +1,3 @@
-import { events } from "./events";
 import { state } from "./state";
 import { MsgFromSrv, MsgToSrv } from "../../types";
 import { cache, notifyChanges } from "./cache";
@@ -49,9 +48,7 @@ export const createConn = () => {
     ws_socket.onopen = () => {
         console.log("onopen")
         ws.connected = true
-        events.next({
-            type: "connected"
-        })
+        cache.connected = true
 
         ws.send({
             type: "Authenticate",
@@ -63,9 +60,7 @@ export const createConn = () => {
         console.log("onclose")
         ws.connected = false
         state.authenticated = false
-        events.next({
-            type: "disconnected"
-        })
+        cache.connected = false
 
         setTimeout(() => {
             createConn()
@@ -74,7 +69,6 @@ export const createConn = () => {
 
     ws_socket.onmessage = data => {
         const msg = JSON.parse(data.data) as MsgFromSrv
-        events.next(msg)
 
         console.log("received", msg)
 

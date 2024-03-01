@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
 import { state } from "./state"
-import { events } from "./events"
 import { ws } from "./ws"
 import {formatDateTime } from "./utility"
 import { useImmer } from "use-immer"
@@ -66,51 +65,51 @@ export const CurrentChat = () => {
     const [chat, setChat] = useImmer(state.currentChat)
     const [model,] = useState("gpt3.5")
 
-    useEffect(() => {
-        const sub = events.subscribe({
-            next: (event) => {
-                if (event.type === "Chat") {
-                    setChat(event)
-                }
+    // useEffect(() => {
+    //     const sub = events.subscribe({
+    //         next: (event) => {
+    //             if (event.type === "Chat") {
+    //                 setChat(event)
+    //             }
 
-                if (event.type === "NewMsg") {
-                    setChat(draft => {
-                        if (draft && draft.id === event.msg.chatId) {
-                            draft.messages.push(event.msg)
-                        }
-                    })
+    //             if (event.type === "NewMsg") {
+    //                 setChat(draft => {
+    //                     if (draft && draft.id === event.msg.chatId) {
+    //                         draft.messages.push(event.msg)
+    //                     }
+    //                 })
                 
-                }
+    //             }
 
-                if (event.type === "ChatCreated") {
-                    setChat(event.chat)
-                }
+    //             if (event.type === "ChatCreated") {
+    //                 setChat(event.chat)
+    //             }
 
-                if (event.type === "selectedChatChanged") {
-                    if (!event.chatId) {
-                        setChat(null)
-                    }
-                }
+    //             if (event.type === "selectedChatChanged") {
+    //                 if (!event.chatId) {
+    //                     setChat(null)
+    //                 }
+    //             }
 
-                if (event.type === "GenerationDone") {
-                    setChat(draft => {
-                        if (draft) {
-                            for (const msg of draft.messages) {
-                                if (msg.id === event.msgId) {
-                                    msg.tokenCount = event.tokenCount
-                                }
-                            }
-                        }
-                    })
+    //             if (event.type === "GenerationDone") {
+    //                 setChat(draft => {
+    //                     if (draft) {
+    //                         for (const msg of draft.messages) {
+    //                             if (msg.id === event.msgId) {
+    //                                 msg.tokenCount = event.tokenCount
+    //                             }
+    //                         }
+    //                     }
+    //                 })
                 
-                }
-            }
-        })
+    //             }
+    //         }
+    //     })
 
-        return () => {
-            sub.unsubscribe()
-        }
-    }, [setChat])
+    //     return () => {
+    //         sub.unsubscribe()
+    //     }
+    // }, [setChat])
 
     return (
         <div className="segment">
@@ -171,27 +170,27 @@ export const ChatMessage = (props: {
 }) => {
     const [text, setText] = useImmer(props.text)
 
-    useEffect(() => {
-        const sub = events.subscribe({
-            next: (event) => {
-                if (event.type === "MsgDelta") {
-                    if (props.msgId === event.msgId) {
-                        setText(draft => draft + event.delta)
-                    }
-                }
+    // useEffect(() => {
+    //     const sub = events.subscribe({
+    //         next: (event) => {
+    //             if (event.type === "MsgDelta") {
+    //                 if (props.msgId === event.msgId) {
+    //                     setText(draft => draft + event.delta)
+    //                 }
+    //             }
 
-                if (event.type === "GenerationDone") {
-                    if (event.msgId === props.msgId) {
-                        setText(event.msg)
-                    }
-                }
-            }
-        })
+    //             if (event.type === "GenerationDone") {
+    //                 if (event.msgId === props.msgId) {
+    //                     setText(event.msg)
+    //                 }
+    //             }
+    //         }
+    //     })
 
-        return () => {
-            sub.unsubscribe()
-        }
-    }, [setText, props.msgId])
+    //     return () => {
+    //         sub.unsubscribe()
+    //     }
+    // }, [setText, props.msgId])
 
     const rows = []
 

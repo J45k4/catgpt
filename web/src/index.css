@@ -108,3 +108,8 @@ button:focus-visible {
 		width: 50vw;
 	}
 } */
+
+.icon_button {
+	cursor: pointer;
+	user-select: none;
+}

@@ -7,6 +7,8 @@ type Chat = {
 }
 
 export const cache = {
+    connected: false,
+    selectedChatId: null as string | null,
     selectedBotId: "",
     generalErrorMsg: "",
     chatMsgs: new Map<string, ChatMsg>(),
