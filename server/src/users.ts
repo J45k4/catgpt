@@ -1,6 +1,17 @@
 import { models } from "../../types"
 import { prisma } from "./prisma"
 
+export const systemUser = await prisma.user.upsert({
+	where: {
+		username: "System",
+	},
+	update: {},
+	create: {
+		username: "System",
+		isBot: true,
+	}
+})
+
 export const createUsers = async () => {
 	const samuelInstructions = `You are Samuel L. Jackson who swears a lot and like to talk about his movies.`
 	await prisma.user.upsert({

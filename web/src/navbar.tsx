@@ -4,10 +4,12 @@ import { ws } from "./ws"
 import { state } from "./state"
 import { Row } from "./layout"
 import { Link } from "react-router-dom"
+import { useCache } from "./cache"
 
 export const Navbar = () => {
     const [connected, setConnected] = useState(ws.connected)
     const [authenticated, setAuthenticated] = useState(state.authenticated)
+    const generalErrorMsg = useCache(s => s.generalErrorMsg)
 
     useEffect(() => {
         events.subscribe({
@@ -66,6 +68,7 @@ export const Navbar = () => {
                             Bots
                         </button>
                     </Link>
+                    <label style={{ color: "red" }}>{generalErrorMsg}</label>
                 </div>
             </Row>
             <button onClick={() => {

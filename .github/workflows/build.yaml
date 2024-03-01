@@ -49,3 +49,21 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v2
+      - name: Get short SHA
+        id: slug
+        run: echo "::set-output name=sha7::$(git rev-parse --short HEAD)"
+      - uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            /home/githubci/upgrade-catgpt ${{ steps.slug.outputs.sha7 }}

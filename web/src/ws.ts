@@ -20,6 +20,19 @@ export const ws = {
     connected: false
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let clearTimer: any
+const clearGeneralError = () => {
+    if (clearTimer) {
+        clearTimeout(clearTimer)
+    }
+
+    clearTimer = setTimeout(() => {
+        cache.generalErrorMsg = ""
+        notifyChanges()
+    }, 5000)
+}
+
 export const createConn = () => {
     let url
     if (import.meta.env.DEV) {
@@ -62,6 +75,14 @@ export const createConn = () => {
     ws_socket.onmessage = data => {
         const msg = JSON.parse(data.data) as MsgFromSrv
         events.next(msg)
+
+        console.log("received", msg)
+
+        if (msg.type === "error") {
+            cache.generalErrorMsg = msg.error.message
+            notifyChanges()
+            clearGeneralError()
+        }
 
         if (msg.type === "Authenticated") {
             localStorage.setItem("token", msg.token)
