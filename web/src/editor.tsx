@@ -1,41 +1,29 @@
 import { useEffect, useRef } from "react"
 
-const createLine = (args: {
-    lineNumber: number
-}) => {
+const createLine = (arg?: { text?: string }) => {
     const line = document.createElement("div")
     line.style.minHeight = "20px"
     line.style.display = "flex"
-    const lineNumber = document.createElement("div")
-    lineNumber.innerHTML = args.lineNumber.toString()
-    line.appendChild(lineNumber)
-    const content = document.createElement("div")
-    content.innerHTML = " "
-    content.style.flexGrow = "1"
-    line.appendChild(content)
-    return {
-        line,
-        content
+
+    if (arg?.text) {
+        line.innerText = arg.text
     }
+    return line
 }
 
 class EditorInstance {
     private root: HTMLDivElement
     private content: string = ""
     
-    public constructor(root: HTMLDivElement) {
-        console.log("create editor instance")
-        this.root = root
+    public constructor(args: {
+        root: HTMLDivElement
+        onChange?: (content: string) => void
+    }) {
+        this.root = args.root
         this.root.contentEditable = "true"
         this.root.style.border = "1px solid #e0e0e0"
         this.root.style.padding = "10px"
-        this.root.appendChild(createLine({
-            lineNumber: 1
-        }).line)
-
-        this.root.onchange = () => {
-            console.log("editor change")
-        }
+        this.root.appendChild(createLine())
 
         this.root.onkeydown = (e) => {
             if (e.key === "ArrowLeft") {
@@ -45,89 +33,92 @@ class EditorInstance {
             } else if (e.key === "ArrowUp") {
 
             } else if (e.key === "ArrowDown") {
+            
+            } else if (e.key === "Shift") {
 
+            } else if (e.key === "Backspace") {
+                this.content = this.content.slice(0, -1)
             } else if (e.key === "Enter") {
                 e.preventDefault()
                 this.insertLineBreak()
+                this.content += "\n"
+                args.onChange(this.content)
             } else {
-                console.log(e.key)
+                this.content += e.key
+                args.onChange(this.content)
             }
-            
-            console.log("editor keydown", e.key)
-        }
-
-        this.root.oninput = (e) => {
-            console.log("editor input")
         }
     }
 
     private insertLineBreak() {
         const selection = window.getSelection()
         if (selection) {
-            console.log("selection", selection)
-            console.log("focusNode", selection?.focusNode)
-            console.log("focusNodeParent", selection?.focusNode?.parentNode)
-
+            let leftOverText = ""
             let node = selection.focusNode
             if (node instanceof Text) {
+                leftOverText = node.textContent?.slice(selection.focusOffset) || ""
+                node.textContent = node.textContent?.slice(0, selection.focusOffset) || ""
                 node = node.parentNode
             }
 
             const nextSibling = node.nextSibling
-            const line = createLine({
-                lineNumber: 2
-            })
+            const line = createLine({ text: leftOverText })
             if (nextSibling) {
-                node.parentNode.insertBefore(line.line, nextSibling)
+                node.parentNode.insertBefore(line, nextSibling)
             } else {
-                node.parentNode.appendChild(line.line)
+                node.parentNode.appendChild(line)
             }
 
-            selection.setPosition(line.content, 0)
-
-            // let parent = selection.focusNode
-            // if (parent !== this.root) {
-            //     parent = parent?.parentNode
-            // }
-
-            // if (parent.nextSibling) {
-            //     parent.parentNode.insertBefore(createLine(), parent.nextSibling)
-            // } else {
-            //     parent.parentNode.appendChild(createLine())
-            // }
-
-            // const range = selection.getRangeAt(0)
-            // selection.focusNode.
-            // const d = document.createElement("div")
-            // d.style.minHeight = "20px"
-            // range.insertNode(d)
-            // d.focus()
-            // selection.setPosition(d, 0)
+            selection.setPosition(line, 0)
         }
     }
 
-    public destroy() {
-        // this.root.remove()
-        console.log("destroy editor instance")
+    public setContent(content: string) {
+        if (content === this.content) {
+            return
+        }
+
+        this.clear()
+        this.content = content
+
+        const lines = content.split("\n")
+
+        for (const line of lines) {
+            this.root.appendChild(createLine({ text: line }))
+        }
+    }
+
+    public clear() {
         for (const child of this.root.children) {
             child.remove()
         }
     }
 }
 
-export const Editor = () => {
+export const Editor = (props: {
+    content: string
+    onChange: (content: string) => void
+}) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r = useRef<any>()
+    const instance = useRef<EditorInstance>()
 
     useEffect(() => {
-        console.log("Editor", r.current)
-
-        const inst = new EditorInstance(r.current)
+        instance.current = new EditorInstance({
+            root: r.current,
+            onChange: (content) => {
+                props.onChange(content)
+            }
+        })
 
         return () => {
-            inst.destroy()
+            instance.current.clear()
         }
-    }, [])
+    }, [props])
+
+    useEffect(() => {
+        instance.current?.setContent(props.content)
+    }, [props.content])
 
     return <div ref={r} />
 }

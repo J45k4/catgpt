@@ -81,6 +81,7 @@ button:focus-visible {
 .segment {
 	border: solid 1px #e0e0e0;
 	padding: 15px;
+	text-align: left;;
 }
 
 .slide_navigation {
@@ -112,4 +113,5 @@ button:focus-visible {
 .icon_button {
 	cursor: pointer;
 	user-select: none;
+	font-size: 25px;
 }

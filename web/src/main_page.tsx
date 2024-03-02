@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 // import { ChatsList } from "./chats_list"
 // import { CurrentChat } from "./current_chat"
 import { FaBars, FaLongArrowAltRight } from "react-icons/fa";
 import { FaRobot } from "react-icons/fa";
 import { FaArrowLeft } from "react-icons/fa";
 import { ChatsList } from "./chats_list";
-import { BotsPage } from "./bot";
+import { BotSelect, BotsPage } from "./bot";
 import { Editor } from "./editor";
+import { cache, notifyChanges, useCache } from "./cache";
+import { CurrentChat } from "./current_chat";
+import { ws } from "./ws";
 
 const Toolbar = (props: {
     left?: React.ReactNode
@@ -28,6 +31,7 @@ const SlideNavigation = (props: {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	children: any[]
 	indx: number
+    onIndxChange?: (indx: number) => void
     style?: React.CSSProperties
 }) => {
     const slideWrapper = useRef<HTMLDivElement>(null)
@@ -36,7 +40,14 @@ const SlideNavigation = (props: {
 
     useEffect(() => {
         setIndx(props.indx)
-    }, [props.indx])
+    }, [props.indx, setIndx])
+
+    const changeIndx = (newIndx: number) => {
+        setIndx(newIndx)
+        if (props.onIndxChange) {
+            props.onIndxChange(newIndx)
+        }
+    }
 
     const itemWidth = 100 / props.children.length
 
@@ -73,11 +84,11 @@ const SlideNavigation = (props: {
                 }
 
                 if (state.current.diff > 100) {
-                    setIndx(Math.min(props.children.length - 1, indx + 1))
+                    changeIndx(Math.min(props.children.length - 1, indx + 1))
                 }
 
                 if (state.current.diff < -100) {
-                    setIndx(Math.max(0, indx - 1))
+                    changeIndx(Math.max(0, indx - 1))
                 }
                 
                 state.current.dragging = false
@@ -97,14 +108,112 @@ const SlideNavigation = (props: {
 	)
 }
 
+const SendMessageBox = () => {
+    const { currentMsg, selectedBotId, selectedChatId } = useCache(cache => {
+        return {
+            selectedChatId: cache.selectedChatId,
+            selectedBotId: cache.selectedBotId,
+            currentMsg: cache.currentMsg
+        }
+    })
+
+    return (
+        <div style={{ display: "flex" }}>
+            <div style={{ flexGrow: 1 }}>
+                <Editor 
+                    content={currentMsg}
+                    onChange={content => {
+                        cache.currentMsg = content
+                    }}
+                />
+            </div>  
+            <button onClick={() => {
+                if (!cache.currentMsg) {
+                    return
+                }
+
+                ws.send({
+                    type: "SendMsg",
+                    botId: selectedBotId,
+                    txt: cache.currentMsg,
+                    chatId: selectedChatId
+                })
+
+                cache.currentMsg = ""
+                notifyChanges()
+            }}>
+                Send
+            </button>
+        </div>
+    )
+}
+
+const LoginForm = () => {
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+    const authFailed = useCache(s => s.authFailed)
+
+    const onLogin = useCallback(() => {
+        ws.send({
+            type: "Login",
+            username,
+            password
+        })
+    }, [username, password])
+
+    return (
+        <div style={{ textAlign: "center", marginTop: "100px" }}>
+            {authFailed && <div style={{ color: "red" }}>Login failed</div>}
+            <div>
+                <input type="text" placeholder="username" value={username} onChange={e => setUsername(e.target.value)}
+                    style={{ marginBottom: "10px" }}
+                    onKeyUp={e => {
+                        if (e.key === "Enter") {
+                            onLogin()
+                        }
+                    }} />
+                <input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)}
+                    style={{ marginBottom: "10px" }}
+                    onKeyUp={e => {
+                        if (e.key === "Enter") {
+                            onLogin()
+                        }
+                    }} />
+            </div>
+            <button onClick={onLogin}>Login</button>
+        </div>
+    )
+}
+
 export const MainPage = () => {
-    const [indx, setIndx] = useState(1)
+    const { authenticated, inx } = useCache(s => {
+        return {
+            authenticated: s.authenticated,
+            inx: s.pageInx
+        }
+    })
+
+    const setIndx = useCallback((indx: number) => {
+        cache.pageInx = indx
+        notifyChanges()
+    }, [])
+
+    if (!authenticated) {
+        return <LoginForm />
+    }
 
     return (
         <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-            <SlideNavigation indx={indx} style={{ flexGrow: 1 }}>
+            <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+                setIndx(i)
+            }}>
                 <div>
                     <Toolbar 
+                        left={<button onClick={() => {
+                            localStorage.removeItem("token")
+                            cache.authenticated = false
+                            notifyChanges()
+                        }}>Logout</button>}
                         right={<div className="icon_button" onClick={() => setIndx(1)}>
                             <FaLongArrowAltRight />
                         </div>} />
@@ -117,7 +226,7 @@ export const MainPage = () => {
                         }}>
                             <FaBars />
                         </div>}
-                        center={<div>model</div>}
+                        center={<BotSelect />}
                         right={<div className="icon_button" onClick={() => {
                             setIndx(2)
                         }}>
@@ -125,10 +234,11 @@ export const MainPage = () => {
                         </div>}
                     />
                     <div style={{ flexGrow: 1, textAlign: "center" }}>
-                        Beeb boop I'm a robot
+                        {/* <ChatMessages chatId={cache.selectedChatId} /> */}
+                        <CurrentChat />
                     </div>
                     <div style={{ padding: "20px" }}>
-                        <Editor />
+                        <SendMessageBox />
                     </div>
                 </div>
                 <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -140,14 +250,6 @@ export const MainPage = () => {
                     <BotsPage />
                 </div>
             </SlideNavigation>
-            {/* <div style={{ display: "flex" }}>
-                <button onClick={() => setIndx(Math.max(0, indx - 1))}>
-                    left
-                </button>
-                <button onClick={() => setIndx(Math.min(1, indx + 1))}>
-                    right
-                </button>
-            </div>    */}
         </div>
 
     )
