@@ -353,7 +353,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
         ws.send({
             type: "Authenticated",
             token: msg.token,
-            version: "1234"
+            version: catgptVersion
         });
     }
 

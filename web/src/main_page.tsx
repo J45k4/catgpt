@@ -99,7 +99,7 @@ const SlideNavigation = (props: {
 				{props.children.map((child, index) => {
 					return (
 						<div key={index} className={`slide_page`} style={{ justifyContent: "center", display: "flex" }}>
-                            <div style={{ maxWidth: "1200px" }}>
+                            <div style={{ maxWidth: "1200px", flexGrow: 1 }}>
 							    {child}
                             </div>
 						</div>
