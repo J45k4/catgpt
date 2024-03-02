@@ -2,17 +2,22 @@ import React, { Fragment, useState } from "react"
 import { ws } from "./ws"
 import { Modal } from "./modal"
 import { Model } from "../../types"
-import { useCache } from "./cache"
+import { cache, notifyChanges, useCache } from "./cache"
 import { ModelSelect } from "./model"
 
-export const BotSelect = (props: {
-    botId: string
-    onSetBotId: (botId: string) => void
-}) => {
-    const bots = useCache(s => s.bots)
+export const BotSelect = () => {
+    const { botId, bots } = useCache(s => {
+        return {
+            botId: s.selectedBotId,
+            bots: s.bots
+        }
+    })
 
     return (
-        <select value={props.botId} onChange={e => props.onSetBotId(e.target.value)}>
+        <select value={botId} onChange={e => {
+            cache.selectedBotId = e.target.value
+            notifyChanges()
+        }}>
             <option disabled value="">Select a Bot</option>
             {bots.map((bot) => {
                 return (
@@ -88,8 +93,6 @@ export const BotsPage = () => {
     const [showAddBotModal, setShowAddBotModal] = React.useState(false)
 
     const bots = useCache(s => s.bots)
-
-    console.log("bots222", bots)
 
     return (
         <div>

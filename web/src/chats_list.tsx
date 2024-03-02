@@ -1,143 +1,97 @@
-import { useEffect, useMemo } from "react"
-import { state } from "./state"
-import { events } from "./events"
 import { ChatMeta } from "../../types"
 import "./chat_list.css"
-import { useImmer } from "use-immer"
-import { useSelectedChatId } from "./hooks"
 import { Row } from "./layout"
 import { ws } from "./ws"
+import { cache, notifyChanges, useCache } from "./cache"
+import { updateQueryParam } from "./utility"
 
 export const ChatsList = () => {
-    const [chatMetas, setChatMetas] = useImmer(state.chatMetas)
-    const [selectedChatId, setSelectedChatId] = useSelectedChatId()
+    const chats = useCache(s => Array.from(s.chats.values()))
+    const groupedChats = new Map<string, ChatMeta[]>()
+    const today = new Date().toDateString()
+    const yesterday = new Date(Date.now() - 86400000).toDateString()
 
-    useEffect(() => {
-        const sub = events.subscribe({
-            next: (e) => {
-                if (e.type === "ChatMetas") {
-                    setChatMetas(e.metas)
-                }
+    for (const c of chats) {
+        const lastMsgDate = new Date(c.lastMsgDatetime).toDateString()
+        let groupKey
 
-                if (e.type === "NewChat") {
-                    setChatMetas(draft => {
-                        draft.push({
-                            id: e.chat.id,
-                            lastMsgDatetime: new Date().toISOString(),
-                            title: e.chat?.title,
-                            type: "ChatMeta"
-                        })
-                    })
-                }
+        if (lastMsgDate === today) {
+            groupKey = "Today"
+        } else if (lastMsgDate === yesterday) {
+            groupKey = "Yesterday"
+        } else {
+            groupKey = lastMsgDate
+        }
 
-                if (e.type === "ChatMeta") {
-                    setChatMetas(draft => {
-                        const chatMeta = draft.find(c => c.id === e.id)
+        let group = groupedChats.get(groupKey)
 
-                        if (chatMeta) {
-                            chatMeta.title = e.title
-                        }
-                    })
-                }
+        if (!group) {
+            group = []
+            groupedChats.set(groupKey, group)
+        }
 
-                if (e.type === "TitleDelta") {
-                    setChatMetas(draft => {
-                        const chatMeta = draft.find(c => c.id === e.chatId)
+        group.push(c as any)
+    }
 
-                        if (chatMeta) {
-                            if (!chatMeta.title) {
-                                chatMeta.title = ""
-                            }
-
-                            chatMeta.title += e.delta
-                        }
-                    })
-                }
-            },
+    // Sort each group
+    for (const group of groupedChats.values()) {
+        group.sort((a, b) => {
+            return new Date(b.lastMsgDatetime).getTime() - new Date(a.lastMsgDatetime).getTime()
         })
+    }
 
-        return () => {
-            sub.unsubscribe()
-        }
-    }, [setChatMetas])
+    // Transform the Map into a list of grouped chats
+    const groupsArray = [...groupedChats.entries()].map(([date, chats]) => ({ date, chats }))
 
-    const groups = useMemo(() => {
-        const groupedChats = new Map<string, ChatMeta[]>()
-
-        const today = new Date().toDateString()
-        const yesterday = new Date(Date.now() - 86400000).toDateString()
-
-        for (const c of chatMetas) {
-            const lastMsgDate = new Date(c.lastMsgDatetime).toDateString()
-            let groupKey
-
-            if (lastMsgDate === today) {
-                groupKey = "Today"
-            } else if (lastMsgDate === yesterday) {
-                groupKey = "Yesterday"
-            } else {
-                groupKey = lastMsgDate
-            }
-
-            let group = groupedChats.get(groupKey)
-
-            if (!group) {
-                group = []
-                groupedChats.set(groupKey, group)
-            }
-
-            group.push(c)
-        }
-
-        // Sort each group
-        for (const group of groupedChats.values()) {
-            group.sort((a, b) => {
-                return new Date(b.lastMsgDatetime).getTime() - new Date(a.lastMsgDatetime).getTime()
-            })
-        }
-
-        // Transform the Map into a list of grouped chats
-        const groupsArray = [...groupedChats.entries()].map(([date, chats]) => ({ date, chats }))
-
-        // Sort the date groups
-        groupsArray.sort((a, b) => {
-            if (a.date === "Today") return -1
-            if (b.date === "Today") return 1
-            if (a.date === "Yesterday") return -1
-            if (b.date === "Yesterday") return 1
-            return new Date(b.date).getTime() - new Date(a.date).getTime()
-        })
-
-        return groupsArray
-    }, [chatMetas])
+    // Sort the date groups
+    groupsArray.sort((a, b) => {
+        if (a.date === "Today") return -1
+        if (b.date === "Today") return 1
+        if (a.date === "Yesterday") return -1
+        if (b.date === "Yesterday") return 1
+        return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
 
     return (
         <div style={{ maxWidth: "800px"}} className="segment">
             <Row>
-                {selectedChatId && 
+                {cache.selectedChatId && 
                 <button onClick={() => {
+                    if (!cache.selectedChatId) {
+                        return
+                    }
+
                     ws.send({
                         type: "GenTitle",
-                        chatId: selectedChatId
+                        chatId: cache.selectedChatId
                     })
                 }}>
                     Regenerate Title
                 </button>}
-                {selectedChatId &&
+                {cache.selectedChatId &&
                 <button onClick={() => {
-                    setSelectedChatId(null)
+                    cache.selectedChatId = null
+                    updateQueryParam("chatId", undefined)
+                    notifyChanges()
                 }}>
                     New Chat
                 </button>}
             </Row>
             <div style={{ overflow: "auto", maxHeight: "500px" }}>
-                {groups.map(group => (
+                {groupsArray.map(group => (
                     <div key={group.date}>
                         <h3>{group.date}</h3>
                         {group.chats.map(chat => (
-                            <div key={chat.id} style={{ cursor: "pointer", border: selectedChatId === chat.id ? "solid 1px black" : undefined  }} className="chatListItem"
+                            <div key={chat.id} style={{ cursor: "pointer", border: cache.selectedChatId === chat.id ? "solid 1px black" : undefined  }} className="chatListItem"
                                 onClick={() => {
-                                    setSelectedChatId(chat.id)
+                                    ws.send({
+                                        type: "GetChat",
+                                        chatId: chat.id
+                                    })
+                                    updateQueryParam("chatId", chat.id)
+                                    cache.selectedChatId = chat.id
+                                    cache.pageInx = 1
+                                    notifyChanges()
                                 }}>
                                 {chat.title ? chat.title : chat.id}
                             </div>

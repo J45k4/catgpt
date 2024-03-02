@@ -9,7 +9,7 @@ export const Row = (props: {
             <div style={{ display: "flex", ...props.style }}>
                 {props.children.map((child, index) => {
                     return (
-                        <div key={index} style={{ marginRight: "15px" }}>
+                        <div key={index}>
                             {child}
                         </div>
                     )

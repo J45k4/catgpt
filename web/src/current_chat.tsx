@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
-import { state } from "./state"
-import { events } from "./events"
+import { useCallback, useState } from "react"
 import { ws } from "./ws"
 import {formatDateTime } from "./utility"
-import { useImmer } from "use-immer"
 import { Row } from "./layout"
 import { BiCopy } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
@@ -12,7 +9,6 @@ import { cache, notifyChanges, useCache } from "./cache"
 
 const SendMessageBox = (props: {
     chatId?: string
-    model: string
 }) => {
     const [msg, setMsg] = useState("")
     const botId = useCache(s => s.selectedBotId)
@@ -21,8 +17,6 @@ const SendMessageBox = (props: {
         if (msg === "") {
             return
         }
-
-        console.log("sending msg", msg)
 
         ws.send({
             type: "SendMsg",
@@ -38,7 +32,7 @@ const SendMessageBox = (props: {
 
     return (
         <div style={{ display: "flex" }}>
-            <textarea style={{ flexGrow: 1, fontSize: "25px", width: "100%", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
+            <textarea style={{ flexGrow: 1, fontSize: "25px", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
                 value={msg}
                 rows={lineBreaks}
                 onChange={e => setMsg(e.target.value)}
@@ -54,76 +48,21 @@ const SendMessageBox = (props: {
             }}>
                 Send
             </button>
-            <BotSelect botId={botId} onSetBotId={(botId) => {
-                cache.selectedBotId = botId
-                notifyChanges()
-            }} />
+            <BotSelect />
         </div>
     )
 }
 
 export const CurrentChat = () => {
-    const [chat, setChat] = useImmer(state.currentChat)
-    const [model,] = useState("gpt3.5")
-
-    useEffect(() => {
-        const sub = events.subscribe({
-            next: (event) => {
-                if (event.type === "Chat") {
-                    setChat(event)
-                }
-
-                if (event.type === "NewMsg") {
-                    setChat(draft => {
-                        if (draft && draft.id === event.msg.chatId) {
-                            draft.messages.push(event.msg)
-                        }
-                    })
-                
-                }
-
-                if (event.type === "ChatCreated") {
-                    setChat(event.chat)
-                }
-
-                if (event.type === "selectedChatChanged") {
-                    if (!event.chatId) {
-                        setChat(null)
-                    }
-                }
-
-                if (event.type === "GenerationDone") {
-                    setChat(draft => {
-                        if (draft) {
-                            for (const msg of draft.messages) {
-                                if (msg.id === event.msgId) {
-                                    msg.tokenCount = event.tokenCount
-                                }
-                            }
-                        }
-                    })
-                
-                }
-            }
-        })
-
-        return () => {
-            sub.unsubscribe()
-        }
-    }, [setChat])
+    const msgs = useCache(cache => {
+        const chat = cache.chats.get(cache.selectedChatId)
+        return chat ? chat.msgs : []
+    })
 
     return (
         <div className="segment">
-            <div style={{ display: "flex", marginBottom: "10px"}}>
-                <div style={{ marginRight: "15px", fontSize: "25px" }}>
-                    Current Chat
-                </div>
-                {/* <div>
-                    <ModelSelect model={model} onChange={setModel} />
-                </div> */}
-            </div>
             <div>
-                {chat?.messages.map((message, index) => {
+                {msgs.map((message, index) => {
                     return (
                         <div style={{ 
                             display: "flex", 
@@ -135,7 +74,7 @@ export const CurrentChat = () => {
                         }}
                             key={message.id}>
                             <div style={{ marginRight: "15px", whiteSpace: "nowrap", display: "flex", flexWrap: "wrap" }}>
-                                <div style={{ flexGrow: 1, fontSize: "25px" }}>
+                                <div style={{ flexGrow: 1, fontSize: "20px" }}>
                                     {message.user}
                                 </div>
                                 <div>
@@ -159,40 +98,16 @@ export const CurrentChat = () => {
                         </div>
                     )
                 })}
+                {/* <SendMessageBox chatId={chat?.id} /> */}
             </div>
-            <SendMessageBox model={model} chatId={chat?.id} />
         </div>
     )
 }
 
-const ChatMessage = (props: {
+export const ChatMessage = (props: {
     msgId: string
     text: string
 }) => {
-    const [text, setText] = useImmer(props.text)
-
-    useEffect(() => {
-        const sub = events.subscribe({
-            next: (event) => {
-                if (event.type === "MsgDelta") {
-                    if (props.msgId === event.msgId) {
-                        setText(draft => draft + event.delta)
-                    }
-                }
-
-                if (event.type === "GenerationDone") {
-                    if (event.msgId === props.msgId) {
-                        setText(event.msg)
-                    }
-                }
-            }
-        })
-
-        return () => {
-            sub.unsubscribe()
-        }
-    }, [setText, props.msgId])
-
     const rows = []
 
     let backbuffer = ""
@@ -200,7 +115,7 @@ const ChatMessage = (props: {
     let parsingCodeBlock = false
     let parsingLanguage = false
     let blockCount = 1
-    for (const char of text) {
+    for (const char of props.text) {
         backbuffer += char
 
         if (parsingCodeBlock) {

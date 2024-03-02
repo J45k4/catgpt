@@ -1,6 +1,10 @@
 export const updateQueryParam = (param: string, value: string) => {
     const url = new URL(window.location.href)
-    url.searchParams.set(param, value)
+    if (value != null) {
+        url.searchParams.set(param, value)
+    } else {
+        url.searchParams.delete(param)
+    }
     window.history.replaceState({}, "", url.toString())
 }
 

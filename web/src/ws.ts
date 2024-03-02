@@ -1,6 +1,4 @@
-import { events } from "./events";
-import { state } from "./state";
-import { MsgFromSrv, MsgToSrv } from "../../types";
+import { ChatMsg, MsgFromSrv, MsgToSrv } from "../../types";
 import { cache, notifyChanges } from "./cache";
 
 let ws_socket: WebSocket
@@ -47,11 +45,8 @@ export const createConn = () => {
     ws_socket = new WebSocket(url)
 
     ws_socket.onopen = () => {
-        console.log("onopen")
         ws.connected = true
-        events.next({
-            type: "connected"
-        })
+        cache.connected = true
 
         ws.send({
             type: "Authenticate",
@@ -60,12 +55,9 @@ export const createConn = () => {
     }
 
     ws_socket.onclose = () => {
-        console.log("onclose")
         ws.connected = false
-        state.authenticated = false
-        events.next({
-            type: "disconnected"
-        })
+        cache.authenticated = false
+        cache.connected = false
 
         setTimeout(() => {
             createConn()
@@ -74,9 +66,6 @@ export const createConn = () => {
 
     ws_socket.onmessage = data => {
         const msg = JSON.parse(data.data) as MsgFromSrv
-        events.next(msg)
-
-        console.log("received", msg)
 
         if (msg.type === "error") {
             cache.generalErrorMsg = msg.error.message
@@ -86,7 +75,6 @@ export const createConn = () => {
 
         if (msg.type === "Authenticated") {
             localStorage.setItem("token", msg.token)
-            state.authenticated = true
 
             ws.send({
                 type: "GetChats"
@@ -96,26 +84,44 @@ export const createConn = () => {
                 type: "GetBots"
             })
 
-            if (state.selectedChatId) {
+            if (cache.selectedChatId) {
                 ws.send({
                     type: "GetChat",
-                    chatId: state.selectedChatId
+                    chatId: cache.selectedChatId
                 })
             }
 
-            if (state.version != null && state.version !== msg.version) {
+            if (cache.version && cache.version !== msg.version) {
                 window.location.reload()
             } else {
-                state.version = msg.version
+                cache.version = msg.version
             }
+
+            cache.authenticated = true
+            notifyChanges()
+        }
+
+        if (msg.type === "AuthTokenInvalid") {
+            cache.authFailed = true
+            notifyChanges()
         }
 
         if (msg.type === "ChatMetas") {
-            state.chatMetas = msg.metas
+            for (const meta of msg.metas) {
+                cache.chats.set(meta.id, {
+                    id: meta.id,
+                    title: meta.title,
+                    lastMsgDatetime: meta.lastMsgDatetime,
+                    msgs: []
+                })
+            }
+            notifyChanges()
         }
 
         if (msg.type === "Chat") {
-            state.currentChat = msg
+            const chat = cache.chats.get(msg.id)
+            chat.msgs = msg.messages
+            notifyChanges()
         }
 
         if (msg.type === "Bots") {
@@ -137,6 +143,71 @@ export const createConn = () => {
             }
 
             notifyChanges()
+        }
+
+        // if (msg.type === "MsgDelta") {
+        //     const chat = cache.chats.get(msg.chatId)
+        //     if (chat) {
+        //         const chatMsg = chat.msgs.find(m => m.id === msg.msgId)
+
+        //         if (chatMsg) {
+        //             chatMsg.text += msg.delta
+        //         }
+        //     }
+        // }
+
+        if (msg.type === "NewChat") {
+            cache.chats.set(msg.chat.id, {
+                id: msg.chat.id,
+                title: msg.chat.title,
+                lastMsgDatetime: new Date().toISOString(),
+                msgs: []
+            })
+            notifyChanges()
+        }
+
+        if (msg.type === "ChatCreated") {
+            cache.chats.set(msg.chat.id, {
+                id: msg.chat.id,
+                lastMsgDatetime: new Date().toISOString(),
+                title: msg.chat.title,
+                msgs: []
+            })
+            cache.selectedChatId = msg.chat.id
+            notifyChanges()
+        }
+
+        if (msg.type === "NewMsg") {
+            const chat = cache.chats.get(msg.msg.chatId)
+            if (chat) {
+                chat.msgs.push(msg.msg)
+                chat.lastMsgDatetime = msg.msg.datetime
+                notifyChanges()
+            }
+        }
+
+
+        if (msg.type === "MsgDelta") {
+            const chat = cache.chats.get(msg.chatId)
+            if (chat) {
+                const message: ChatMsg = chat.msgs.find(m => m.id === msg.msgId)
+                if (message) {
+                    message.text += msg.delta
+                    notifyChanges()
+                }
+            }
+        }
+
+        if (msg.type === "TitleDelta") {
+            const chat = cache.chats.get(msg.chatId)
+            if (chat) {
+                if (chat.title) {
+                    chat.title += msg.delta
+                } else {
+                    chat.title = msg.delta
+                }
+                notifyChanges()
+            }
         }
     }
 }
