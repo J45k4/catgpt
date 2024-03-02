@@ -203,8 +203,7 @@ export const MainPage = () => {
     }
 
     return (
-        <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-            <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+        <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
                 setIndx(i)
             }}>
                 <div>
@@ -219,7 +218,7 @@ export const MainPage = () => {
                         </div>} />
                     <ChatsList />
                 </div>    
-                <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                <div style={{ maxHeight: "100vh", height: "100%", display: "flex", flexDirection: "column" }}>
                     <Toolbar
                         left={<div className="icon_button" onClick={() => {
                             setIndx(0)
@@ -233,7 +232,7 @@ export const MainPage = () => {
                             <FaRobot />
                         </div>}
                     />
-                    <div style={{ flexGrow: 1, textAlign: "center" }}>
+                    <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center" }}>
                         {/* <ChatMessages chatId={cache.selectedChatId} /> */}
                         <CurrentChat />
                     </div>
@@ -250,7 +249,6 @@ export const MainPage = () => {
                     <BotsPage />
                 </div>
             </SlideNavigation>
-        </div>
 
     )
 }

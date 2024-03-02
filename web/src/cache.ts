@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { Bot, ChatMsg } from "../../types"
-import { useImmer } from "use-immer"
 import { getQueryParam } from "./utility"
 
 type Chat = {
