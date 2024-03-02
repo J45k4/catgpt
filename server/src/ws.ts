@@ -3,7 +3,7 @@ import { LLMMessageRole, LLmMessage, State } from "./types";
 import { Model, MsgFromSrv, MsgToSrv, SendMsg } from "../../types";
 import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
-import { JWT_SECRET_KEY } from "./config";
+import { JWT_SECRET_KEY, catgptVersion } from "./config";
 import { llmClient } from "./llm_client";
 
 type Ws = {
@@ -305,7 +305,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
         ws.send({
             type: "Authenticated",
             token,
-            version: "1234"
+            version: catgptVersion
         })
     }
 

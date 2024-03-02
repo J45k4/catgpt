@@ -89,10 +89,8 @@ export const createConn = () => {
 
             if (cache.version && cache.version !== msg.version) {
                 window.location.reload()
-            } else {
-                cache.version = msg.version
             }
-
+            cache.version = msg.version
             cache.authenticated = true
             notifyChanges()
         }
