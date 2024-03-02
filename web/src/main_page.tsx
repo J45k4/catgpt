@@ -35,7 +35,7 @@ const SlideNavigation = (props: {
     style?: React.CSSProperties
 }) => {
     const slideWrapper = useRef<HTMLDivElement>(null)
-    const state = useRef({ x: 0, diff: 0, dragging: false })
+    const state = useRef({ x: 0, y: 0, diff: 0, dragging: false })
     const [indx, setIndx] = useState(props.indx)
 
     useEffect(() => {
@@ -68,12 +68,20 @@ const SlideNavigation = (props: {
             onTouchStart={(e) => {
                 state.current.dragging = true
                 state.current.x = e.touches[0].clientX
+                state.current.y = e.touches[0].clientY
                 if (slideWrapper.current) {
                     slideWrapper.current.style.transition = "none"
                 }
             }}
             onTouchMove={(e) => {
                 if (state.current.dragging && slideWrapper.current) {
+                    const xDiff = Math.abs(e.touches[0].clientX - state.current.x)
+                    const yDiff = Math.abs(e.touches[0].clientY - state.current.y)
+
+                    if (yDiff > xDiff) {
+                        return
+                    }
+
                     state.current.diff = state.current.x - e.touches[0].clientX
                     const diffRatio = state.current.diff / window.innerWidth
                     const newx = ((indx * itemWidth) + (diffRatio * 50)) * -1
