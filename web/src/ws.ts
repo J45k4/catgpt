@@ -114,7 +114,16 @@ export const createConn = () => {
 
         if (msg.type === "Chat") {
             const chat = cache.chats.get(msg.id)
-            chat.msgs = msg.messages
+            if (chat) {
+                chat.msgs = msg.messages
+            } else {
+                cache.chats.set(msg.id, {
+                    id: msg.id,
+                    title: msg.title,
+                    lastMsgDatetime: new Date().toISOString(),
+                    msgs: msg.messages
+                })
+            }
             notifyChanges()
         }
 
