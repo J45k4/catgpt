@@ -35,10 +35,10 @@ export const notifyChanges = () => {
     }
 
     tim = setTimeout(() => {
+        tim = null
         for (const listener of listeners) {
             listener()
         }
-        tim = null
     }, 16)
 }
 
