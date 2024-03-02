@@ -53,7 +53,7 @@ export const ChatsList = () => {
     })
 
     return (
-        <div style={{ maxWidth: "800px"}} className="segment">
+        <div className="segment">
             <Row>
                 {cache.selectedChatId && 
                 <button onClick={() => {

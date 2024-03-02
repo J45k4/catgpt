@@ -98,8 +98,10 @@ const SlideNavigation = (props: {
             >
 				{props.children.map((child, index) => {
 					return (
-						<div key={index} className={`slide_page`}>
-							{child}
+						<div key={index} className={`slide_page`} style={{ justifyContent: "center", display: "flex" }}>
+                            <div style={{ maxWidth: "1200px" }}>
+							    {child}
+                            </div>
 						</div>
 					)
 				})}
@@ -218,27 +220,29 @@ export const MainPage = () => {
                         </div>} />
                     <ChatsList />
                 </div>    
-                <div style={{ maxHeight: "100vh", height: "100%", display: "flex", flexDirection: "column" }}>
-                    <Toolbar
-                        left={<div className="icon_button" onClick={() => {
-                            setIndx(0)
-                        }}>
-                            <FaBars />
-                        </div>}
-                        center={<BotSelect />}
-                        right={<div className="icon_button" onClick={() => {
-                            setIndx(2)
-                        }}>
-                            <FaRobot />
-                        </div>}
-                    />
-                    <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center" }}>
-                        {/* <ChatMessages chatId={cache.selectedChatId} /> */}
-                        <CurrentChat />
-                    </div>
-                    <div style={{ padding: "20px" }}>
-                        <SendMessageBox />
-                    </div>
+                <div style={{ maxHeight: "100vh", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    {/* <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", maxWidth: "1200px" }}> */}
+                        <Toolbar
+                            left={<div className="icon_button" onClick={() => {
+                                setIndx(0)
+                            }}>
+                                <FaBars />
+                            </div>}
+                            center={<BotSelect />}
+                            right={<div className="icon_button" onClick={() => {
+                                setIndx(2)
+                            }}>
+                                <FaRobot />
+                            </div>}
+                        />
+                        <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center" }}>
+                            {/* <ChatMessages chatId={cache.selectedChatId} /> */}
+                            <CurrentChat />
+                        </div>
+                        <div style={{ padding: "20px" }}>
+                            <SendMessageBox />
+                        </div>
+                    {/* </div>      */}
                 </div>
                 <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
                     <div style={{ display: "flex" }}>
