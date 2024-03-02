@@ -184,7 +184,7 @@ export const ChatMessage = (props: {
     }
 
     return (
-        <div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
             {rows}
         </div>
     )

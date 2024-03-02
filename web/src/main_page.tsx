@@ -3,13 +3,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // import { CurrentChat } from "./current_chat"
 import { FaBars, FaLongArrowAltRight } from "react-icons/fa";
 import { FaRobot } from "react-icons/fa";
-import { FaArrowLeft } from "react-icons/fa";
 import { ChatsList } from "./chats_list";
 import { BotSelect, BotsPage } from "./bot";
 import { Editor } from "./editor";
 import { cache, notifyChanges, useCache } from "./cache";
 import { CurrentChat } from "./current_chat";
 import { ws } from "./ws";
+import { useScreenSize } from "./utility";
 
 const Toolbar = (props: {
     left?: React.ReactNode
@@ -48,6 +48,9 @@ const SlideNavigation = (props: {
             props.onIndxChange(newIndx)
         }
     }
+
+    console.log("SlideNavigation  items" + props.children.length)
+    console.log("SlideNavigation " + indx)
 
     const itemWidth = 100 / props.children.length
 
@@ -98,10 +101,8 @@ const SlideNavigation = (props: {
             >
 				{props.children.map((child, index) => {
 					return (
-						<div key={index} className={`slide_page`} style={{ justifyContent: "center" }}>
-                            <div style={{ maxWidth: "1200px", flexGrow: 1 }}>
-							    {child}
-                            </div>
+						<div key={index} className={`slide_page`}>
+                            {child}
 						</div>
 					)
 				})}
@@ -187,6 +188,54 @@ const LoginForm = () => {
     )
 }
 
+const ChatsPage = (props: {
+    style?: React.CSSProperties
+    onSlideRight?: () => void
+}) => {
+    return (
+        <div style={props.style}>
+            <Toolbar 
+                left={<button onClick={() => {
+                    localStorage.removeItem("token")
+                    cache.authenticated = false
+                    notifyChanges()
+                }}>Logout</button>}
+                right={props.onSlideRight ? <div className="icon_button" onClick={props.onSlideRight}>
+                    <FaLongArrowAltRight />
+                </div> : undefined} />
+            <ChatsList />
+        </div>
+    )
+}
+
+const CurrentChagePage = (props: {
+    style?: React.CSSProperties
+    onSlideLeft?: () => void
+    onSlideRight?: () => void
+}) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", ...props.style}}>
+            <Toolbar
+                left={props.onSlideLeft ? <div className="icon_button" onClick={() => {
+                    props.onSlideLeft()
+                }}>
+                    <FaBars />
+                </div> : undefined}
+                center={<BotSelect />}
+                right={props.onSlideRight ? <div className="icon_button" onClick={props.onSlideRight}>
+                    <FaRobot />
+                </div> : undefined}
+            />
+            <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center", width: "100%" }}>
+                <CurrentChat />
+            </div>
+            <div style={{ padding: "20px" }}>
+                <SendMessageBox />
+            </div>
+        </div>
+    )
+}
+
 export const MainPage = () => {
     const { authenticated, inx } = useCache(s => {
         return {
@@ -194,65 +243,48 @@ export const MainPage = () => {
             inx: s.pageInx
         }
     })
+    const width = useScreenSize()
 
     const setIndx = useCallback((indx: number) => {
         cache.pageInx = indx
         notifyChanges()
     }, [])
 
+    const slideLeft = useCallback(() => {
+        if (inx === 0) {
+            return
+        }
+        setIndx(inx - 1)
+    }, [inx, setIndx])
+
+    const slideRight = useCallback(() => {
+        if (inx === 2) {
+            return
+        }
+        setIndx(inx + 1)
+    }, [inx, setIndx])
+
     if (!authenticated) {
         return <LoginForm />
     }
 
-    return (
-        <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+    if (width < 1300) {
+        return (
+            <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
                 setIndx(i)
             }}>
-                <div>
-                    <Toolbar 
-                        left={<button onClick={() => {
-                            localStorage.removeItem("token")
-                            cache.authenticated = false
-                            notifyChanges()
-                        }}>Logout</button>}
-                        right={<div className="icon_button" onClick={() => setIndx(1)}>
-                            <FaLongArrowAltRight />
-                        </div>} />
-                    <ChatsList />
-                </div>    
-                <div style={{ maxHeight: "100vh", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    {/* <div style={{ display: "flex", flexGrow: 1, flexDirection: "column", maxWidth: "1200px" }}> */}
-                        <Toolbar
-                            left={<div className="icon_button" onClick={() => {
-                                setIndx(0)
-                            }}>
-                                <FaBars />
-                            </div>}
-                            center={<BotSelect />}
-                            right={<div className="icon_button" onClick={() => {
-                                setIndx(2)
-                            }}>
-                                <FaRobot />
-                            </div>}
-                        />
-                        <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center" }}>
-                            {/* <ChatMessages chatId={cache.selectedChatId} /> */}
-                            <CurrentChat />
-                        </div>
-                        <div style={{ padding: "20px" }}>
-                            <SendMessageBox />
-                        </div>
-                    {/* </div>      */}
-                </div>
-                <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                    <div style={{ display: "flex" }}>
-                        <div className="icon_button" onClick={() => setIndx(1)}>
-                            <FaArrowLeft />
-                        </div>
-                    </div>
-                    <BotsPage />
-                </div>
+                <ChatsPage onSlideRight={slideRight} />
+                <CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
+                <BotsPage onSlideLeft={slideLeft} />
             </SlideNavigation>
+        )
+    }
 
+    return (
+        <div style={{ display: "flex", flexDirection: "row", width: "100vw" }}>
+            <ChatsPage />
+            <CurrentChagePage style={{ flexShrink: 1, flexGrow: 1 }} />
+            <BotsPage style={{ minWidth: "400px" }} />
+        </div>   
     )
 }

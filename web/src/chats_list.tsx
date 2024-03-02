@@ -53,7 +53,7 @@ export const ChatsList = () => {
     })
 
     return (
-        <div className="segment">
+        <div className="segment" style={{ }}>
             <Row>
                 {cache.selectedChatId && 
                 <button onClick={() => {
@@ -77,7 +77,7 @@ export const ChatsList = () => {
                     New Chat
                 </button>}
             </Row>
-            <div style={{ overflow: "auto", maxHeight: "500px" }}>
+            <div style={{ overflow: "auto" }}>
                 {groupsArray.map(group => (
                     <div key={group.date}>
                         <h3>{group.date}</h3>
@@ -90,7 +90,9 @@ export const ChatsList = () => {
                                     })
                                     updateQueryParam("chatId", chat.id)
                                     cache.selectedChatId = chat.id
-                                    cache.pageInx = 1
+                                    if (window.innerWidth < 1300) {
+                                        cache.pageInx = 1
+                                    }
                                     notifyChanges()
                                 }}>
                                 {chat.title ? chat.title : chat.id}

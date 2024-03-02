@@ -4,6 +4,7 @@ import { Modal } from "./modal"
 import { Bot, Model } from "../../types"
 import { cache, notifyChanges, useCache } from "./cache"
 import { ModelSelect } from "./model"
+import { FaArrowLeft } from "react-icons/fa"
 
 export const BotSelect = () => {
     const { botId, bots } = useCache(s => {
@@ -155,14 +156,23 @@ const CreateBotForm = (props: {
     )
 }
 
-export const BotsPage = () => {
+export const BotsPage = (props: {
+    style?: React.CSSProperties
+    onSlideLeft?: () => void
+}) => {
     const [showAddBotModal, setShowAddBotModal] = React.useState(false)
     const [editingBot, setEditingBot] = React.useState("")
 
     const bots = useCache(s => s.bots)
 
     return (
-        <div>
+        <div style={{ display: "flex", flexDirection: "column", ...props.style }}>
+            {props.onSlideLeft &&
+            <div style={{ display: "flex" }}>
+                <div className="icon_button" onClick={() => props.onSlideLeft()}>
+                    <FaArrowLeft />
+                </div>
+            </div>}
             <button onClick={() => setShowAddBotModal(true)}>
                 Add Bot
             </button>
@@ -173,7 +183,7 @@ export const BotsPage = () => {
                 }
                 
                 return (
-                    <div style={{ border: "1px solid black", margin: "10px", display: "flex" }}>
+                    <div key={bot.id} style={{ border: "1px solid black", margin: "10px", display: "flex" }}>
                         <div key={bot.id} style={{ flexGrow: 1 }}>
                             <div>
                                 Name: {bot.name}
@@ -191,6 +201,7 @@ export const BotsPage = () => {
                     </div>
                 )
             })}
+            
         </div>
     )
 }
