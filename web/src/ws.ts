@@ -41,9 +41,7 @@ export const createConn = () => {
         const host = window.location.host
         url = `${protocol}://${host}/ws`
     }
-    console.log("ws url", url)
     ws_socket = new WebSocket(url)
-
     ws_socket.onopen = () => {
         ws.connected = true
         cache.connected = true
@@ -53,7 +51,6 @@ export const createConn = () => {
             token: localStorage.getItem("token") ?? ""
         })
     }
-
     ws_socket.onclose = () => {
         ws.connected = false
         cache.authenticated = false
@@ -63,7 +60,6 @@ export const createConn = () => {
             createConn()
         }, 1000)
     }
-
     ws_socket.onmessage = data => {
         const msg = JSON.parse(data.data) as MsgFromSrv
 
@@ -190,7 +186,7 @@ export const createConn = () => {
         if (msg.type === "MsgDelta") {
             const chat = cache.chats.get(msg.chatId)
             if (chat) {
-                const message: ChatMsg = chat.msgs.find(m => m.id === msg.msgId)
+                const message = chat.msgs.find(m => m.id === msg.msgId)
                 if (message) {
                     message.text += msg.delta
                     notifyChanges()
