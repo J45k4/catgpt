@@ -102,6 +102,10 @@ export const createConn = () => {
 
         if (msg.type === "ChatMetas") {
             for (const meta of msg.metas) {
+                if (cache.chats.has(meta.id)) {
+                    continue
+                }
+
                 cache.chats.set(meta.id, {
                     id: meta.id,
                     title: meta.title,
