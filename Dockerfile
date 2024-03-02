@@ -16,5 +16,5 @@ WORKDIR /usr/src/catgpt/server
 COPY ./server .
 RUN npx prisma generate
 ARG version
-ENV VERSION=$version
+ENV CATGPT_VERSION=$version
 CMD ["bun", "run", "./src/index.ts"]
