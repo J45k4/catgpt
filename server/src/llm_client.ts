@@ -1,3 +1,4 @@
+import Groq from "groq-sdk";
 import { Model } from "../../types";
 import { LLmMessage } from "./types";
 import openai from "openai"
@@ -5,6 +6,9 @@ import openai from "openai"
 const openAiClient = new openai.OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 })
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY
+});
 
 export type LLMStreamEvent = {
     type: "delta"
@@ -32,6 +36,19 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
     }
 }
 
+// async function* wrapGroqStream(stream: AsyncIterable<Groq.Chat.Completions.C>): AsyncIterable<LLMStreamEvent> {
+//     for await (const chunk of stream) {
+//         yield {
+//             type: "delta",
+//             delta: JSON.stringify(chunk)
+//         }
+//     }
+
+//     yield {
+//         type: "done"
+//     }
+// }
+
 export const llmClient = {
     streamRequest: async (args: {
         model: Model
@@ -43,6 +60,18 @@ export const llmClient = {
             const model = args.model.replace("openai/", "")
 
             const stream = await openAiClient.chat.completions.create({
+                model: model,
+                messages: args.messages,
+                stream: true,
+            })
+
+            return wrapOpenAIStream(stream)
+        }
+
+        if (args.model.startsWith("groq/")) {
+            const model = args.model.replace("groq/", "")
+
+            const stream = await groq.chat.completions.create({
                 model: model,
                 messages: args.messages,
                 stream: true,

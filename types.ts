@@ -248,6 +248,14 @@ export type CreateBot = {
     instructions: string
 }
 
+export type UpdateBot = {
+    type: "UpdateBot"
+    id: string
+    name: string
+    model: Model
+    instructions: string
+}
+
 export type DeleteBot = {
     type: "DeleteBot"
     id: string
@@ -269,6 +277,7 @@ export type MsgToSrv = SendMsg |
     GetBots |
     GetBot |
     CreateBot |
+    UpdateBot |
     DeleteBot
 
 export type Model = typeof models[number]
@@ -277,7 +286,8 @@ export const models = [
     "openai/gpt-3.5-turbo", 
     "openai/gpt-4-1106-preview", 
     "openai/gpt-4-vision-preview", 
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1"
+    "anyscale/mistralai/Mistral-7B-Instruct-v0.1",
+    "groq/mixtral-8x7b-32768"
 ] as const
 
 export type Provider = typeof providers[number]
@@ -287,14 +297,14 @@ export const providers = [
     "Anyscale" as const
 ]
 
-export const inputTokenCost: Record<Model, number> = {
+export const inputTokenCost: Partial<Record<Model, number>> = {
     "openai/gpt-3.5-turbo": 0.0030,
     "openai/gpt-4-1106-preview": 0.0000,
     "openai/gpt-4-vision-preview": 0.0000,
     "anyscale/mistralai/Mistral-7B-Instruct-v0.1": 0.0000
 }
 
-export const outputTokenCost: Record<Model, number> = {
+export const outputTokenCost: Partial<Record<Model, number>> = {
     "openai/gpt-3.5-turbo": 0.0060,
     "openai/gpt-4-1106-preview": 0.0000,
     "openai/gpt-4-vision-preview": 0.0000,

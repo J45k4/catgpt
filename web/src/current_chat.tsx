@@ -62,7 +62,7 @@ export const CurrentChat = () => {
     return (
         <div className="segment">
             <div>
-                {msgs.map((message, index) => {
+                {msgs.map((msg, index) => {
                     return (
                         <div style={{ 
                             display: "flex", 
@@ -72,28 +72,29 @@ export const CurrentChat = () => {
                             padding: "5px",
                             backgroundColor: index % 2 === 0 ? "#f6f6f6" : "white",
                         }}
-                            key={message.id}>
+                            key={msg.id}>
                             <div style={{ marginRight: "15px", whiteSpace: "nowrap", display: "flex", flexWrap: "wrap" }}>
                                 <div style={{ flexGrow: 1, fontSize: "20px" }}>
-                                    {message.user}
+                                    {msg.user}
                                 </div>
                                 <div>
                                     <Row style={{ flexWrap: "wrap" }}>
-                                        {formatDateTime(message.datetime)}
+                                        {formatDateTime(msg.datetime)}
                                         Token Count:
-                                        {message.tokenCount}
+                                        {msg.tokenCount}
                                         <BiCopy 
                                             style={{ fontSize: "25px", cursor: "pointer" }}
                                             onClick={() => {
-                                                navigator.clipboard.writeText(message.text)
+                                                navigator.clipboard.writeText(msg.text)
                                             }}
                                         />
                                     </Row>    
                                 </div>
                             </div>
                             <ChatMessage
-                                msgId={message.id}
-                                text={message.text}
+                                key={msg.id}
+                                msgId={msg.id}
+                                text={msg.text}
                                 />
                         </div>
                     )

@@ -557,6 +557,30 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
             id: bot.id.toString(),
             name: bot.username,
             model: bot.botModel as string,
+            instructions: bot.botInstruction || undefined
+        })
+    }
+
+    if (msg.type === "UpdateBot") {
+        console.log("updateBot", msg)
+
+        const bot = await prisma.user.update({
+            where: {
+                id: parseInt(msg.id)
+            },
+            data: {
+                username: msg.name,
+                botInstruction: msg.instructions,
+                botModel: msg.model
+            }
+        })
+
+        ws.send({
+            type: "Bot",
+            id: bot.id.toString(),
+            name: bot.username,
+            instructions: bot.botInstruction || undefined,
+            model: bot.botModel as string,
         })
     }
 }
