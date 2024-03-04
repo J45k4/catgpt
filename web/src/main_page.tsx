@@ -276,23 +276,33 @@ export const MainPage = () => {
         return <LoginForm />
     }
 
-    if (width < 1300) {
-        return (
-            <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
-                setIndx(i)
-            }}>
-                <ChatsPage onSlideRight={slideRight} />
-                <CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
-                <BotsPage onSlideLeft={slideLeft} />
-            </SlideNavigation>
-        )
-    }
+	return (
+		<SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+			setIndx(i)
+		}}>
+			<ChatsPage onSlideRight={slideRight} />
+			<CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
+			<BotsPage onSlideLeft={slideLeft} />
+		</SlideNavigation>
+	)
 
-    return (
-        <div style={{ display: "flex", flexDirection: "row", width: "100vw" }}>
-            <ChatsPage />
-            <CurrentChagePage style={{ flexShrink: 1, flexGrow: 1 }} />
-            <BotsPage style={{ minWidth: "400px" }} />
-        </div>   
-    )
+    // if (width < 1300) {
+    //     return (
+    //         <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+    //             setIndx(i)
+    //         }}>
+    //             <ChatsPage onSlideRight={slideRight} />
+    //             <CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
+    //             <BotsPage onSlideLeft={slideLeft} />
+    //         </SlideNavigation>
+    //     )
+    // }
+
+    // return (
+    //     <div style={{ display: "flex", flexDirection: "row", width: "100vw" }}>
+    //         <ChatsPage />
+    //         <CurrentChagePage style={{ flexShrink: 1, flexGrow: 1 }} />
+    //         <BotsPage style={{ minWidth: "400px" }} />
+    //     </div>   
+    // )
 }
