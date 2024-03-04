@@ -72,6 +72,7 @@ export const ChatsList = () => {
                 <button onClick={() => {
                     cache.selectedChatId = null
                     updateQueryParam("chatId", undefined)
+					cache.pageInx = 1
                     notifyChanges()
                 }}>
                     New Chat
@@ -90,9 +91,7 @@ export const ChatsList = () => {
                                     })
                                     updateQueryParam("chatId", chat.id)
                                     cache.selectedChatId = chat.id
-                                    if (window.innerWidth < 1300) {
-                                        cache.pageInx = 1
-                                    }
+                                    cache.pageInx = 1
                                     notifyChanges()
                                 }}>
                                 {chat.title ? chat.title : chat.id}
