@@ -134,7 +134,7 @@ export const createConn = () => {
         if (msg.type === "Bots") {
             cache.bots = msg.bots
             cache.bots.sort((a, b) => a.id.localeCompare(b.id))
-            cache.selectedBotId = msg.bots[0]?.id ?? ""
+            cache.selectedBotId = cache.bots.find(b => b.name === "aki")?.id ?? cache.bots[0]?.id ?? ""
             notifyChanges()
         }
 
