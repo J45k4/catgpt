@@ -196,7 +196,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
 
         const botMsgTokens = encode(text)
 
-        await prisma.chatMsg.update({
+        const updatedChatMsg = await prisma.chatMsg.update({
             where: {
                 id: botMsg.id
             },
@@ -204,6 +204,19 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
                 text,
                 tokenCount: botMsgTokens.length,
                 charCount: text.length
+            }
+        })
+
+        ws.send({
+            type: "NewMsg",
+            msg: {
+                id: updatedChatMsg.id.toString(),
+                bot: true,
+                chatId: chat.id.toString(),
+                datetime: updatedChatMsg.timestamp.toISOString(),
+                text: updatedChatMsg.text,
+                tokenCount: updatedChatMsg.tokenCount,
+                user: bot.username
             }
         })
     } catch (err: any) {

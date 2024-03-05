@@ -183,7 +183,7 @@ export const BotsPage = (props: {
                 }
                 
                 return (
-                    <div key={bot.id} style={{ border: "1px solid black", margin: "10px", display: "flex" }}>
+                    <div key={bot.id} style={{ border: "1px solid black", margin: "10px", display: "flex", padding: "10px" }}>
                         <div key={bot.id} style={{ flexGrow: 1 }}>
                             <div>
                                 Name: {bot.name}
