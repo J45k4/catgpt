@@ -187,7 +187,17 @@ export const createConn = () => {
         if (msg.type === "NewMsg") {
             const chat = cache.chats.get(msg.msg.chatId)
             if (chat) {
-                chat.msgs.push(msg.msg)
+                let chatMsg = chat.msgs.find(m => m.id === msg.msg.id)
+
+                if (!chatMsg) {
+                    chatMsg = msg.msg
+                    chat.msgs.push(chatMsg)
+                } else {
+                    chatMsg.text = msg.msg.text
+                    chatMsg.tokenCount = msg.msg.tokenCount
+                    chatMsg.datetime = msg.msg.datetime
+                }
+
                 chat.lastMsgDatetime = msg.msg.datetime
                 notifyChanges()
             }
