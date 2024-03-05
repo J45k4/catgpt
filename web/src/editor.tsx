@@ -48,6 +48,15 @@ class EditorInstance {
                 args.onChange(this.content)
             }
         }
+
+        this.root.onpaste = (e) => {
+            e.preventDefault()
+            const text = e.clipboardData?.getData("text")
+            if (text) {
+                this.setContent(text)
+                args.onChange(this.content)
+            }
+        }
     }
 
     private insertLineBreak() {
