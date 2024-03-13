@@ -12,6 +12,7 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
+  admin          Boolean   @default(false)
   username        String    @unique
   passwordHash    String?    @map("password_hash")
   isBot           Boolean   @default(false) @map("is_bot")

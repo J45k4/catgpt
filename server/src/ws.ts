@@ -172,7 +172,6 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             messages
         })
 
-
         let text = ""
 
         for await (const event of stream) {
@@ -222,11 +221,23 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     } catch (err: any) {
         console.log(err)
 
+        const text = ws.state.user.admin ? err.message : "Sorry, I am not available at the moment. Please try again later."
+
         ws.send({
             type: "MsgDelta",
             chatId: chat.id.toString(),
             msgId: botMsg.id.toString(),
-            delta: "Sorry, I am not available at the moment. Please try again later."
+            delta: text
+        })
+        await prisma.chatMsg.update({
+            where: {
+                id: botMsg.id
+            },
+            data: {
+                text,
+                tokenCount: 0,
+                charCount: text.length
+            }
         })
     }
 
