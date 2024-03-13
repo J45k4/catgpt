@@ -2,13 +2,28 @@ import Groq from "groq-sdk";
 import { Model } from "../../types";
 import { LLmMessage } from "./types";
 import openai from "openai"
+import { lazy } from "./utility";
 
-const openAiClient = new openai.OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+
+const openAiClient = lazy(() => {
+    const apiKey = process.env.OPENAI_API_KEY
+
+    if (!apiKey) {
+        throw new Error("OPENAI_API_KEY is not set")
+    }
+
+    return new openai.OpenAI({ apiKey })
 })
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-});
+
+const groq = lazy(() => {
+    const apiKey = process.env.GROQ_API_KEY
+
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY is not set")
+    }
+
+    return new Groq({ apiKey })
+})
 
 export type LLMStreamEvent = {
     type: "delta"
@@ -36,19 +51,6 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
     }
 }
 
-// async function* wrapGroqStream(stream: AsyncIterable<Groq.Chat.Completions.C>): AsyncIterable<LLMStreamEvent> {
-//     for await (const chunk of stream) {
-//         yield {
-//             type: "delta",
-//             delta: JSON.stringify(chunk)
-//         }
-//     }
-
-//     yield {
-//         type: "done"
-//     }
-// }
-
 export const llmClient = {
     streamRequest: async (args: {
         model: Model
@@ -59,7 +61,7 @@ export const llmClient = {
         if (args.model.startsWith("openai/")) {
             const model = args.model.replace("openai/", "")
 
-            const stream = await openAiClient.chat.completions.create({
+            const stream = await openAiClient().chat.completions.create({
                 model: model,
                 messages: args.messages,
                 stream: true,
@@ -71,7 +73,7 @@ export const llmClient = {
         if (args.model.startsWith("groq/")) {
             const model = args.model.replace("groq/", "")
 
-            const stream = await groq.chat.completions.create({
+            const stream = await groq().chat.completions.create({
                 model: model,
                 messages: args.messages,
                 stream: true,
