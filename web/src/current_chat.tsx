@@ -1,54 +1,145 @@
-import { useCallback, useState } from "react"
 import { ws } from "./ws"
 import {formatDateTime } from "./utility"
 import { Row } from "./layout"
 import { BiCopy } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
-import { BotSelect } from "./bot"
 import { cache, notifyChanges, useCache } from "./cache"
+import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
+import {LexicalComposer} from '@lexical/react/LexicalComposer';
+import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
+import {ContentEditable} from '@lexical/react/LexicalContentEditable';
+import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
+import { useCallback, useLayoutEffect } from "react"
+import { $createParagraphNode, $createTextNode, $getRoot, EditorState } from "lexical"
 
-const SendMessageBox = (props: {
-    chatId?: string
-}) => {
-    const [msg, setMsg] = useState("")
-    const botId = useCache(s => s.selectedBotId)
+function onError(error) {
+    console.error(error);
+}
+
+const MsgEditorContnet = () => {
+    const { selectedBotId, selectedChatId } = useCache(cache => {
+        return {
+            selectedChatId: cache.selectedChatId,
+            selectedBotId: cache.selectedBotId
+        }
+    })
+    const [editor] = useLexicalComposerContext()
 
     const sendMsg = useCallback(() => {
-        if (msg === "") {
+        if (!cache.currentMsg) {
             return
         }
 
         ws.send({
             type: "SendMsg",
-            botId,
-            chatId: props.chatId,
-            txt: msg
+            botId: selectedBotId,
+            txt: cache.currentMsg,
+            chatId: selectedChatId
         })
 
-        setMsg("")
-    }, [botId, msg, props.chatId])
+        cache.currentMsg = ""
+        notifyChanges()
+        editor.update(() => {
+            const root = $getRoot()
+            root.clear()
+        })
+    }, [editor, selectedBotId, selectedChatId])
 
-    const lineBreaks = msg.split("\n").length || 1
+    useLayoutEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                sendMsg()
+            }
+        }
+
+        return editor.registerRootListener(
+            (
+                rootElement: null | HTMLElement,
+                prevRootElement: null | HTMLElement,
+            ) => {
+                if (prevRootElement !== null) {
+                    prevRootElement.removeEventListener('keydown', onKeyDown)
+                }
+                if (rootElement !== null) {
+                    rootElement.addEventListener('keydown', onKeyDown)
+                }
+            }
+        )
+    }, [editor, sendMsg])
+
+    return (
+        <div style={{
+            display: "flex",
+            border: "solid 1px rgba(0, 0, 0, 0.3)",
+            outline: "none",
+            padding: "0px"
+        }}>
+            <RichTextPlugin
+                contentEditable={<ContentEditable style={{
+                    flexGrow: 1,
+                    margin: "0px",
+                    padding: "10px",
+                    outline: "none",
+                }} />}
+                placeholder={<div></div>}
+                ErrorBoundary={LexicalErrorBoundary}
+            />
+            <button onClick={sendMsg}>
+                Send
+            </button>
+        </div>
+
+    )
+}
+
+export const SendMessageBox = () => {
+    const { currentMsg } = useCache(cache => {
+        return {
+            currentMsg: cache.currentMsg
+        }
+    })
+
+    const onMsgChange = useCallback((editorState: EditorState) => {
+        editorState.read(() => {
+            const root = $getRoot()
+            const text = root.getTextContent()
+            cache.currentMsg = text
+        })
+    }, [])
 
     return (
         <div style={{ display: "flex" }}>
-            <textarea style={{ flexGrow: 1, fontSize: "25px", marginRight: "10px" , height: `${lineBreaks * 30}px`, overflow: "hidden", resize: "none" }}
-                value={msg}
-                rows={lineBreaks}
-                onChange={e => setMsg(e.target.value)}
-                onKeyDown={e => {
-                    if (!e.shiftKey && lineBreaks == 1 && e.key === "Enter") {
-                        e.preventDefault()
-                        sendMsg()
-                    }
-                }}
-                />
-            <button onClick={() => {
-                sendMsg()
-            }}>
-                Send
-            </button>
-            <BotSelect />
+            <div style={{ flexGrow: 1 }}>
+                <LexicalComposer initialConfig={{
+                    namespace: "NewMessageEditor",
+                    onError,
+                    theme: {
+                        paragraph: "editor-paragraph",
+                    },
+                    editorState(editor) {
+                        editor.update(() => {
+                            const root = $getRoot()
+                            currentMsg.split("\n").forEach(line => {
+                                const p = $createParagraphNode()
+                                const text = $createTextNode(line)
+                                p.append(text)
+                                root.append(p)
+                            })
+                        })
+                    },
+                    
+                }}>
+                    <MsgEditorContnet />
+                    <HistoryPlugin />
+                    <AutoFocusPlugin />
+                    <OnChangePlugin onChange={onMsgChange} />
+
+                </LexicalComposer>
+            </div>
+
         </div>
     )
 }

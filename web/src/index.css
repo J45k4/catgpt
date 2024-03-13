@@ -128,3 +128,9 @@ button:focus-visible {
 	user-select: none;
 	font-size: 25px;
 }
+
+.editor-paragraph {
+	margin-top: 0;
+	margin-bottom: 0;
+	font-family:  'Nunito, Mada-Regular, sans-serif'
+}

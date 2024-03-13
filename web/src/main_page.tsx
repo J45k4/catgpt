@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-// import { ChatsList } from "./chats_list"
-// import { CurrentChat } from "./current_chat"
 import { FaBars, FaLongArrowAltRight } from "react-icons/fa";
 import { FaRobot } from "react-icons/fa";
 import { ChatsList } from "./chats_list";
 import { BotSelect, BotsPage } from "./bot";
-import { Editor } from "./editor";
 import { cache, notifyChanges, useCache } from "./cache";
-import { CurrentChat } from "./current_chat";
+import { CurrentChat, SendMessageBox } from "./current_chat";
 import { ws } from "./ws";
-import { useScreenSize } from "./utility";
+
 
 const Toolbar = (props: {
     left?: React.ReactNode
@@ -28,9 +25,9 @@ const Toolbar = (props: {
 }
 
 const SlideNavigation = (props: {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	children: any[]
-	indx: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    children: any[]
+    indx: number
     onIndxChange?: (indx: number) => void
     style?: React.CSSProperties
 }) => {
@@ -54,107 +51,67 @@ const SlideNavigation = (props: {
 
     const itemWidth = 100 / props.children.length
 
-	return (
-		<div className={`slide_navigation `}
-			style={{
+    return (
+        <div className={`slide_navigation `}
+            style={{
                 ...props.style,
-				width: "100%",
-			}}
-		>
-			<div ref={slideWrapper} className="slide_wrapper" style={{
+                width: "100%",
+            }}
+        >
+            <div ref={slideWrapper} className="slide_wrapper" style={{
                 transform: `translateX(-${indx * itemWidth}%)`,
                 transition: "transform 0.3s ease-in-out",
             }}
-            onTouchStart={(e) => {
-                state.current.dragging = true
-                state.current.x = e.touches[0].clientX
-                state.current.y = e.touches[0].clientY
-                if (slideWrapper.current) {
-                    slideWrapper.current.style.transition = "none"
-                }
-            }}
-            onTouchMove={(e) => {
-                if (state.current.dragging && slideWrapper.current) {
-                    const xDiff = Math.abs(e.touches[0].clientX - state.current.x)
-                    const yDiff = Math.abs(e.touches[0].clientY - state.current.y)
+                onTouchStart={(e) => {
+                    state.current.dragging = true
+                    state.current.x = e.touches[0].clientX
+                    state.current.y = e.touches[0].clientY
+                    if (slideWrapper.current) {
+                        slideWrapper.current.style.transition = "none"
+                    }
+                }}
+                onTouchMove={(e) => {
+                    if (state.current.dragging && slideWrapper.current) {
+                        const xDiff = Math.abs(e.touches[0].clientX - state.current.x)
+                        const yDiff = Math.abs(e.touches[0].clientY - state.current.y)
 
-                    if (yDiff > xDiff) {
-                        return
+                        if (yDiff > xDiff) {
+                            return
+                        }
+
+                        state.current.diff = state.current.x - e.touches[0].clientX
+                        const diffRatio = state.current.diff / window.innerWidth
+                        const newx = ((indx * itemWidth) + (diffRatio * 50)) * -1
+                        slideWrapper.current.style.transform = `translateX(${newx}%)`
+                    }
+                }}
+                onTouchEnd={() => {
+                    if (slideWrapper.current) {
+                        slideWrapper.current.style.transition = "transform 0.3s ease-in-out"
+                        slideWrapper.current.style.transform = `translateX(-${indx * itemWidth}%)`
                     }
 
-                    state.current.diff = state.current.x - e.touches[0].clientX
-                    const diffRatio = state.current.diff / window.innerWidth
-                    const newx = ((indx * itemWidth) + (diffRatio * 50)) * -1
-                    slideWrapper.current.style.transform = `translateX(${newx}%)`
-                }
-            }}
-            onTouchEnd={(e) => {
-                if (slideWrapper.current) {
-                    slideWrapper.current.style.transition = "transform 0.3s ease-in-out"
-                    slideWrapper.current.style.transform = `translateX(-${indx * itemWidth}%)`
-                }
+                    if (state.current.diff > 100) {
+                        changeIndx(Math.min(props.children.length - 1, indx + 1))
+                    }
 
-                if (state.current.diff > 100) {
-                    changeIndx(Math.min(props.children.length - 1, indx + 1))
-                }
+                    if (state.current.diff < -100) {
+                        changeIndx(Math.max(0, indx - 1))
+                    }
 
-                if (state.current.diff < -100) {
-                    changeIndx(Math.max(0, indx - 1))
-                }
-                
-                state.current.dragging = false
-                state.current.diff = 0
-                state.current.x = 0
-            }}
+                    state.current.dragging = false
+                    state.current.diff = 0
+                    state.current.x = 0
+                }}
             >
-				{props.children.map((child, index) => {
-					return (
-						<div key={index} className={`slide_page`}>
+                {props.children.map((child, index) => {
+                    return (
+                        <div key={index} className={`slide_page`}>
                             {child}
-						</div>
-					)
-				})}
-			</div>
-		</div>
-	)
-}
-
-const SendMessageBox = () => {
-    const { currentMsg, selectedBotId, selectedChatId } = useCache(cache => {
-        return {
-            selectedChatId: cache.selectedChatId,
-            selectedBotId: cache.selectedBotId,
-            currentMsg: cache.currentMsg
-        }
-    })
-
-    return (
-        <div style={{ display: "flex" }}>
-            <div style={{ flexGrow: 1 }}>
-                <Editor 
-                    content={currentMsg}
-                    onChange={content => {
-                        cache.currentMsg = content
-                    }}
-                />
-            </div>  
-            <button onClick={() => {
-                if (!cache.currentMsg) {
-                    return
-                }
-
-                ws.send({
-                    type: "SendMsg",
-                    botId: selectedBotId,
-                    txt: cache.currentMsg,
-                    chatId: selectedChatId
-                })
-
-                cache.currentMsg = ""
-                notifyChanges()
-            }}>
-                Send
-            </button>
+                        </div>
+                    )
+                })}
+            </div>
         </div>
     )
 }
@@ -202,7 +159,7 @@ const ChatsPage = (props: {
 }) => {
     return (
         <div style={props.style}>
-            <Toolbar 
+            <Toolbar
                 left={<button onClick={() => {
                     localStorage.removeItem("token")
                     cache.authenticated = false
@@ -222,7 +179,7 @@ const CurrentChagePage = (props: {
     onSlideRight?: () => void
 }) => {
     return (
-        <div style={{ display: "flex", flexDirection: "column", ...props.style}}>
+        <div style={{ display: "flex", flexDirection: "column", ...props.style }}>
             <Toolbar
                 left={props.onSlideLeft ? <div className="icon_button" onClick={() => {
                     props.onSlideLeft()
@@ -251,8 +208,6 @@ export const MainPage = () => {
             inx: s.pageInx
         }
     })
-    const width = useScreenSize()
-
     const setIndx = useCallback((indx: number) => {
         cache.pageInx = indx
         notifyChanges()
@@ -276,33 +231,13 @@ export const MainPage = () => {
         return <LoginForm />
     }
 
-	return (
-		<SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
-			setIndx(i)
-		}}>
-			<ChatsPage onSlideRight={slideRight} />
-			<CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
-			<BotsPage onSlideLeft={slideLeft} />
-		</SlideNavigation>
-	)
-
-    // if (width < 1300) {
-    //     return (
-    //         <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
-    //             setIndx(i)
-    //         }}>
-    //             <ChatsPage onSlideRight={slideRight} />
-    //             <CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
-    //             <BotsPage onSlideLeft={slideLeft} />
-    //         </SlideNavigation>
-    //     )
-    // }
-
-    // return (
-    //     <div style={{ display: "flex", flexDirection: "row", width: "100vw" }}>
-    //         <ChatsPage />
-    //         <CurrentChagePage style={{ flexShrink: 1, flexGrow: 1 }} />
-    //         <BotsPage style={{ minWidth: "400px" }} />
-    //     </div>   
-    // )
+    return (
+        <SlideNavigation indx={inx} style={{ flexGrow: 1 }} onIndxChange={i => {
+            setIndx(i)
+        }}>
+            <ChatsPage onSlideRight={slideRight} />
+            <CurrentChagePage onSlideLeft={slideLeft} onSlideRight={slideRight} />
+            <BotsPage onSlideLeft={slideLeft} />
+        </SlideNavigation>
+    )
 }
