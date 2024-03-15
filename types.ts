@@ -286,7 +286,6 @@ export const models = [
     "openai/gpt-3.5-turbo", 
     "openai/gpt-4-1106-preview", 
     "openai/gpt-4-vision-preview", 
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1",
     "groq/mixtral-8x7b-32768",
     "groq/llama2-70b-4096",
     "groq/gemma-7b-it",
