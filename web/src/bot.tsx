@@ -17,6 +17,7 @@ export const BotSelect = () => {
     return (
         <select value={botId} onChange={e => {
             cache.selectedBotId = e.target.value
+            localStorage.setItem("selectedBotId", e.target.value)
             notifyChanges()
         }}>
             <option disabled value="">Select a Bot</option>
