@@ -17,7 +17,7 @@ export const cache = {
     currentMsg: "",
     version: "",
     selectedChatId: getQueryParam("chatId") ?? "",
-    selectedBotId: "",
+    selectedBotId: localStorage.getItem("selectedBotId") ?? "",
     generalErrorMsg: "",
     pageInx: 1,
     chatMsgs: new Map<string, ChatMsg>(),
