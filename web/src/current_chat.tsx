@@ -275,7 +275,7 @@ export const ChatMessage = (props: {
     }
 
     return (
-        <div style={{ display: "flex", flexDirection: "column" }} onTouchStart={e => e.stopPropagation()}>
+        <div style={{ display: "flex", flexDirection: "column", overflow: "auto" }} onTouchStart={e => e.stopPropagation()}>
             {rows}
         </div>
     )
