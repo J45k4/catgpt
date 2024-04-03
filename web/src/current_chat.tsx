@@ -233,6 +233,7 @@ export const ChatMessage = (props: {
                     </div>   
                 )
                 backbuffer = ""
+				parsingCodeBlock = false
             }
             continue
         }
