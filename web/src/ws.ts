@@ -77,9 +77,9 @@ export const createConn = () => {
                 type: "GetChats"
             })
 
-            // ws.send({
-            //     type: "GetBots"
-            // })
+            ws.send({
+                type: "GetBots"
+            })
 
             if (cache.selectedChatId) {
                 ws.send({
