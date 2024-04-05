@@ -40,6 +40,17 @@ const MsgEditorContnet = () => {
             chatId: selectedChatId
         })
 
+		const chat = cache.chats.get(selectedChatId)
+
+		if (chat) {
+			chat.msgs.push({
+				bot: false,
+				chatId: selectedChatId,
+				text: cache.currentMsg,
+				datetime: new Date().toISOString(),
+			})
+		}
+
         cache.currentMsg = ""
         notifyChanges()
         editor.update(() => {

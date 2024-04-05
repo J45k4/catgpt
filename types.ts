@@ -14,11 +14,11 @@ export type FinishWrite = {
 }
 
 export type ChatMsg = {
-    id: string,
+    id?: string,
     chatId: string
     text: string,
-    tokenCount: number,
-    user: string,
+    tokenCount?: number,
+    user?: string,
     datetime: string,
     bot: boolean
 }
