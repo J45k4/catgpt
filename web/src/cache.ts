@@ -29,7 +29,7 @@ export const cache = {
     currentMsg: "",
     version: "",
     selectedChatId: getQueryParam("chatId") ?? "",
-    selectedBotId: bots.find(b => b.id === selectedBotId) ? selectedBotId : bots[0]?.id ?? "",
+    selectedBotId: bots.find(b => b.id === selectedBotId) ? selectedBotId : bots.find(p => p.name === "aki")?.id ?? bots[0]?.id ?? "",
     generalErrorMsg: "",
     pageInx: 1,
     chatMsgs: new Map<string, ChatMsg>(),
