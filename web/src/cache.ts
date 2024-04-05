@@ -9,6 +9,17 @@ type Chat = {
     msgs: ChatMsg[]
 }
 
+const getBotsFromLocalStorage = () => {
+	const bots = localStorage.getItem("bots")
+	if (bots) {
+		return JSON.parse(bots) as Bot[]
+	}
+	return []
+}
+
+const bots = getBotsFromLocalStorage()
+const selectedBotId = localStorage.getItem("selectedBotId") ?? ""
+
 export const cache = {
 	initialLoading: true,
     token: "",
@@ -18,12 +29,12 @@ export const cache = {
     currentMsg: "",
     version: "",
     selectedChatId: getQueryParam("chatId") ?? "",
-    selectedBotId: localStorage.getItem("selectedBotId") ?? "",
+    selectedBotId: bots.find(b => b.id === selectedBotId) ? selectedBotId : bots[0]?.id ?? "",
     generalErrorMsg: "",
     pageInx: 1,
     chatMsgs: new Map<string, ChatMsg>(),
     chats: new Map<string, Chat>(),
-    bots: [] as Bot[],
+    bots
 }
 
 const listeners = new Set<() => void>()

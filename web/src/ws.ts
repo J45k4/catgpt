@@ -77,9 +77,9 @@ export const createConn = () => {
                 type: "GetChats"
             })
 
-            ws.send({
-                type: "GetBots"
-            })
+            // ws.send({
+            //     type: "GetBots"
+            // })
 
             if (cache.selectedChatId) {
                 ws.send({
@@ -135,6 +135,7 @@ export const createConn = () => {
 
         if (msg.type === "Bots") {
             cache.bots = msg.bots
+			localStorage.setItem("bots", JSON.stringify(msg.bots))
             cache.bots.sort((a, b) => a.id.localeCompare(b.id))
 			if (!cache.bots.find(b => b.id === cache.selectedBotId)) {
 				cache.selectedBotId = cache.bots.find(b => b.name === "aki")?.id ?? cache.bots[0]?.id ?? ""
