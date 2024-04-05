@@ -18,3 +18,4 @@ Cute personal assistant
 - [ ] Add support for stopping generation
 - [ ] Add support for editing previous message and resubmit it. Also possible to switch bot.
 - [ ] Store current model to local storage so it can remember it.
+- [ ] Implement canvas for viewing conversation history with different paths.
