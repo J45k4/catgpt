@@ -10,6 +10,7 @@ type Chat = {
 }
 
 export const cache = {
+	initialLoading: true,
     token: "",
     connected: false,
     authenticated: false,

@@ -6,6 +6,7 @@ import { BotSelect, BotsPage } from "./bot";
 import { cache, notifyChanges, useCache } from "./cache";
 import { CurrentChat, SendMessageBox } from "./current_chat";
 import { ws } from "./ws";
+import { Loader } from "./common";
 
 
 const Toolbar = (props: {
@@ -202,10 +203,11 @@ const CurrentChagePage = (props: {
 }
 
 export const MainPage = () => {
-    const { authenticated, inx } = useCache(s => {
+    const { authenticated, inx, loading } = useCache(s => {
         return {
             authenticated: s.authenticated,
-            inx: s.pageInx
+            inx: s.pageInx,
+			loading: s.initialLoading
         }
     })
     const setIndx = useCallback((indx: number) => {
@@ -226,6 +228,12 @@ export const MainPage = () => {
         }
         setIndx(inx + 1)
     }, [inx, setIndx])
+
+	if (loading) {
+		return <div style={{ display: "flex", justifyContent: "center" }}>
+			<Loader />
+		</div>
+	}
 
     if (!authenticated) {
         return <LoginForm />

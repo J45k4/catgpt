@@ -1,4 +1,4 @@
-import { ChatMsg, MsgFromSrv, MsgToSrv } from "../../types";
+import { MsgFromSrv, MsgToSrv } from "../../types";
 import { cache, notifyChanges } from "./cache";
 
 let ws_socket: WebSocket
@@ -45,11 +45,11 @@ export const createConn = () => {
     ws_socket.onopen = () => {
         ws.connected = true
         cache.connected = true
-
-        ws.send({
-            type: "Authenticate",
-            token: localStorage.getItem("token") ?? ""
-        })
+		notifyChanges()
+		ws.send({
+			type: "Authenticate",
+			token: localStorage.getItem("token") ?? ""
+		})
     }
     ws_socket.onclose = () => {
         ws.connected = false
@@ -70,6 +70,7 @@ export const createConn = () => {
         }
 
         if (msg.type === "Authenticated") {
+			cache.initialLoading = false
             localStorage.setItem("token", msg.token)
 
             ws.send({
@@ -96,6 +97,7 @@ export const createConn = () => {
         }
 
         if (msg.type === "AuthTokenInvalid") {
+			cache.initialLoading = false
             cache.authFailed = true
             notifyChanges()
         }
