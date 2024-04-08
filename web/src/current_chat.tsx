@@ -161,7 +161,7 @@ export const CurrentChat = () => {
         const chat = cache.chats.get(cache.selectedChatId)
         return {
 			msgs: chat ? chat.msgs : [],
-			loading: chat ? false : true,
+			loading: chat || !cache.selectedChatId ? false : true,
 		}
     })
 
