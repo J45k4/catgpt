@@ -14,6 +14,7 @@ import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useCallback, useLayoutEffect } from "react"
 import { $createParagraphNode, $createTextNode, $getRoot, EditorState } from "lexical"
+import { Loader } from "./common"
 
 function onError(error) {
     console.error(error);
@@ -156,14 +157,18 @@ export const SendMessageBox = () => {
 }
 
 export const CurrentChat = () => {
-    const msgs = useCache(cache => {
+    const { msgs, loading } = useCache(cache => {
         const chat = cache.chats.get(cache.selectedChatId)
-        return chat ? chat.msgs : []
+        return {
+			msgs: chat ? chat.msgs : [],
+			loading: chat ? false : true,
+		}
     })
 
     return (
         <div className="segment">
             <div>
+				{loading && <Loader />}
                 {msgs.map((msg, index) => {
                     return (
                         <div style={{ 
