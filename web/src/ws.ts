@@ -193,6 +193,10 @@ export const createConn = () => {
         if (msg.type === "NewMsg") {
             const chat = cache.chats.get(msg.msg.chatId)
             if (chat) {
+				if (!chat.msgs) {
+					chat.msgs = []
+				}
+
 				chat.msgs = chat.msgs.filter(p => p.id != null)
 
                 let chatMsg = chat.msgs.find(m => m.id === msg.msg.id)
