@@ -114,6 +114,7 @@ export const createConn = () => {
                     lastMsgDatetime: meta.lastMsgDatetime,
                 })
             }
+			cache.chatsLoaded = true
             notifyChanges()
         }
 

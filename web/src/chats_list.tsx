@@ -4,9 +4,13 @@ import { Row } from "./layout"
 import { ws } from "./ws"
 import { cache, notifyChanges, useCache } from "./cache"
 import { updateQueryParam } from "./utility"
+import { Loader } from "./common"
 
 export const ChatsList = () => {
-    const chats = useCache(s => Array.from(s.chats.values()))
+    const { chats, loading } = useCache(s => ({
+		chats: Array.from(s.chats.values()),
+		loading: !s.chatsLoaded
+	}))
     const groupedChats = new Map<string, ChatMeta[]>()
     const today = new Date().toDateString()
     const yesterday = new Date(Date.now() - 86400000).toDateString()
@@ -51,6 +55,10 @@ export const ChatsList = () => {
         if (b.date === "Yesterday") return 1
         return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
+
+	if (loading) {
+		return <Loader />
+	}
 
     return (
         <div className="segment" style={{ }}>

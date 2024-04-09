@@ -33,7 +33,7 @@ export const cache = {
     selectedBotId: bots.find(b => b.id === selectedBotId) ? selectedBotId : bots.find(p => p.name === "aki")?.id ?? bots[0]?.id ?? "",
     generalErrorMsg: "",
     pageInx: 1,
-    chatMsgs: new Map<string, ChatMsg>(),
+	chatsLoaded: false,
     chats: new Map<string, Chat>(),
     bots
 }
