@@ -50,7 +50,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             chat: {
                 id: chat.id.toString(),
                 type: "Chat",
-                messages: []
+                msgs: []
             }
         })
 
@@ -59,7 +59,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             chat: {
                 id: chat.id.toString(),
                 type: "Chat",
-                messages: []
+                msgs: []
             }
         })
     }
@@ -443,7 +443,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
         ws.send({
             type: "Chat",
             id: chat.id + "",
-            messages: chat.messages.map(msg => ({
+            msgs: chat.messages.map(msg => ({
                 id: msg.id + "",
                 chatId: msg.chatId + "",
                 text: msg.text,
