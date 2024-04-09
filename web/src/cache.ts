@@ -6,7 +6,7 @@ type Chat = {
     id: string
     title?: string
     lastMsgDatetime: string
-    msgs: ChatMsg[]
+    msgs?: ChatMsg[]
 }
 
 const getBotsFromLocalStorage = () => {

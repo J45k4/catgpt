@@ -157,19 +157,21 @@ export const SendMessageBox = () => {
 }
 
 export const CurrentChat = () => {
-    const { msgs, loading } = useCache(cache => {
+    const msgs = useCache(cache => {
         const chat = cache.chats.get(cache.selectedChatId)
-        return {
-			msgs: chat ? chat.msgs : [],
-			loading: chat || !cache.selectedChatId ? false : true,
+
+		if (!chat) {
+			return []
 		}
+
+		return chat.msgs
     })
 
     return (
         <div className="segment">
             <div>
-				{loading && <Loader />}
-                {msgs.map((msg, index) => {
+				{!msgs && <Loader />}
+                {msgs?.map((msg, index) => {
                     return (
                         <div style={{ 
                             display: "flex", 

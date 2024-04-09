@@ -112,7 +112,6 @@ export const createConn = () => {
                     id: meta.id,
                     title: meta.title,
                     lastMsgDatetime: meta.lastMsgDatetime,
-                    msgs: []
                 })
             }
             notifyChanges()
@@ -173,7 +172,6 @@ export const createConn = () => {
                 id: msg.chat.id,
                 title: msg.chat.title,
                 lastMsgDatetime: new Date().toISOString(),
-                msgs: []
             })
             notifyChanges()
         }
@@ -183,7 +181,6 @@ export const createConn = () => {
                 id: msg.chat.id,
                 lastMsgDatetime: new Date().toISOString(),
                 title: msg.chat.title,
-                msgs: []
             })
             cache.selectedChatId = msg.chat.id
             notifyChanges()
