@@ -118,17 +118,20 @@ export const createConn = () => {
         }
 
         if (msg.type === "Chat") {
-            const chat = cache.chats.get(msg.id)
-            if (chat) {
-                chat.msgs = msg.messages
-            } else {
-                cache.chats.set(msg.id, {
-                    id: msg.id,
-                    title: msg.title,
-                    lastMsgDatetime: new Date().toISOString(),
-                    msgs: msg.messages
-                })
-            }
+            let chat = cache.chats.get(msg.id)
+
+			if (!chat) {
+				chat = {
+					id: msg.id,
+					lastMsgDatetime: msg.messages[msg.messages.length - 1].datetime,
+				}
+				cache.chats.set(msg.id, chat)
+			}
+
+			chat.title = msg.title
+			chat.msgs = msg.messages
+
+			localStorage.setItem(`chat:${msg.id}`, JSON.stringify(msg))
             notifyChanges()
         }
 

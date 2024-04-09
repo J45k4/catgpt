@@ -19,6 +19,7 @@ const getBotsFromLocalStorage = () => {
 
 const bots = getBotsFromLocalStorage()
 const selectedBotId = localStorage.getItem("selectedBotId") ?? ""
+const selectedChatId = getQueryParam("chatId") ?? ""
 
 export const cache = {
 	initialLoading: true,
@@ -28,13 +29,21 @@ export const cache = {
     authFailed: false,
     currentMsg: "",
     version: "",
-    selectedChatId: getQueryParam("chatId") ?? "",
+    selectedChatId,
     selectedBotId: bots.find(b => b.id === selectedBotId) ? selectedBotId : bots.find(p => p.name === "aki")?.id ?? bots[0]?.id ?? "",
     generalErrorMsg: "",
     pageInx: 1,
     chatMsgs: new Map<string, ChatMsg>(),
     chats: new Map<string, Chat>(),
     bots
+}
+
+if (selectedChatId) {
+	const chatStr = localStorage.getItem(`chat:${selectedChatId}`)
+	if (chatStr) {
+		const chat = JSON.parse(chatStr) as Chat
+		cache.chats.set(chat.id, chat)
+	}
 }
 
 const listeners = new Set<() => void>()
