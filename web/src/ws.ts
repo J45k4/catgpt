@@ -123,12 +123,12 @@ export const createConn = () => {
 			if (!chat) {
 				chat = {
 					id: msg.id,
+					title: msg.title,
 					lastMsgDatetime: msg.messages[msg.messages.length - 1].datetime,
 				}
 				cache.chats.set(msg.id, chat)
 			}
 
-			chat.title = msg.title
 			chat.msgs = msg.messages
 
 			localStorage.setItem(`chat:${msg.id}`, JSON.stringify(msg))
