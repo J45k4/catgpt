@@ -158,10 +158,14 @@ export const SendMessageBox = () => {
 
 export const CurrentChat = () => {
     const msgs = useCache(cache => {
+		if (!cache.selectedChatId) {
+			return []
+		}
+
         const chat = cache.chats.get(cache.selectedChatId)
 
 		if (!chat) {
-			return []
+			return undefined
 		}
 
 		return chat.msgs
