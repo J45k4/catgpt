@@ -284,6 +284,7 @@ export type Model = typeof models[number]
 
 export const models = [
     "openai/gpt-3.5-turbo", 
+	"openai/gpt-4-turbo",
     "openai/gpt-4-1106-preview", 
     "openai/gpt-4-vision-preview", 
     "groq/mixtral-8x7b-32768",
