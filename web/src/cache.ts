@@ -38,13 +38,13 @@ export const cache = {
     bots
 }
 
-if (selectedChatId) {
-	const chatStr = localStorage.getItem(`chat:${selectedChatId}`)
-	if (chatStr) {
-		const chat = JSON.parse(chatStr) as Chat
-		cache.chats.set(chat.id, chat)
-	}
-}
+// if (selectedChatId) {
+// 	const chatStr = localStorage.getItem(`chat:${selectedChatId}`)
+// 	if (chatStr) {
+// 		const chat = JSON.parse(chatStr) as Chat
+// 		cache.chats.set(chat.id, chat)
+// 	}
+// }
 
 const listeners = new Set<() => void>()
 

@@ -132,7 +132,7 @@ export const createConn = () => {
 
 			chat.msgs = msg.msgs
 
-			localStorage.setItem(`chat:${msg.id}`, JSON.stringify(msg))
+			// localStorage.setItem(`chat:${msg.id}`, JSON.stringify(msg))
             notifyChanges()
         }
 
