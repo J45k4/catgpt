@@ -7,6 +7,8 @@ import { cache, notifyChanges, useCache } from "./cache";
 import { CurrentChat, SendMessageBox } from "./current_chat";
 import { ws } from "./ws";
 import { Loader } from "./common";
+import { FaRegPenToSquare } from "react-icons/fa6";
+import { updateQueryParam } from "./utility";
 
 
 const Toolbar = (props: {
@@ -182,10 +184,20 @@ const CurrentChagePage = (props: {
     return (
         <div style={{ display: "flex", flexDirection: "column", ...props.style }}>
             <Toolbar
-                left={props.onSlideLeft ? <div className="icon_button" onClick={() => {
-                    props.onSlideLeft()
-                }}>
-                    <FaBars />
+                left={props.onSlideLeft ? <div style={{ display: "flex" }}>
+					<div className="icon_button" style={{ marginRight: "10px" }} onClick={() => {
+						props.onSlideLeft()
+					}}>
+						<FaBars />
+					</div>
+					<div className="icon_button" onClick={() => {
+						cache.selectedChatId = null
+						updateQueryParam("chatId", undefined)
+						cache.pageInx = 1
+						notifyChanges()
+					}}>
+						<FaRegPenToSquare />
+					</div>
                 </div> : undefined}
                 center={<BotSelect />}
                 right={props.onSlideRight ? <div className="icon_button" onClick={props.onSlideRight}>
