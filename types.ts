@@ -291,7 +291,8 @@ export const models = [
     "groq/llama2-70b-4096",
     "groq/gemma-7b-it",
     "anyscale/mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1"
+    "anyscale/mistralai/Mistral-7B-Instruct-v0.1",
+	"anyscale/meta-llama/Llama-3-8b-chat-hf"
 ] as const
 
 export type Provider = typeof providers[number]
