@@ -1,8 +1,10 @@
 import Groq from "groq-sdk";
+import Anthropic from '@anthropic-ai/sdk';
 import { Model } from "../../types";
 import { LLmMessage } from "./types";
 import openai, { OpenAI } from "openai"
 import { lazy } from "./utility";
+import { anthropicApiKey } from "./config";
 
 
 const openAiClient = lazy(() => {
@@ -36,6 +38,14 @@ const anyscale = lazy(() => {
         baseURL: "https://api.endpoints.anyscale.com/v1",
         apiKey 
     })
+})
+
+const anthropic = lazy(() => {
+	if (!anthropicApiKey) {
+		throw new Error("ANTHROPIC_API_KEY is not set")
+	}
+
+	return new Anthropic({ apiKey: anthropicApiKey })
 })
 
 export type LLMStreamEvent = {
@@ -72,6 +82,47 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
     yield {
         type: "done"
     }
+}
+
+async function* handleAnthropic(model: string, messages: LLmMessage[]): AsyncIterable<LLMStreamEvent> {
+	const systemMsg = messages.find(p => p.role === "system")?.content
+	const stream = await anthropic().messages.stream({
+		model,
+		max_tokens: 1024,
+		system: systemMsg,
+		messages: messages.filter(e => e.role !== "system").map(p => {
+			let role: "user" | "assistant" = "user"
+			if (p.role === "assistant") {
+				role = "assistant"
+			}
+
+			if (p.role === "user") {
+				role = "user"
+			}
+
+			if (p.role === "system") {
+				throw new Error("System message should not be sent to the model")
+			}
+
+			return {
+				role: role,
+				content: p.content
+			}
+		})
+	})
+
+	for await (const event of stream) {
+		if (event.type === "content_block_delta") {
+			yield {
+				type: "delta",
+				delta:event.delta.text,
+			}
+		}
+	}
+
+	yield {
+		type: "done"
+	}
 }
 
 export const llmClient = {
@@ -116,6 +167,11 @@ export const llmClient = {
 
             return wrapOpenAIStream(stream)
         }
+
+		if (args.model.startsWith("anthropic/")) {
+			const model = args.model.replace("anthropic/", "")
+			return handleAnthropic(model, args.messages)
+		}
 
         throw new Error(`Unknown model: ${args.model}`)
     }
