@@ -5,8 +5,11 @@ Cute personal assistant
 ## Environment variables
 
 **ANTHROPIC_API_KEY** - API key for Anthropics API
+
 **OPENAI_API_KEY** - API key for OpenAI API
+
 **GROQ_API_KEY** - API key for Groq API
+
 **ANYSCALE_API_KEY** - API key for Anyscale API
 
 ## Supported models
