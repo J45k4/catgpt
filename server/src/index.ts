@@ -5,6 +5,8 @@ import { State } from "./types"
 import { createUsers } from "./users"
 import { join } from "path"
 
+import "./google"
+
 const staticDir = "../web/dist"
 const indexFilePath = `${staticDir}/index.html`
 const indexFile = Bun.file(indexFilePath)

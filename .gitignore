@@ -7,3 +7,4 @@ workdir
 server.sh
 models
 node_modules
+google_service_account.json
