@@ -148,7 +148,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             role = "assistant"
         }
 
-        if (totalTokenCount + tokenCount > 2_000) {
+        if (totalTokenCount + tokenCount > 6_000) {
             break
         }
 
