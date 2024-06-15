@@ -1,6 +1,6 @@
 import { encode } from "gpt-tokenizer";
 import { LLMMessageRole, LLmMessage, State } from "./types";
-import { Model, MsgFromSrv, MsgToSrv, SendMsg } from "../../types";
+import { Model, MsgFromSrv, MsgToSrv, SendMsg, modelSetings } from "../../types";
 import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_SECRET_KEY, catgptVersion } from "./config";
@@ -83,6 +83,14 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
         return;
     }
 
+	const modelSettings = modelSetings[bot.botModel as Model]
+
+	let contextSize = 3000
+
+	if (modelSettings && modelSettings.contextSize) {
+		contextSize = modelSettings.contextSize
+	}
+
     const tokens = encode(msg.txt)
 
     const chatMsg = await prisma.chatMsg.create({
@@ -137,6 +145,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
 
     const messages: LLmMessage[] = []
     let totalTokenCount = 0
+	const cutofftime = new Date().getTime() - (1000 * 60 * 15)
 
     for (const msg of chatMsgs) {
         const tokens = encode(msg.text)
@@ -148,9 +157,13 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             role = "assistant"
         }
 
-        if (totalTokenCount + tokenCount > 6_000) {
+        if (totalTokenCount + tokenCount > contextSize) {
             break
         }
+		if (messages.length > 1 && msg.timestamp.getTime() < cutofftime) {
+			console.log("skipping old msg", msg)
+			break
+		}
 
         messages.push({
             role,
@@ -284,7 +297,6 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
 }
 
 export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
-    // console.log(`[${ws.data.store.connId}] message`, msg)
     if (msg.type === "Login") {
         const user = await prisma.user.findFirst({
             where: {
@@ -430,7 +442,10 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
                 messages: {
                     include: {
                         user: true
-                    }
+                    },
+					orderBy: {
+						timestamp: "asc"
+					}
                 }
             }
         })
@@ -494,7 +509,7 @@ export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
                 role = "assistant"
             }
 
-            if (totalTokenCount + tokenCount > 2_000) {
+            if (totalTokenCount + tokenCount > 3000) {
                 break
             }
 

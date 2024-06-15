@@ -299,23 +299,30 @@ export const models = [
 	"anthropic/claude-2.1"
 ] as const
 
-export type Provider = typeof providers[number]
+export type ModelKey = typeof models[number]
 
-export const providers = [
-    "OpenAI" as const,
-    "Anyscale" as const
-]
-
-export const inputTokenCost: Partial<Record<Model, number>> = {
-    "openai/gpt-3.5-turbo": 0.0030,
-    "openai/gpt-4-1106-preview": 0.0000,
-    "openai/gpt-4-vision-preview": 0.0000,
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1": 0.0000
+export type ModelSettings = {
+	// Cost per million tokens for input
+	inputTokenCost?: number
+	// Cost per million tokens for output
+	outputTokenCost?: number
+	contextSize?: number
 }
 
-export const outputTokenCost: Partial<Record<Model, number>> = {
-    "openai/gpt-3.5-turbo": 0.0060,
-    "openai/gpt-4-1106-preview": 0.0000,
-    "openai/gpt-4-vision-preview": 0.0000,
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1": 0.0000
+export const modelSetings: Partial<Record<Model, ModelSettings>> = {
+	"openai/gpt-3.5-turbo": {
+		inputTokenCost: 0.50,
+		outputTokenCost: 1.50,
+		contextSize: 16385
+	},
+	"openai/gpt-4-turbo": {
+		inputTokenCost: 10.00,
+		outputTokenCost: 30.00,
+		contextSize: 128_000
+	},
+	"openai/gpt-4o": {
+		inputTokenCost: 5.00,
+		outputTokenCost: 15.00,
+		contextSize: 128_000
+	}
 }
