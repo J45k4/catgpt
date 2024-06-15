@@ -49,4 +49,21 @@ export const createUsers = async () => {
 			botInstruction: akiInstructions
 		}
 	})
+
+	for (const model of models) {
+		console.log("Creating bot", model)
+		await prisma.user.upsert({
+			where: {
+				username: model
+			},
+			update: {
+				botModel: model
+			},
+			create: {
+				username: model,
+				isBot: true,
+				botModel: model
+			}
+		})
+	}
 }
