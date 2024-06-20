@@ -299,6 +299,7 @@ export const models = [
     "anyscale/meta-llama/Llama-3-70b-chat-hf",
 	"anthropic/claude-3-haiku-20240307",
 	"anthropic/claude-3-sonnet-20240229",
+	"anthropic/claude-3-5-sonnet-20240620",
 	"anthropic/claude-3-opus-20240229",
 	"anthropic/claude-2.1"
 ] as const
