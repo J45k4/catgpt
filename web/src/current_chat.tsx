@@ -15,16 +15,18 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { useCallback, useLayoutEffect, useState } from "react"
 import { $createParagraphNode, $createTextNode, $getRoot, EditorState } from "lexical"
 import { Loader } from "./common"
+import { FaRegStopCircle } from "react-icons/fa"
 
 function onError(error) {
     console.error(error);
 }
 
 const MsgEditorContnet = () => {
-    const { selectedBotId, selectedChatId } = useCache(cache => {
+    const { selectedBotId, selectedChatId, chatsGenerating } = useCache(cache => {
         return {
             selectedChatId: cache.selectedChatId,
-            selectedBotId: cache.selectedBotId
+            selectedBotId: cache.selectedBotId,
+			chatsGenerating: cache.chatsGenerating.has(cache.selectedChatId)
         }
     })
     const [editor] = useLexicalComposerContext()
@@ -59,6 +61,13 @@ const MsgEditorContnet = () => {
             root.clear()
         })
     }, [editor, selectedBotId, selectedChatId])
+
+	const stopGenerating = useCallback(() => {
+		ws.send({
+			type: "StopGeneration",
+			chatId: selectedChatId
+		})
+	}, [selectedChatId])
 
     useLayoutEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -101,9 +110,15 @@ const MsgEditorContnet = () => {
                 ErrorBoundary={LexicalErrorBoundary}
             />
 			<div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+				{!chatsGenerating && (
 				<button onClick={sendMsg}>
 					Send
-				</button>
+				</button>)}
+				{chatsGenerating && (
+					<button onClick={stopGenerating}>
+						<FaRegStopCircle style={{ width: "20px", height: "20px" }} />
+					</button>
+				)}
 			</div>
         </div>
 

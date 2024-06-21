@@ -262,6 +262,16 @@ export const createConn = () => {
                 notifyChanges()
             }
         }
+
+		if (msg.type === "GenerationStarted") {
+			cache.chatsGenerating.add(msg.chatId)
+			notifyChanges()
+		}
+
+		if (msg.type === "GenerationFinished") {
+			cache.chatsGenerating.delete(msg.chatId)
+			notifyChanges()
+		}
     }
 }
 

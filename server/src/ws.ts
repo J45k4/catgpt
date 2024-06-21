@@ -173,9 +173,14 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
     })
     messages.reverse()
 
+	ctx.send({
+		type: "GenerationStarted",
+		chatId: chat.id.toString(),
+	})
+
     try {
         const stream = await ctx.llmClient.streamRequest({
-			id: botMsg.id.toString(),
+			id: chat.id.toString(),
             model: bot.botModel as Model,
             messages
         })
@@ -248,6 +253,11 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
             }
         })
     }
+
+	ctx.send({
+		type: "GenerationFinished",
+		chatId: chat.id.toString(),
+	})
 
     if (!chat.title) {
         messages.push({
@@ -608,7 +618,7 @@ const handleUpdateBot = async (msg: UpdateBot, ctx: WsContext) => {
 }
 
 const handleStopGenration = async (msg: StopGeneration, ctx: WsContext) => {
-	ctx.llmClient.stopStream(msg.msgId)
+	ctx.llmClient.stopStream(msg.chatId)
 }
 
 export const handleWsMsg = async (msg: MsgToSrv, ctx: WsContext) => {

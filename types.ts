@@ -145,12 +145,12 @@ export type ErrorRes = {
 
 export type GenerationStarted = {
 	type: "GenerationStarted"
-	msgId: string
+	chatId: string
 }
 
 export type GenerationFinished = {
 	type: "GenerationFinished"
-	msgId: string
+	chatId: string
 }
 
 export type MsgFromSrv = MsgDelta | 
@@ -275,7 +275,7 @@ export type DeleteBot = {
 
 export type StopGeneration = {
 	type: "StopGeneration"
-	msgId: string
+	chatId: string
 }
 
 export type MsgToSrv = SendMsg | 

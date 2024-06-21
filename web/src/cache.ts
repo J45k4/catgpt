@@ -35,6 +35,7 @@ export const cache = {
     pageInx: 1,
 	chatsLoaded: false,
     chats: new Map<string, Chat>(),
+	chatsGenerating: new Set<string>(),
     bots
 }
 
