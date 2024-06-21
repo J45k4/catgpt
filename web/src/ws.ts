@@ -42,6 +42,12 @@ if (import.meta.env.VITE_SERVER_URL) {
 }
 
 if (!serverUrlString) {
+	serverUrlString = window.location.href
+}
+
+console.log("serverUrlString:", serverUrlString)
+
+if (!serverUrlString) {
 	throw new Error("Server URL not set")
 }
 
