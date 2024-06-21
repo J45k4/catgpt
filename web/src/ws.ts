@@ -41,19 +41,18 @@ if (import.meta.env.VITE_SERVER_URL) {
 	serverUrlString = import.meta.env.VITE_SERVER_URL
 }
 
-if (!serverUrlString) {
-	serverUrlString = window.location.href
+let protocol = window.location.protocol
+let host = window.location.host
+
+if (serverUrlString) {
+	const serverUrl = new URL(serverUrlString)
+	protocol = serverUrl.protocol
+	host = serverUrl.host
 }
 
-console.log("serverUrlString:", serverUrlString)
-
-if (!serverUrlString) {
-	throw new Error("Server URL not set")
-}
-
-const serverUrl = new URL(serverUrlString)
-const wsProtocol = serverUrl.protocol === "https:" ? "wss" : "ws"
-const wsUrl = `${wsProtocol}://${serverUrl.host}/ws`
+console.log("protocol", protocol)
+const wsProtocol = protocol === "https:" ? "wss" : "ws"
+const wsUrl = `${wsProtocol}://${host}/ws`
 console.log("wsUrl:", wsUrl)
 
 export const createConn = () => {
