@@ -231,13 +231,14 @@ export const CurrentChat = () => {
                         <div style={{ 
                             display: "flex", 
                             flexDirection: "column", 
-                            border: "solid 1px, black", 
+                            border: "solid 1px, #c4c4c4", 
                             marginBottom: "20px",
                             padding: "5px",
+							paddingLeft: "10px",
                             backgroundColor: index % 2 === 0 ? "#f6f6f6" : "white",
                         }}
                             key={msg.id}>
-                            <div style={{ marginRight: "15px", whiteSpace: "nowrap", display: "flex", flexWrap: "wrap" }}>
+                            <div style={{whiteSpace: "nowrap", display: "flex", flexWrap: "wrap" }}>
                                 <div style={{ flexGrow: 1, fontSize: "20px" }}>
                                     {msg.user}
                                 </div>
