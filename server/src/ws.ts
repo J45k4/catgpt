@@ -1,20 +1,14 @@
 import { encode } from "gpt-tokenizer";
-import { LLMMessageRole, LLmMessage, State } from "./types";
-import { Model, MsgFromSrv, MsgToSrv, SendMsg, modelSetings } from "../../types";
+import { LLMMessageRole, LLmMessage, State, WSContext as WsContext } from "./types";
+import { Authenticate, CreateBot, GenTitle, GetBots, GetChat, GetChats, Login, Model, MsgFromSrv, MsgToSrv, SendMsg, StopGeneration, UpdateBot, modelSetings } from "../../types";
 import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_SECRET_KEY, catgptVersion } from "./config";
-import { llmClient } from "./llm_client";
-
-type Ws = {
-    state: State
-    send: (msg: MsgFromSrv) => void
-}
 
 const alg = "HS256"
 
-const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
-    if (!ws.state.user) {
+const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
+    if (!ctx.state.user) {
         console.error("user not authenticated")
         return;
     }
@@ -45,7 +39,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             }
         })
 
-        ws.send({
+        ctx.send({
             type: "ChatCreated",
             chat: {
                 id: chat.id.toString(),
@@ -54,7 +48,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             }
         })
 
-        ws.send({
+        ctx.send({
             type: "NewChat",
             chat: {
                 id: chat.id.toString(),
@@ -98,7 +92,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             text: msg.txt,
             timestamp: new Date(),
             chatId: chat.id,
-            userId: ws.state.user.id,
+            userId: ctx.state.user.id,
             tokenCount: tokens.length
         },
         include: {
@@ -108,14 +102,14 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     chatMsgs.push(chatMsg)
     chatMsgs.reverse()
 
-    ws.send({
+    ctx.send({
         type: "NewMsg",
         msg: {
             id: chatMsg.id.toString(),
             chatId: chat.id.toString(),
             text: chatMsg.text,
             tokenCount: chatMsg.tokenCount,
-            user: ws.state.user.username,
+            user: ctx.state.user.username,
             datetime: chatMsg.timestamp.toISOString(),
             bot: false
         }
@@ -130,7 +124,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
         },
     })
 
-    ws.send({
+    ctx.send({
         type: "NewMsg",
         msg: {
             id: botMsg.id.toString(),
@@ -180,7 +174,8 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     messages.reverse()
 
     try {
-        const stream = await llmClient.streamRequest({
+        const stream = await ctx.llmClient.streamRequest({
+			id: botMsg.id.toString(),
             model: bot.botModel as Model,
             messages
         })
@@ -197,7 +192,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             if (event.type === "delta") {
                 text += event.delta
 
-                ws.send({
+                ctx.send({
                     type: "MsgDelta",
                     chatId: chat.id.toString(),
                     msgId: botMsg.id.toString(),
@@ -219,7 +214,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             }
         })
 
-        ws.send({
+        ctx.send({
             type: "NewMsg",
             msg: {
                 id: updatedChatMsg.id.toString(),
@@ -234,9 +229,9 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     } catch (err: any) {
         console.log(err)
 
-        const text = ws.state.user.admin ? err.message : "Sorry, I am not available at the moment. Please try again later."
+        const text = ctx.state.user.admin ? err.message : "Sorry, I am not available at the moment. Please try again later."
 
-        ws.send({
+        ctx.send({
             type: "MsgDelta",
             chatId: chat.id.toString(),
             msgId: botMsg.id.toString(),
@@ -262,7 +257,8 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
 
         messages.shift()
 
-        const titleStream = await llmClient.streamRequest({
+        const titleStream = await ctx.llmClient.streamRequest({
+			id: chat.id.toString(),
             model: "openai/gpt-3.5-turbo",
             messages
         })
@@ -277,7 +273,7 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
             if (event.type === "delta") {
                 title += event.delta
 
-                ws.send({
+                ctx.send({
                     type: "TitleDelta",
                     chatId: chat.id.toString(),
                     delta: event.delta
@@ -296,330 +292,341 @@ const handleSendMsg = async (ws: Ws, msg: SendMsg) => {
     }
 }
 
-export const handleWsMsg = async (ws: Ws, msg: MsgToSrv) => {
-    if (msg.type === "Login") {
-        const user = await prisma.user.findFirst({
-            where: {
-                username: msg.username,
-                passwordHash: {
-                    not: null
-                }
-            }
-        })
+const handleLogin = async (msg: Login, ctx: WsContext) => {
+	const user = await prisma.user.findFirst({
+		where: {
+			username: msg.username,
+			passwordHash: {
+				not: null
+			}
+		}
+	})
 
-        if (!user) {
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+	if (!user) {
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        if (!user.passwordHash) {
-            console.error("user.passwordHash is undefined")
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+	if (!user.passwordHash) {
+		console.error("user.passwordHash is undefined")
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        const isPasswordValid = Bun.password.verify(msg.password, user.passwordHash)
+	const isPasswordValid = Bun.password.verify(msg.password, user.passwordHash)
 
-        if (!isPasswordValid) {
-            console.error("password is invalid")
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+	if (!isPasswordValid) {
+		console.error("password is invalid")
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        ws.state.user = user
+	ctx.state.user = user
 
-        const token = await new SignJWT({ "userId": user.id })
-            .setProtectedHeader({ alg })
-            .sign(JWT_SECRET_KEY)
+	const token = await new SignJWT({ "userId": user.id })
+		.setProtectedHeader({ alg })
+		.sign(JWT_SECRET_KEY)
 
-        ws.send({
-            type: "Authenticated",
-            token,
-            version: catgptVersion
-        })
-    }
+	ctx.send({
+		type: "Authenticated",
+		token,
+		version: catgptVersion
+	})
+}
 
-    if (msg.type === "Authenticate") {
-        let payload
+const handleAuthenticate = async (msg: Authenticate, ctx: WsContext) => {
+	let payload
 
-        try {
-            const verifyRes = await jwtVerify(msg.token, JWT_SECRET_KEY)
-            payload = verifyRes.payload
-        } catch (err) {
-            console.error(err)
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+	try {
+		const verifyRes = await jwtVerify(msg.token, JWT_SECRET_KEY)
+		payload = verifyRes.payload
+	} catch (err) {
+		console.error(err)
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        if (!payload.userId) {
-            console.error("payload.userId is undefined")
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+	if (!payload.userId) {
+		console.error("payload.userId is undefined")
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        const userId = parseInt(payload.userId as string)
+	const userId = parseInt(payload.userId as string)
 
-        const user = await prisma.user.findUnique({
-            where: {
-                id: userId
-            }
-        })
+	const user = await prisma.user.findUnique({
+		where: {
+			id: userId
+		}
+	})
 
-        if (!user) {
-            console.error("user not found")
+	if (!user) {
+		console.error("user not found")
 
-            ws.send({
-                type: "AuthTokenInvalid"
-            });
-            return;
-        }
+		ctx.send({
+			type: "AuthTokenInvalid"
+		});
+		return;
+	}
 
-        ws.state.user = user
+	ctx.state.user = user
 
-        ws.send({
-            type: "Authenticated",
-            token: msg.token,
-            version: catgptVersion
-        });
-    }
+	ctx.send({
+		type: "Authenticated",
+		token: msg.token,
+		version: catgptVersion
+	});
+}
 
-    if (!ws.state.user) {
-        ws.send({
+const handleGetChats = async (msg: GetChats, ctx: WsContext) => {
+	const chats = await prisma.chat.findMany({
+		take: msg.limit,
+		skip: msg.offset,
+		include: {
+			messages: {
+				take: 1,
+				orderBy: {
+					timestamp: "desc"
+				},
+				select: {
+					timestamp: true
+				}
+			}
+		}
+	})
+
+	ctx.send({
+		type: "ChatMetas",
+		metas: chats.map(chat => ({
+			type: "ChatMeta",
+			id: chat.id.toString(),
+			title: chat.title || undefined,
+			lastMsgDatetime: chat.messages[0]?.timestamp.toISOString() ?? ""
+		}))
+	})
+}
+
+const handleGetChat = async (msg: GetChat, ctx: WsContext) => {
+	const chat = await prisma.chat.findUnique({
+		where: {
+			id: parseInt(msg.chatId)
+		},
+		include: {
+			messages: {
+				include: {
+					user: true
+				},
+				orderBy: {
+					timestamp: "asc"
+				}
+			}
+		}
+	})
+
+	if (!chat) {
+		console.error("chat not found")
+		return;
+	}
+
+	ctx.send({
+		type: "Chat",
+		id: chat.id + "",
+		msgs: chat.messages.map(msg => ({
+			id: msg.id + "",
+			chatId: msg.chatId + "",
+			text: msg.text,
+			tokenCount: msg.tokenCount,
+			user: msg.user.username,
+			datetime: msg.timestamp.toISOString(),
+			bot: msg.user.isBot
+		}))
+	})
+}
+
+const handleGenTitle = async (msg: GenTitle, ctx: WsContext) => {
+	const chat = await prisma.chat.findUnique({
+		where: {
+			id: parseInt(msg.chatId)
+		},
+		include: {
+			messages: {
+				include: {
+					user: true
+				}
+			}
+		}
+	})
+
+	if (!chat) {
+		console.error("chat not found")
+		return;
+	}
+
+	ctx.send({
+		type: "ChatMeta",
+		id: chat.id.toString(),
+		title: "",
+		lastMsgDatetime: ""
+	})
+
+	const messages: LLmMessage[] = []
+	let totalTokenCount = 0
+
+	for (const msg of chat.messages) {
+		const tokens = encode(msg.text)
+		const tokenCount = tokens.length
+
+		let role: LLMMessageRole = "user"
+
+		if (msg.user.isBot) {
+			role = "assistant"
+		}
+
+		if (totalTokenCount + tokenCount > 3000) {
+			break
+		}
+
+		messages.push({
+			role,
+			content: msg.text
+		})
+
+		totalTokenCount += tokenCount
+	}
+
+	messages.reverse()
+
+	messages.push({
+		role: "user" as const,
+		content: "summarise this conversation with very short sentence. Be very brief it is important!!"
+	})
+
+	const stream = await ctx.llmClient.streamRequest({
+		id: chat.id.toString(),
+		model: "openai/gpt-3.5-turbo",
+		messages
+	})
+
+	let title = ""
+
+	for await (const event of stream) {
+		if (event.type === "done") {
+			break;
+		}
+
+		if (event.type === "delta") {
+			title += event.delta
+
+			ctx.send({
+				type: "TitleDelta",
+				chatId: chat.id.toString(),
+				delta: event.delta
+			})
+		}
+	}
+
+	await prisma.chat.update({
+		where: {
+			id: chat.id
+		},
+		data: {
+			title
+		}
+	})
+}
+
+const handleGetBots = async (msg: GetBots, ctx: WsContext) => {
+	const bots = await prisma.user.findMany({
+		where: {
+			isBot: true
+		}
+	})
+
+	ctx.send({
+		type: "Bots",
+		bots: bots.map(bot => ({
+			id: bot.id.toString(),
+			name: bot.username,
+			model: bot.botModel as string,
+			instructions: bot.botInstruction || undefined
+		}))
+	})
+}
+
+const handleCreateBot = async (msg: CreateBot, ctx: WsContext) => {
+	console.log("createBot", msg)
+
+	const bot = await prisma.user.create({
+		data: {
+			username: msg.name,
+			botInstruction: msg.instructions,
+			isBot: true,
+			botModel: msg.model
+		}
+	})
+
+	ctx.send({
+		type: "Bot",
+		id: bot.id.toString(),
+		name: bot.username,
+		model: bot.botModel as string,
+		instructions: bot.botInstruction || undefined
+	})
+}
+
+const handleUpdateBot = async (msg: UpdateBot, ctx: WsContext) => {
+	console.log("updateBot", msg)
+
+	const bot = await prisma.user.update({
+		where: {
+			id: parseInt(msg.id)
+		},
+		data: {
+			username: msg.name,
+			botInstruction: msg.instructions,
+			botModel: msg.model
+		}
+	})
+
+	ctx.send({
+		type: "Bot",
+		id: bot.id.toString(),
+		name: bot.username,
+		instructions: bot.botInstruction || undefined,
+		model: bot.botModel as string,
+	})
+}
+
+const handleStopGenration = async (msg: StopGeneration, ctx: WsContext) => {
+	ctx.llmClient.stopStream(msg.msgId)
+}
+
+export const handleWsMsg = async (msg: MsgToSrv, ctx: WsContext) => {
+    if (msg.type === "Login") handleLogin(msg, ctx)
+    if (msg.type === "Authenticate") handleAuthenticate(msg, ctx)
+    if (!ctx.state.user) {
+        ctx.send({
             type: "AuthTokenInvalid"
         });
         console.error("user not authenticated")
         return;
     }
-
-    if (msg.type === "SendMsg") {
-        await handleSendMsg(ws, msg)
-    }
-
-    if (msg.type === "GetChats") {
-        const chats = await prisma.chat.findMany({
-            take: msg.limit,
-            skip: msg.offset,
-            include: {
-                messages: {
-                    take: 1,
-                    orderBy: {
-                        timestamp: "desc"
-                    },
-                    select: {
-                        timestamp: true
-                    }
-                }
-            }
-        })
-
-        ws.send({
-            type: "ChatMetas",
-            metas: chats.map(chat => ({
-                type: "ChatMeta",
-                id: chat.id.toString(),
-                title: chat.title || undefined,
-                lastMsgDatetime: chat.messages[0]?.timestamp.toISOString() ?? ""
-            }))
-        })
-    }
-
-    if (msg.type === "GetChat") {
-        const chat = await prisma.chat.findUnique({
-            where: {
-                id: parseInt(msg.chatId)
-            },
-            include: {
-                messages: {
-                    include: {
-                        user: true
-                    },
-					orderBy: {
-						timestamp: "asc"
-					}
-                }
-            }
-        })
-
-        if (!chat) {
-            console.error("chat not found")
-            return;
-        }
-
-        ws.send({
-            type: "Chat",
-            id: chat.id + "",
-            msgs: chat.messages.map(msg => ({
-                id: msg.id + "",
-                chatId: msg.chatId + "",
-                text: msg.text,
-                tokenCount: msg.tokenCount,
-                user: msg.user.username,
-                datetime: msg.timestamp.toISOString(),
-                bot: msg.user.isBot
-            }))
-        })
-    }
-
-    if (msg.type === "GenTitle") {
-        const chat = await prisma.chat.findUnique({
-            where: {
-                id: parseInt(msg.chatId)
-            },
-            include: {
-                messages: {
-                    include: {
-                        user: true
-                    }
-                }
-            }
-        })
-
-        if (!chat) {
-            console.error("chat not found")
-            return;
-        }
-
-        ws.send({
-            type: "ChatMeta",
-            id: chat.id.toString(),
-            title: "",
-            lastMsgDatetime: ""
-        })
-
-        const messages: LLmMessage[] = []
-        let totalTokenCount = 0
-
-        for (const msg of chat.messages) {
-            const tokens = encode(msg.text)
-            const tokenCount = tokens.length
-
-            let role: LLMMessageRole = "user"
-
-            if (msg.user.isBot) {
-                role = "assistant"
-            }
-
-            if (totalTokenCount + tokenCount > 3000) {
-                break
-            }
-
-            messages.push({
-                role,
-                content: msg.text
-            })
-
-            totalTokenCount += tokenCount
-        }
-
-        messages.reverse()
-
-        messages.push({
-            role: "user" as const,
-            content: "summarise this conversation with very short sentence. Be very brief it is important!!"
-        })
-
-        const stream = await llmClient.streamRequest({
-            model: "openai/gpt-3.5-turbo",
-            messages
-        })
-
-        let title = ""
-
-        for await (const event of stream) {
-            if (event.type === "done") {
-                break;
-            }
-
-            if (event.type === "delta") {
-                title += event.delta
-
-                ws.send({
-                    type: "TitleDelta",
-                    chatId: chat.id.toString(),
-                    delta: event.delta
-                })
-            }
-        }
-
-        await prisma.chat.update({
-            where: {
-                id: chat.id
-            },
-            data: {
-                title
-            }
-        })
-    }
-
-    if (msg.type === "GetBots") {
-        const bots = await prisma.user.findMany({
-            where: {
-                isBot: true
-            }
-        })
-
-        ws.send({
-            type: "Bots",
-            bots: bots.map(bot => ({
-                id: bot.id.toString(),
-                name: bot.username,
-                model: bot.botModel as string,
-                instructions: bot.botInstruction || undefined
-            }))
-        })
-    }
-
-    if (msg.type === "CreateBot") {
-        console.log("createBot", msg)
-
-        const bot = await prisma.user.create({
-            data: {
-                username: msg.name,
-                botInstruction: msg.instructions,
-                isBot: true,
-                botModel: msg.model
-            }
-        })
-
-        ws.send({
-            type: "Bot",
-            id: bot.id.toString(),
-            name: bot.username,
-            model: bot.botModel as string,
-            instructions: bot.botInstruction || undefined
-        })
-    }
-
-    if (msg.type === "UpdateBot") {
-        console.log("updateBot", msg)
-
-        const bot = await prisma.user.update({
-            where: {
-                id: parseInt(msg.id)
-            },
-            data: {
-                username: msg.name,
-                botInstruction: msg.instructions,
-                botModel: msg.model
-            }
-        })
-
-        ws.send({
-            type: "Bot",
-            id: bot.id.toString(),
-            name: bot.username,
-            instructions: bot.botInstruction || undefined,
-            model: bot.botModel as string,
-        })
-    }
+    if (msg.type === "SendMsg") await handleSendMsg(msg, ctx)
+    if (msg.type === "GetChats") await handleGetChats(msg, ctx)
+    if (msg.type === "GetChat") await handleGetChat(msg, ctx)
+    if (msg.type === "GenTitle") await handleGenTitle(msg, ctx)
+    if (msg.type === "GetBots") await handleGetBots(msg, ctx)
+    if (msg.type === "CreateBot") await handleCreateBot(msg, ctx)
+    if (msg.type === "UpdateBot") await handleUpdateBot(msg, ctx)
+	if (msg.type === "StopGeneration") await handleStopGenration(msg, ctx)
 }

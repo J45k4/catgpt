@@ -1,5 +1,7 @@
 import { User } from "@prisma/client"
 import { t } from "elysia"
+import { MsgFromSrv } from "../../types"
+import { LLMClient } from "./llm_client"
 
 type Delta = {
     type: "Delta"
@@ -28,4 +30,10 @@ export const SendMsg = t.Object({
 export type State = {
     socketId: number
     user?: User
+}
+
+export type WSContext = {
+	state: State
+	llmClient: LLMClient
+	send: (msg: MsgFromSrv) => void
 }

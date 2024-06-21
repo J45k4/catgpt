@@ -1,7 +1,7 @@
 import { ws } from "./ws"
 import {formatDateTime } from "./utility"
 import { Row } from "./layout"
-import { BiCopy } from "react-icons/bi"
+import { BiCopy, BiSolidEditAlt } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
 import { cache, notifyChanges, useCache } from "./cache"
 import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
@@ -12,7 +12,7 @@ import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
-import { useCallback, useLayoutEffect } from "react"
+import { useCallback, useLayoutEffect, useState } from "react"
 import { $createParagraphNode, $createTextNode, $getRoot, EditorState } from "lexical"
 import { Loader } from "./common"
 
@@ -85,6 +85,7 @@ const MsgEditorContnet = () => {
     return (
         <div style={{
             display: "flex",
+			flexDirection: "row",
             border: "solid 1px rgba(0, 0, 0, 0.3)",
             outline: "none",
             padding: "0px"
@@ -99,9 +100,11 @@ const MsgEditorContnet = () => {
                 placeholder={<div></div>}
                 ErrorBoundary={LexicalErrorBoundary}
             />
-            <button onClick={sendMsg}>
-                Send
-            </button>
+			<div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+				<button onClick={sendMsg}>
+					Send
+				</button>
+			</div>
         </div>
 
     )
@@ -156,7 +159,55 @@ export const SendMessageBox = () => {
     )
 }
 
+export const EditMessageBox = (props: {
+	text: string
+}) => {
+	// const [editing, setEditing] = useState(false)
+
+	const onMsgChange = useCallback((editorState: EditorState) => {
+		editorState.read(() => {
+			const root = $getRoot()
+			const text = root.getTextContent()
+			cache.currentMsg = text
+		})
+	}, [])
+
+	return (
+		<div style={{ display: "flex" }}>
+			<div style={{ flexGrow: 1 }}>
+				<LexicalComposer initialConfig={{
+					namespace: "NewMessageEditor",
+					onError,
+					theme: {
+						paragraph: "editor-paragraph",
+					},
+					editorState(editor) {
+						editor.update(() => {
+							const root = $getRoot()
+							props.text.split("\n").forEach(line => {
+								const p = $createParagraphNode()
+								const text = $createTextNode(line)
+								p.append(text)
+								root.append(p)
+							})
+						})
+					},
+					
+				}}>
+					<MsgEditorContnet />
+					<HistoryPlugin />
+					<AutoFocusPlugin />
+					<OnChangePlugin onChange={onMsgChange} />
+				</LexicalComposer>
+			</div>
+
+		</div>
+	)
+}
+
 export const CurrentChat = () => {
+	const [editing, setEditing] = useState(false)
+
     const msgs = useCache(cache => {
 		if (!cache.selectedChatId) {
 			return []
@@ -192,23 +243,31 @@ export const CurrentChat = () => {
                                 </div>
                                 <div>
                                     <Row style={{ flexWrap: "wrap" }}>
-                                        {formatDateTime(msg.datetime)}
-                                        Token Count:
-                                        {msg.tokenCount}
+										<label style={{ marginRight: "10px", fontSize: "17px" }}>
+											{formatDateTime(msg.datetime)}
+										</label>
+                                        {/* Token Count:
+                                        {msg.tokenCount} */}
                                         <BiCopy 
                                             style={{ fontSize: "25px", cursor: "pointer" }}
                                             onClick={() => {
                                                 navigator.clipboard.writeText(msg.text)
                                             }}
                                         />
+										{/* <BiSolidEditAlt
+											style={{ fontSize: "25px", cursor: "pointer" }}
+											onClick={() => setEditing(true)} /> */}
                                     </Row>    
                                 </div>
                             </div>
+							{editing &&
+							<EditMessageBox text={msg.text} />}
+							{!editing &&
                             <ChatMessage
                                 key={msg.id}
                                 msgId={msg.id}
                                 text={msg.text}
-                                />
+                                />}
                         </div>
                     )
                 })}
@@ -245,6 +304,7 @@ export const ChatMessage = (props: {
                             <div>
                                 <BiCopy style={{ margin: "5px", fontSize: "20px", cursor: "pointer" }}
                                     onClick={() => navigator.clipboard.writeText(code)} />
+								
                             </div>
                         </div>
                         

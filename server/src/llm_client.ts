@@ -6,7 +6,6 @@ import openai, { OpenAI } from "openai"
 import { lazy } from "./utility";
 import { anthropicApiKey } from "./config";
 
-
 const openAiClient = lazy(() => {
     const apiKey = process.env.OPENAI_API_KEY
 
@@ -48,6 +47,10 @@ const anthropic = lazy(() => {
 	return new Anthropic({ apiKey: anthropicApiKey })
 })
 
+type Context = {
+	stop: boolean
+}
+
 export type LLMStreamEvent = {
     type: "delta"
     delta: string
@@ -55,8 +58,12 @@ export type LLMStreamEvent = {
     type: "done"
 }
 
-async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.ChatCompletionChunk>): AsyncIterable<LLMStreamEvent> {
+async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.ChatCompletionChunk>, ctx: Context): AsyncIterable<LLMStreamEvent> {
     for await (const chunk of stream) {
+		if (ctx.stop) {
+			break
+		}
+
         const choice = chunk.choices[0]
 
         if (!choice) {
@@ -84,7 +91,7 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
     }
 }
 
-async function* handleAnthropic(model: string, messages: LLmMessage[]): AsyncIterable<LLMStreamEvent> {
+async function* handleAnthropic(model: string, messages: LLmMessage[], ctx: Context): AsyncIterable<LLMStreamEvent> {
 	const systemMsg = messages.find(p => p.role === "system")?.content
 	const stream = await anthropic().messages.stream({
 		model,
@@ -112,6 +119,10 @@ async function* handleAnthropic(model: string, messages: LLmMessage[]): AsyncIte
 	})
 
 	for await (const event of stream) {
+		if (ctx.stop) {
+			break
+		}
+
 		if (event.type === "content_block_delta") {
 			yield {
 				type: "delta",
@@ -125,12 +136,24 @@ async function* handleAnthropic(model: string, messages: LLmMessage[]): AsyncIte
 	}
 }
 
-export const llmClient = {
-    streamRequest: async (args: {
+export class LLMStream {
+
+}
+
+export class LLMClient {
+	private contexes: Map<string, Context> = new Map()
+
+    public async streamRequest(args: {
+		id: string
         model: Model
         messages: LLmMessage[]
-    }): Promise<AsyncIterable<LLMStreamEvent>> => {
+    }): Promise<AsyncIterable<LLMStreamEvent>> {
         console.log("streamRequest", args)
+
+		let ctx: Context = {
+			stop: false
+		}
+		this.contexes.set(args.id, ctx)
 
         if (args.model.startsWith("openai/")) {
             const model = args.model.replace("openai/", "")
@@ -141,7 +164,7 @@ export const llmClient = {
                 stream: true,
             })
 
-            return wrapOpenAIStream(stream)
+            return wrapOpenAIStream(stream, ctx)
         }
 
         if (args.model.startsWith("groq/")) {
@@ -153,7 +176,7 @@ export const llmClient = {
                 stream: true,
             })
 
-            return wrapOpenAIStream(stream)
+            return wrapOpenAIStream(stream, ctx)
         }
 
         if (args.model.startsWith("anyscale/")) {
@@ -165,14 +188,24 @@ export const llmClient = {
                 temperature: 0.1
             })
 
-            return wrapOpenAIStream(stream)
+            return wrapOpenAIStream(stream, ctx)
         }
 
 		if (args.model.startsWith("anthropic/")) {
 			const model = args.model.replace("anthropic/", "")
-			return handleAnthropic(model, args.messages)
+			return handleAnthropic(model, args.messages, ctx)
 		}
 
         throw new Error(`Unknown model: ${args.model}`)
     }
+
+	public async stopStream(id: string) {
+		const ctx = this.contexes.get(id)
+
+		if (!ctx) {
+			return
+		}
+
+		ctx.stop = true
+	}
 }

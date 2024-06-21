@@ -143,6 +143,16 @@ export type ErrorRes = {
     }
 }
 
+export type GenerationStarted = {
+	type: "GenerationStarted"
+	msgId: string
+}
+
+export type GenerationFinished = {
+	type: "GenerationFinished"
+	msgId: string
+}
+
 export type MsgFromSrv = MsgDelta | 
     Chats |
     Chat | 
@@ -162,7 +172,9 @@ export type MsgFromSrv = MsgDelta |
     Bots |
     BotRes |
     ErrorRes |
-    MsgError
+    MsgError |
+	GenerationStarted |
+	GenerationFinished
 
 export type SendMsg = {
     type: "SendMsg"
@@ -261,6 +273,11 @@ export type DeleteBot = {
     id: string
 }
 
+export type StopGeneration = {
+	type: "StopGeneration"
+	msgId: string
+}
+
 export type MsgToSrv = SendMsg | 
     StopGen | 
     GetChats | 
@@ -278,7 +295,8 @@ export type MsgToSrv = SendMsg |
     GetBot |
     CreateBot |
     UpdateBot |
-    DeleteBot
+    DeleteBot |
+	StopGeneration
 
 export type Model = typeof models[number]
 
@@ -348,6 +366,11 @@ export const modelSetings: Partial<Record<Model, ModelSettings>> = {
 		outputTokenCost: 1.25
 	},
 	"anthropic/claude-3-sonnet-20240229": {
+		contextSize: 200000,
+		inputTokenCost: 3.00,
+		outputTokenCost: 15.00
+	},
+	"anthropic/claude-3-5-sonnet-20240620": {
 		contextSize: 200000,
 		inputTokenCost: 3.00,
 		outputTokenCost: 15.00

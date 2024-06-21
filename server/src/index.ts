@@ -4,6 +4,7 @@ import { handleWsMsg } from "./ws"
 import { State } from "./types"
 import { createUsers } from "./users"
 import { join } from "path"
+import { LLMClient } from "./llm_client"
 
 const staticDir = "../web/dist"
 const indexFilePath = `${staticDir}/index.html`
@@ -12,6 +13,8 @@ const indexFile = Bun.file(indexFilePath)
 await createUsers()
 
 let socketId = 1
+
+const llmClient = new LLMClient()
 
 Bun.serve<State>({
 	port: 5566,
@@ -41,10 +44,11 @@ Bun.serve<State>({
 			const jsonMsg = JSON.parse(msg) as MsgToSrv
 
 			try {
-				await handleWsMsg({
+				await handleWsMsg(jsonMsg, {
 					state: ws.data,
+					llmClient,
 					send: (msg) => ws.send(JSON.stringify(msg))
-				}, jsonMsg)
+				})
 			} catch (err: any) {
 				console.error(err)
 

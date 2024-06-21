@@ -21,13 +21,27 @@ export const getQueryParam = (param: string) => {
     return url.searchParams.get(param)
 }
 
+const numToString = (num: number, minDigits: number) => {
+	let str = num.toString()
+	while (str.length < minDigits) {
+		str = `0${str}`
+	}
+	return str
+}
+
 export const formatDateTime = (date?: Date | string) => {
     if (!date) {
         return ""
     }
 
     const d = new Date(date)
-    return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
+	const dateStr = numToString(d.getDate(), 2)
+	const monthStr = numToString(d.getMonth() + 1, 2)
+	const hoursStr = numToString(d.getHours(), 2)
+	const minutesStr = numToString(d.getMinutes(), 2)
+	const secondsStr = numToString(d.getSeconds(), 2)
+
+    return `${d.getFullYear()}-${monthStr}-${dateStr} ${hoursStr}:${minutesStr}:${secondsStr}`
 }
 
 export const useScreenSize = () => {

@@ -31,17 +31,36 @@ const clearGeneralError = () => {
     }, 5000)
 }
 
+let serverUrlString = window.location.host
+
+if (import.meta.env.DEV) {
+	serverUrlString = "http://localhost:5566"
+}
+
+if (import.meta.env.VITE_SERVER_URL) {
+	serverUrlString = import.meta.env.VITE_SERVER_URL
+}
+
+if (!serverUrlString) {
+	throw new Error("Server URL not set")
+}
+
+const serverUrl = new URL(serverUrlString)
+const wsProtocol = serverUrl.protocol === "https:" ? "wss" : "ws"
+const wsUrl = `${wsProtocol}://${serverUrl.host}/ws`
+console.log("wsUrl:", wsUrl)
+
 export const createConn = () => {
-    let url
-    if (import.meta.env.DEV) {
-        url = `ws://localhost:5566/ws`
-        ws_socket = new WebSocket(url)
-    } else {
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws"
-        const host = window.location.host
-        url = `${protocol}://${host}/ws`
-    }
-    ws_socket = new WebSocket(url)
+    // let url
+    // if (import.meta.env.DEV) {
+    //     url = `ws://localhost:5566/ws`
+    //     ws_socket = new WebSocket(url)
+    // } else {
+    //     const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+    //     const host = window.location.host
+    //     url = `${protocol}://${host}/ws`
+    // }
+    ws_socket = new WebSocket(wsUrl)
     ws_socket.onopen = () => {
         ws.connected = true
         cache.connected = true
