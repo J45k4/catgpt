@@ -31,7 +31,7 @@ const clearGeneralError = () => {
     }, 5000)
 }
 
-let serverUrlString = window.location.host
+let serverUrlString
 
 if (import.meta.env.DEV) {
 	serverUrlString = "http://localhost:5566"
