@@ -10,6 +10,7 @@ ADD ./web/package.json ./package.json
 ADD ./web/bun.lockb ./bun.lockb
 RUN bun install
 ADD types.ts /usr/src/catgpt/types.ts
+ADD models.ts /usr/src/catgpt/models.ts
 COPY ./web .
 RUN bun run build
 WORKDIR /usr/src/catgpt/server

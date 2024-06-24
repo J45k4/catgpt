@@ -1,10 +1,11 @@
 import React, { Fragment, useState } from "react"
 import { ws } from "./ws"
 import { Modal } from "./modal"
-import { Bot, Model } from "../../types"
+import { Bot } from "../../types"
 import { cache, notifyChanges, useCache } from "./cache"
 import { ModelSelect } from "./model"
 import { FaArrowLeft } from "react-icons/fa"
+import { Model } from "../../models"
 
 export const BotSelect = () => {
     const { botId, bots } = useCache(s => {
