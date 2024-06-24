@@ -307,7 +307,6 @@ export const models = [
     "openai/gpt-4-vision-preview",
 	"openai/gpt-4o", 
     "groq/mixtral-8x7b-32768",
-    "groq/llama2-70b-4096",
 	"groq/llama3-70b-8192",
 	"groq/llama3-8b-8192",
     "groq/gemma-7b-it",
@@ -350,9 +349,6 @@ export const modelSetings: Partial<Record<Model, ModelSettings>> = {
 	},
 	"groq/mixtral-8x7b-32768": {
 		contextSize: 32768
-	},
-	"groq/llama2-70b-4096": {
-		contextSize: 4096
 	},
 	"groq/llama3-70b-8192": {
 		contextSize: 8192
