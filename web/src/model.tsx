@@ -1,4 +1,4 @@
-import { Model, models } from "../../types"
+import { Model, models } from "../../models"
 
 export const ModelSelect = (props: {
 	model: Model

@@ -1,4 +1,4 @@
-import { models } from "../../types"
+import { models } from "../../models"
 import { prisma } from "./prisma"
 
 export const systemUser = await prisma.user.upsert({

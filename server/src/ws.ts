@@ -1,9 +1,10 @@
 import { encode } from "gpt-tokenizer";
 import { LLMMessageRole, LLmMessage, State, WSContext as WsContext } from "./types";
-import { Authenticate, CreateBot, GenTitle, GetBots, GetChat, GetChats, Login, Model, MsgFromSrv, MsgToSrv, SendMsg, StopGeneration, UpdateBot, modelSetings } from "../../types";
+import { Authenticate, CreateBot, GenTitle, GetBots, GetChat, GetChats, Login, MsgFromSrv, MsgToSrv, SendMsg, StopGeneration, UpdateBot } from "../../types";
 import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_SECRET_KEY, catgptVersion } from "./config";
+import { Model, modelSetings } from "../../models";
 
 const alg = "HS256"
 
