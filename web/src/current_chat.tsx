@@ -1,7 +1,7 @@
 import { ws } from "./ws"
 import {formatDateTime } from "./utility"
 import { Row } from "./layout"
-import { BiCopy, BiSolidEditAlt } from "react-icons/bi"
+import { BiCopy } from "react-icons/bi"
 import { CodeBlock } from "react-code-blocks"
 import { cache, notifyChanges, useCache } from "./cache"
 import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
@@ -16,6 +16,7 @@ import { useCallback, useLayoutEffect, useState } from "react"
 import { $createParagraphNode, $createTextNode, $getRoot, EditorState } from "lexical"
 import { Loader } from "./common"
 import { FaRegStopCircle } from "react-icons/fa"
+import { TbReload } from "react-icons/tb";
 
 function onError(error) {
     console.error(error);
@@ -265,11 +266,12 @@ export const CurrentChat = () => {
                                         {/* Token Count:
                                         {msg.tokenCount} */}
                                         <BiCopy 
-                                            style={{ fontSize: "25px", cursor: "pointer" }}
+                                            className="icon"
                                             onClick={() => {
                                                 navigator.clipboard.writeText(msg.text)
                                             }}
                                         />
+										<TbReload className="icon" />
 										{/* <BiSolidEditAlt
 											style={{ fontSize: "25px", cursor: "pointer" }}
 											onClick={() => setEditing(true)} /> */}

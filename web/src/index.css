@@ -133,3 +133,12 @@ button:focus-visible {
 	margin-top: 0;
 	margin-bottom: 0;
 }
+
+.icon {
+	cursor: pointer;
+	font-size: 25px;
+}
+
+.icon:hover {
+	color: #646cff;
+}

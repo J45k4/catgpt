@@ -169,7 +169,7 @@ const ChatsPage = (props: {
                     notifyChanges()
                 }}>Logout</button>}
                 right={props.onSlideRight ? <div className="icon_button" onClick={props.onSlideRight}>
-                    <FaLongArrowAltRight />
+                    <FaLongArrowAltRight className="icon" />
                 </div> : undefined} />
             <ChatsList />
         </div>
@@ -188,7 +188,7 @@ const CurrentChagePage = (props: {
 					<div className="icon_button" style={{ marginRight: "10px" }} onClick={() => {
 						props.onSlideLeft()
 					}}>
-						<FaBars />
+						<FaBars className="icon" />
 					</div>
 					<div className="icon_button" onClick={() => {
 						cache.selectedChatId = null
@@ -196,12 +196,12 @@ const CurrentChagePage = (props: {
 						cache.pageInx = 1
 						notifyChanges()
 					}}>
-						<FaRegPenToSquare />
+						<FaRegPenToSquare className="icon" />
 					</div>
                 </div> : undefined}
                 center={<BotSelect />}
                 right={props.onSlideRight ? <div className="icon_button" onClick={props.onSlideRight}>
-                    <FaRobot />
+                    <FaRobot className="icon" />
                 </div> : undefined}
             />
             <div style={{ flexGrow: 1, overflow: "auto", textAlign: "center", width: "100%" }}>

@@ -172,7 +172,7 @@ export const BotsPage = (props: {
             {props.onSlideLeft &&
             <div style={{ display: "flex" }}>
                 <div className="icon_button" onClick={() => props.onSlideLeft()}>
-                    <FaArrowLeft />
+                    <FaArrowLeft className="icon" />
                 </div>
             </div>}
             <button onClick={() => setShowAddBotModal(true)}>
