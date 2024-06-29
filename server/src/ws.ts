@@ -559,7 +559,8 @@ const handleGenTitle = async (msg: GenTitle, ctx: WsContext) => {
 const handleGetBots = async (msg: GetBots, ctx: WsContext) => {
 	const bots = await prisma.user.findMany({
 		where: {
-			isBot: true
+			isBot: true,
+			disabled: false
 		}
 	})
 

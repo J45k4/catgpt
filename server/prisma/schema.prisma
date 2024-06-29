@@ -12,14 +12,15 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
-  admin          Boolean   @default(false)
+  admin           Boolean   @default(false)
   username        String    @unique
-  passwordHash    String?    @map("password_hash")
+  passwordHash    String?   @map("password_hash")
   isBot           Boolean   @default(false) @map("is_bot")
   botModel        String?   @map("bot_model") @db.VarChar(50)
   botInstruction  String?   @map("bot_instruction")
   createdAt       DateTime  @default(now()) @map("created_at")
   createdByUserId Int?      @map("created_by_user_id")
+  disabled        Boolean   @default(false)
   ChatMsg         ChatMsg[]
   createdByUser   User?     @relation("createdByUser", fields: [createdByUserId], references: [id])
   createdUsers    User[]    @relation("createdByUser")
@@ -28,10 +29,10 @@ model User {
 }
 
 model Chat {
-  id       Int       @id @default(autoincrement())
-  title    String?
+  id        Int       @id @default(autoincrement())
+  title     String?
   createdAt DateTime  @default(now()) @map("created_at")
-  messages ChatMsg[]
+  messages  ChatMsg[]
 
   @@index([createdAt], name: "created_at")
   @@map("chats")

@@ -1,4 +1,4 @@
-import { models } from "../../models"
+import { Model, models } from "../../models"
 import { prisma } from "./prisma"
 
 export const systemUser = await prisma.user.upsert({
@@ -63,6 +63,35 @@ export const createUsers = async () => {
 				username: model,
 				isBot: true,
 				botModel: model
+			}
+		})
+	}
+
+	const users = await prisma.user.findMany(
+		{
+			where: {
+				isBot: true,
+				disabled: false
+			}
+		}
+	)
+
+	console.log("users", users)
+
+	for (const user of users) {
+
+		if (models.includes(user.botModel as Model)){
+			continue
+		}
+
+		console.log(`user ${user.username} has invalid model ${user.botModel}`)
+		console.log("disabling user")
+		await prisma.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				disabled: true
 			}
 		})
 	}
