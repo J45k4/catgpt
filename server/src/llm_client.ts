@@ -95,7 +95,7 @@ async function* handleAnthropic(model: string, messages: LLmMessage[], ctx: Cont
 	const systemMsg = messages.find(p => p.role === "system")?.content
 	const stream = await anthropic().messages.stream({
 		model,
-		max_tokens: 1024,
+		max_tokens: 10_000,
 		system: systemMsg,
 		messages: messages.filter(e => e.role !== "system").map(p => {
 			let role: "user" | "assistant" = "user"
