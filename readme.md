@@ -22,3 +22,5 @@ Cute personal assistant
 - [ ] Store current model to local storage so it can remember it.
 - [ ] Implement canvas for viewing conversation history with different paths.
 - [ ] Run html, js and css code in the browser.
+- [ ] Latex rendering
+- [ ] Markdown rendering
