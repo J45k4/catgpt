@@ -76,8 +76,6 @@ export const createUsers = async () => {
 		}
 	)
 
-	console.log("users", users)
-
 	for (const user of users) {
 
 		if (models.includes(user.botModel as Model)){

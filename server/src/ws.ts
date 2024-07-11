@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 import { SignJWT, jwtVerify } from "jose";
 import { JWT_SECRET_KEY, catgptVersion } from "./config";
 import { Model, modelSetings } from "../../models";
+import { Calls } from "./executor";
 
 const alg = "HS256"
 
@@ -179,6 +180,8 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
 		chatId: chat.id.toString(),
 	})
 
+	const calls = new Calls()
+
     try {
         const stream = await ctx.llmClient.streamRequest({
 			id: chat.id.toString(),
@@ -205,6 +208,14 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
                     delta: event.delta
                 })
             }
+
+			if (event.type === "tool") {
+				calls.add({
+					name: event.name,
+					index: event.index,
+					args: event.args
+				})
+			}
         }
 
         const botMsgTokens = encode(text)
@@ -254,6 +265,8 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
             }
         })
     }
+
+	calls.execute()
 
 	ctx.send({
 		type: "GenerationFinished",

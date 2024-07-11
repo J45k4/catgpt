@@ -24,3 +24,4 @@ Cute personal assistant
 - [ ] Run html, js and css code in the browser.
 - [ ] Latex rendering
 - [ ] Markdown rendering
+- [ ] Add support for image generation models.

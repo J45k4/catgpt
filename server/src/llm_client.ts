@@ -5,6 +5,7 @@ import { LLmMessage } from "./types";
 import openai, { OpenAI } from "openai"
 import { lazy } from "./utility";
 import { anthropicApiKey } from "./config";
+import { functions } from "./functions";
 
 const openAiClient = lazy(() => {
     const apiKey = process.env.OPENAI_API_KEY
@@ -56,10 +57,15 @@ export type LLMStreamEvent = {
     delta: string
 } | {
     type: "done"
+} | {
+	type: "tool"
+	index: number
+	name?: string
+	args: any
 }
 
 async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.ChatCompletionChunk>, ctx: Context): AsyncIterable<LLMStreamEvent> {
-    for await (const chunk of stream) {
+	for await (const chunk of stream) {
 		if (ctx.stop) {
 			break
 		}
@@ -73,6 +79,17 @@ async function* wrapOpenAIStream(stream: AsyncIterable<openai.Chat.Completions.C
         if (choice.finish_reason) {
             break
         }
+
+		if (choice?.delta?.tool_calls) {
+			for (const toolCall of choice.delta.tool_calls) {
+				yield {
+					type: "tool",
+					index: toolCall.index,
+					name: toolCall.function?.name,
+					args: toolCall.function?.arguments
+				}
+			}
+		}
 
         const content = choice.delta?.content
 
@@ -162,6 +179,12 @@ export class LLMClient {
                 model: model,
                 messages: args.messages,
                 stream: true,
+				tools: [
+					{
+						type: "function",
+						function: functions[0]
+					}
+				]
             })
 
             return wrapOpenAIStream(stream, ctx)
