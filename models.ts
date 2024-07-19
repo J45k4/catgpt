@@ -30,6 +30,9 @@ export type ModelSettings = {
 	// Cost per million tokens for output
 	outputTokenCost?: number
 	contextSize?: number
+	// If this is not set it will try to minimize the context size
+	// by limiting number of messages in the context.
+	noContextLimiting?: boolean
 }
 
 export const modelSetings: Partial<Record<Model, ModelSettings>> = {
@@ -51,7 +54,8 @@ export const modelSetings: Partial<Record<Model, ModelSettings>> = {
 	"openai/gpt-4o-mini": {
 		inputTokenCost: 0.150,
 		outputTokenCost: 0.600,
-		contextSize: 128_000
+		contextSize: 128_000,
+		noContextLimiting: true
 	},
 	"groq/mixtral-8x7b-32768": {
 		contextSize: 32768

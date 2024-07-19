@@ -81,9 +81,11 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
 	const modelSettings = modelSetings[bot.botModel as Model]
 
 	let contextSize = 3000
+	let contextLimiting = true
 
-	if (modelSettings && modelSettings.contextSize) {
-		contextSize = modelSettings.contextSize
+	if (modelSettings) {
+		if (modelSettings.contextSize) contextSize = modelSettings.contextSize
+		if (modelSettings.noContextLimiting) contextLimiting = false
 	}
 
     const tokens = encode(msg.txt)
@@ -155,9 +157,12 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
         if (totalTokenCount + tokenCount > contextSize) {
             break
         }
-		if (messages.length > 1 && msg.timestamp.getTime() < cutofftime) {
-			console.log("skipping old msg", msg)
-			break
+
+		if (contextLimiting) {
+			if (messages.length > 1 && msg.timestamp.getTime() < cutofftime) {
+				console.log("skipping old msg", msg)
+				break
+			}
 		}
 
         messages.push({
