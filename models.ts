@@ -5,7 +5,8 @@ export const models = [
 	"openai/gpt-4-turbo",
     "openai/gpt-4-1106-preview", 
     "openai/gpt-4-vision-preview",
-	"openai/gpt-4o", 
+	"openai/gpt-4o",
+	"openai/gpt-4o-mini",
     "groq/mixtral-8x7b-32768",
 	"groq/llama3-70b-8192",
 	"groq/llama3-8b-8192",
@@ -45,6 +46,11 @@ export const modelSetings: Partial<Record<Model, ModelSettings>> = {
 	"openai/gpt-4o": {
 		inputTokenCost: 5.00,
 		outputTokenCost: 15.00,
+		contextSize: 128_000
+	},
+	"openai/gpt-4o-mini": {
+		inputTokenCost: 0.150,
+		outputTokenCost: 0.600,
 		contextSize: 128_000
 	},
 	"groq/mixtral-8x7b-32768": {
