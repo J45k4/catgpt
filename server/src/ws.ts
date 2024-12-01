@@ -275,7 +275,7 @@ const handleSendMsg = async (msg: SendMsg, ctx: WsContext) => {
 
         const titleStream = await ctx.llmClient.streamRequest({
 			id: chat.id.toString(),
-            model: "openai/gpt-3.5-turbo",
+            model: "openai/gpt-4o-mini",
             messages
         })
 
@@ -529,7 +529,7 @@ const handleGenTitle = async (msg: GenTitle, ctx: WsContext) => {
 
 	const stream = await ctx.llmClient.streamRequest({
 		id: chat.id.toString(),
-		model: "openai/gpt-3.5-turbo",
+		model: "openai/gpt-4o-mini",
 		messages
 	})
 

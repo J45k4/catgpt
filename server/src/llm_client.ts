@@ -1,10 +1,10 @@
 import Groq from "groq-sdk";
 import Anthropic from '@anthropic-ai/sdk';
-import { Model } from "../../types";
 import { LLmMessage } from "./types";
 import openai, { OpenAI } from "openai"
 import { lazy } from "./utility";
 import { anthropicApiKey } from "./config";
+import { Model } from "../../models";
 
 const openAiClient = lazy(() => {
     const apiKey = process.env.OPENAI_API_KEY
