@@ -38,7 +38,7 @@ const AddBotModal = (props: {
     onClose?: () => void
 }) => {
     const [name, setName] = useState("")
-    const [model, setModel] = useState<Model>("openai/gpt-3.5-turbo")
+    const [model, setModel] = useState<Model>("openai/gpt-4o-mini")
     const [instructions, setInstructions] = useState("")
 
     return (
@@ -97,7 +97,7 @@ const CreateBotForm = (props: {
     onClose?: () => void
 }) => {
     const [name, setName] = useState(props.bot?.name || "")
-    const [model, setModel] = useState<Model>(props.bot?.model as Model || "openai/gpt-3.5-turbo")
+    const [model, setModel] = useState<Model>(props.bot?.model as Model || "openai/gpt-4o-mini")
     const [instructions, setInstructions] = useState(props.bot?.instructions || "")
 
     return (
