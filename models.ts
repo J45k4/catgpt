@@ -9,10 +9,7 @@ export const models = [
 	"groq/llama3-70b-8192",
 	"groq/llama3-8b-8192",
     "groq/gemma-7b-it",
-    "anyscale/mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "anyscale/mistralai/Mistral-7B-Instruct-v0.1",
-	"anyscale/meta-llama/Llama-3-8b-chat-hf",
-    "anyscale/meta-llama/Llama-3-70b-chat-hf",
+	"together/deepseek-ai/DeepSeek-R1",
 	"anthropic/claude-3-5-sonnet-latest",
 	"anthropic/claude-2.1"
 ] as const

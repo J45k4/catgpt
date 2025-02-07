@@ -39,6 +39,15 @@ const anyscale = lazy(() => {
     })
 })
 
+const together = lazy(() => {
+	const apiKey = process.env.TOGETHER_API_KEY
+	if (!apiKey) throw new Error("TOGETHER_API_KEY is not set")
+	return new OpenAI({ 
+		baseURL: "https://api.together.xyz/v1",
+		apiKey
+	})
+})
+
 const anthropic = lazy(() => {
 	if (!anthropicApiKey) {
 		throw new Error("ANTHROPIC_API_KEY is not set")
@@ -179,15 +188,14 @@ export class LLMClient {
             return wrapOpenAIStream(stream, ctx)
         }
 
-        if (args.model.startsWith("anyscale/")) {
-            const model = args.model.replace("anyscale/", "")
-            const stream = await anyscale().chat.completions.create({
+        if (args.model.startsWith("together/")) {
+            const model = args.model.replace("together/", "")
+            const stream = await together().chat.completions.create({
                 model,
                 messages: args.messages,
                 stream: true,
                 temperature: 0.1
             })
-
             return wrapOpenAIStream(stream, ctx)
         }
 
