@@ -1,17 +1,19 @@
 export type Model = typeof models[number]
 
 export const models = [
+	"openai/gpt-4.1",
 	"openai/gpt-4o",
 	"openai/gpt-4o-mini",
 	"openai/chatgpt-4o-latest",
-	"openai/o3-mini",
+	"openai/o4-mini",
+	"openai/o3",
     "groq/mixtral-8x7b-32768",
 	"groq/llama3-70b-8192",
 	"groq/llama3-8b-8192",
     "groq/gemma-7b-it",
 	"together/deepseek-ai/DeepSeek-R1",
 	"anthropic/claude-3-5-sonnet-latest",
-	"anthropic/claude-2.1"
+	"anthropic/claude-2.1",
 ] as const
 
 export type ModelKey = typeof models[number]
